@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIH26125 - Blockchain Identity &amp; Access Control System</title>
+    <meta name="description" content="Blockchain platform for identity &amp; access control: ZK self-sovereign identity, ABAC, dynamic lifecycle NFTs and dual-layer encrypted storage.">
+    <meta name="theme-color" content="#1d4ed8">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=3">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/app.css?v=3">
+</head>
+<body>
+    <div class="app-shell">
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+        <div class="sidebar-brand">
+            <div class="brand-mark"><i class="fas fa-link"></i></div>
+            <div>
+                <div class="brand-title">SIH26125</div>
+                <div class="brand-sub">Blockchain Identity</div>
+            </div>
+            <button class="icon-btn sidebar-collapse" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+        <button class="icon-btn drawer-close" onclick="toggleDrawer(false)" aria-label="Close navigation menu">
+            <i class="fas fa-times"></i>
+        </button>
+        <nav aria-label="Sections">
+            <div class="nav-group">Overview</div>
+            <button class="nav-item active" data-ws="ws-dashboard" onclick="gotoSection('ws-dashboard', this)" role="tab" aria-selected="true" aria-controls="ws-dashboard" title="Dashboard">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+
+            <div class="nav-group">Identity &amp; Access</div>
+            <button class="nav-item" data-ws="ws-identity" onclick="gotoSection('ws-identity', this)" role="tab" aria-selected="false" aria-controls="ws-identity" title="Identity &amp; Registration">
+                <i class="fas fa-users"></i> Identity &amp; Registration
+            </button>
+            <button class="nav-item" data-ws="ws-verification" onclick="gotoSection('ws-verification', this)" role="tab" aria-selected="false" aria-controls="ws-verification" title="Verification &amp; ZK">
+                <i class="fas fa-fingerprint"></i> Verification &amp; ZK
+            </button>
+            <button class="nav-item" data-ws="ws-access" onclick="gotoSection('ws-access', this)" role="tab" aria-selected="false" aria-controls="ws-access" title="Access Control">
+                <i class="fas fa-lock"></i> Access Control
+            </button>
+
+            <div class="nav-group">Network &amp; Storage</div>
+            <button class="nav-item" data-ws="ws-network" onclick="gotoSection('ws-network', this)" role="tab" aria-selected="false" aria-controls="ws-network" title="Network &amp; IPFS">
+                <i class="fas fa-network-wired"></i> Network &amp; IPFS
+            </button>
+            <button class="nav-item" data-ws="ws-assets" onclick="gotoSection('ws-assets', this)" role="tab" aria-selected="false" aria-controls="ws-assets" title="Digital Assets">
+                <i class="fas fa-cubes"></i> Digital Assets
+            </button>
+
+            <div class="nav-group">Security</div>
+            <button class="nav-item" data-ws="ws-audit" onclick="gotoSection('ws-audit', this)" role="tab" aria-selected="false" aria-controls="ws-audit" title="Audit &amp; Security">
+                <i class="fas fa-history"></i> Audit &amp; Security
+            </button>
+            <button class="nav-item" data-ws="ws-gseries" onclick="gotoSection('ws-gseries', this)" role="tab" aria-selected="false" aria-controls="ws-gseries" title="G-Series Security">
+                <i class="fas fa-shield-halved"></i> G-Series Security
+            </button>
+</nav>
+        <div class="sidebar-footer">
+            <button class="nav-item danger" onclick="resetBlockchain()" title="Reset Blockchain">
+                <i class="fas fa-sync"></i> Reset Blockchain
+            </button>
+        </div>
+    </aside>
+        <div class="page">
+<header class="topbar">
+        <button class="icon-btn menu-btn" onclick="toggleDrawer(true)" aria-label="Open navigation menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="topbar-pills" aria-label="System status">
+            <span class="status-pill" id="topBlocks"><i class="fas fa-cubes"></i> -- blocks</span>
+            <span class="status-pill" id="topIdentities"><i class="fas fa-users"></i> -- identities</span>
+            <span class="status-pill chain-ok" id="topChainStatus"><i class="fas fa-shield-alt"></i> Chain VALID</span>
+            <span class="status-pill" id="topNodeCount"><i class="fas fa-server"></i> -- nodes</span>
+        </div>
+        <div class="topbar-actions">
+            <button class="icon-btn" onclick="toggleActivity()" title="Activity log (L)" aria-label="Toggle activity log">
+                <i class="fas fa-stream"></i>
+            </button>
+            <button class="icon-btn" onclick="startTour()" title="Guided tour (T)" aria-label="Start guided tour">
+                <i class="fas fa-compass"></i>
+            </button>
+            <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="btn btn-danger btn-small" onclick="resetBlockchain()">
+                <i class="fas fa-sync"></i> <span>Reset</span>
+            </button>
+        </div>
+    </header>
+            <main class="container" id="mainContent">
+<div class="hero">
+        <div>
+            <span class="hero-badge"><i class="fas fa-bolt"></i> SIH 2024 Problem Statement 26125</span>
+            <h2><i class="fas fa-shield-halved"></i> Blockchain for Identity &amp; Access Control</h2>
+            <p>Self-sovereign identity (W3C DIDs), attribute-based access control, dynamic lifecycle NFTs and
+               dual-layer encrypted storage &mdash; all protected by a tamper-proof Proof-of-Work blockchain
+               built for Bharat Electronics Limited (BEL).</p>
+        </div>
+        <div class="hero-actions">
+            <button class="btn btn-primary" onclick="startTour()"><i class="fas fa-compass"></i> Take the guided tour</button>
+            <button class="btn btn-primary" onclick="gotoSection('ws-identity')"><i class="fas fa-user-plus"></i> Register an identity</button>
+        </div>
+    </div>
+                <div class="alert-stack" id="alertContainer" role="region" aria-label="Notifications"></div>
+<section class="workspace active" id="ws-dashboard">
+    <div class="workspace-title"><i class="fas fa-chart-pie"></i> Dashboard <span class="workspace-desc">&nbsp;&middot;&nbsp; Live overview of chain health, identities and consensus</span></div>
+    <div class="stats-grid">
+            <div class="stat-card accent-cubes">
+                <div class="stat-value" id="totalBlocks">0</div>
+                <div class="stat-label"><i class="fas fa-cubes"></i> Total Blocks</div>
+            </div>
+            <div class="stat-card accent-users">
+                <div class="stat-value" id="totalIdentities">0</div>
+                <div class="stat-label"><i class="fas fa-users"></i> Registered Identities</div>
+            </div>
+            <div class="stat-card accent-shield">
+                <div class="stat-value" id="chainStatus">-</div>
+                <div class="stat-label"><i class="fas fa-shield-alt"></i> Chain Status</div>
+            </div>
+            <div class="stat-card accent-clock">
+                <div class="stat-value" id="genesisTime">-</div>
+                <div class="stat-label"><i class="fas fa-clock"></i> Genesis Block Created</div>
+            </div>
+        </div>
+        <div class="dash-section-divider"><i class="fas fa-wave-square"></i> Live Chain &amp; Consensus</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-cubes"></i> Blockchain Visualization</h2>
+                    <div class="chain-visualization" id="chainVisualization">
+                        <div class="loading">Loading blockchain...</div>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-chart-line"></i> Network &amp; Consensus Metrics</h2>
+                    <div id="metricsContainer">
+                        <div class="loading">Loading metrics...</div>
+                    </div>
+                </div>
+    </div>
+</div>
+<div class="dash-section-divider"><i class="fas fa-shield-halved"></i> Security Posture &amp; Incident Command</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-heart-pulse"></i> Security Posture Score</h2>
+                    <div id="postureGauge"></div>
+                    <div id="postureBreakdown"></div>
+                    <div class="form-group">
+                        <button class="btn" onclick="postureRefresh()"><i class="fas fa-sync"></i> Refresh Posture</button>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-bullhorn"></i> Live Threat Board (SOC)</h2>
+                    <div class="form-group">
+                        <button class="btn" onclick="threatBoard()"><i class="fas fa-broadcast-tower"></i> Load Threat Board</button>
+                    </div>
+                    <div id="threatResult"><div class="hint">Merges anomaly alerts, Live Defense events, honeytoken trips, revocations and geofence/schedule denials into one severity-coloured feed.</div></div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-sliders"></i> Point-in-Time Audit Slider</h2>
+                    <div class="form-group">
+                        <label>Block index timeline</label>
+                        <input type="range" id="pitSlider" min="0" max="0" value="0" oninput="pitLabel()">
+                        <div id="pitSliderLabel" style="font-size:0.75rem;color:var(--text-dim);">block 0</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Resource (who had access at this block)</label>
+                        <input type="text" id="pitResource" value="personal_record" placeholder="personal_record / vault / blueprint_export">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn" onclick="pitQuery()"><i class="fas fa-history"></i> Reconstruct State</button>
+                    </div>
+                    <div id="pitResult"><div class="hint">Scrub to any historical block and answer: "who had access to &lt;resource&gt; at that exact point?"</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-shield-heart"></i> Posture Breakdown</h2>
+                    <div id="postureDetail"><div class="hint">Each component of the 0-100 score: chain validity, revocation health, open anomaly alerts, node health and timing consistency.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-clapperboard"></i> Scenario Theater <span class="tag tag-new">NEW</span></h2>
+                    <p class="muted">One narrated story that chains <b>real</b> backend methods: onboard &rarr; allowed access &rarr; duress coercion &rarr; partition fork &rarr; auto-defense. Every step is an actual on-chain operation.</p>
+                    <div class="form-group"><label>Preset</label>
+                        <select id="f15scenPreset"><option value="coercion">Coercion drill (duress + fork + defense)</option><option value="routine">Routine step-up evaluation</option></select>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15ScenarioRun()"><i class="fas fa-play"></i> Run Scenario Theater</button>
+                    <div id="f15scenResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-share-nodes"></i> Block-Propagation Map</h2>
+                    <p class="muted">Blocks fly node-to-node on a live canvas. Nodes decoupled by chaos mutation dim out; the canonical head is highlighted.</p>
+                    <canvas id="f15propCanvas" width="460" height="200" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-app);"></canvas>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
+                        <button class="btn btn-primary btn-full" onclick="f15PropBroadcast()"><i class="fas fa-paper-plane"></i> Broadcast Block</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15PropMap()"><i class="fas fa-sync"></i> Refresh Map</button>
+                    </div>
+                    <div id="f15propResult" class="hint" style="margin-top:0.4rem;">Broadcast a block, then press Refresh Map to watch it propagate.</div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-gauge-high"></i> Performance Benchmarks</h2>
+                    <p class="muted">In-process latency probes: PoW mine-time per difficulty, ABAC auth latency (mean / p50 / p95) and ZK range-proof generate/verify percentiles. Read-only probes - the chain is never mutated.</p>
+                    <button class="btn btn-primary btn-full" onclick="f15BenchRun()"><i class="fas fa-stopwatch"></i> Run Benchmarks</button>
+                    <div id="f15benchResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+
+<section class="workspace" id="ws-identity">
+    <div class="workspace-title"><i class="fas fa-users"></i> Identity & Registration <span class="workspace-desc">&nbsp;&middot;&nbsp; Register, verify, and check access for identities</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-user-plus"></i> Register New Identity</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="name" placeholder="e.g., Rahul Singh">
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <input type="text" id="role" placeholder="e.g., Developer">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" placeholder="user@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <input type="text" id="department" placeholder="e.g., IT Security">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Access Level</label>
+                            <select id="accessLevel">
+                                <option value="LOW">LOW</option>
+                                <option value="MEDIUM">MEDIUM</option>
+                                <option value="HIGH">HIGH</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ID Number</label>
+                            <input type="text" id="idNumber" placeholder="e.g., EMP-1020">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Allowed Resources (comma-separated)</label>
+                        <input type="text" id="allowedResources" 
+                               placeholder="admin_dashboard, sensitive_data, network_access">
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Metadata</label>
+                        <textarea id="metadata" rows="2" placeholder="Any additional info"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary btn-full" onclick="registerIdentity()">
+                            <i class="fas fa-plus-circle"></i> Register & Mine on Blockchain
+                        </button>
+                    </div>
+                </div><div class="card">
+                    <h2><i class="fas fa-search"></i> Verify Identity</h2>
+                    <div class="form-group">
+                        <label>Identity Hash (from registration)</label>
+                        <input type="text" id="verifyHash" placeholder="Paste identity hash here...">
+                    </div>
+                    <button class="btn btn-primary" onclick="verifyIdentity()">
+                        <i class="fas fa-check-circle"></i> Verify on Blockchain
+                    </button>
+                    <div id="verifyResult" class="alert"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-lock"></i> Access Control Check</h2>
+                    <div class="form-group">
+                        <label>Identity Hash</label>
+                        <input type="text" id="accessHash" placeholder="Identity hash to check access for">
+                    </div>
+                    <select id="resourceSelect">
+                        <option value="admin_dashboard">admin_dashboard</option>
+                        <option value="sensitive_data">sensitive_data</option>
+                        <option value="user_management">user_management</option>
+                        <option value="network_access">network_access</option>
+                        <option value="blockchain_console">blockchain_console</option>
+                        <option value="analytics_dashboard">analytics_dashboard</option>
+                        <option value="reporting">reporting</option>
+                        <option value="basic_access">basic_access</option>
+                    </select>
+                    <div style="margin-top: 0.5rem;">
+                        <button class="btn btn-success btn-full" onclick="checkAccess()">
+                            <i class="fas fa-check-double"></i> Check Access Permission
+                        </button>
+                    </div>
+                    <div id="accessResult" class="alert"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-list"></i> Registered Identities on Blockchain</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Block</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Access</th>
+                                    <th>Identity Hash</th>
+                                </tr>
+                            </thead>
+                            <tbody id="identityTable">
+                                <tr>
+                                    <td colspan="5" class="loading">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+</div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-clone"></i> Duplicate / Synthetic Identity Detection</h2>
+                    <div class="form-group"><label>Name</label><input type="text" id="dupName" placeholder="e.g. Mark Johnson"></div>
+                    <div class="form-group"><label>Email</label><input type="text" id="dupEmail" placeholder="e.g. mark@bel-bengaluru.in"></div>
+                    <div class="form-group"><label>ID Number</label><input type="text" id="dupId" placeholder="e.g. BEL-EMP-0001"></div>
+                    <div class="form-group">
+                        <button class="btn" onclick="dupCheck()"><i class="fas fa-binoculars"></i> Run Fuzzy Match</button>
+                        <button class="btn" onclick="dupFlags()"><i class="fas fa-flag"></i> Flag History</button>
+                    </div>
+                    <div id="dupResult"><div class="hint">Fuzzy-matches name + email + ID against every registered identity; blocks synthetic identities (same ID, different name) at registration.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-file-csv"></i> Bulk CSV Onboarding + Hash Receipts</h2>
+                    <div class="form-group"><label>Roster (one identity per line, pipe-separated)</label>
+                        <textarea id="bulkCsv" rows="4" placeholder="name|id_number|role|email&#10;Suresh Kumar|BEL-1001|TECH|suresh@bel.in&#10;Priya Sharma|BEL-1002|SECURITY|priya@bel.in"></textarea>
+                    </div>
+                    <div class="form-group"><label>Batch label</label><input type="text" id="bulkLabel" placeholder="factory-shift-9"></div>
+                    <div class="form-group">
+                        <button class="btn" onclick="bulkOnboard()"><i class="fas fa-user-plus"></i> Onboard Roster</button>
+                        <button class="btn" onclick="bulkBatches()"><i class="fas fa-receipt"></i> Batch Receipts</button>
+                    </div>
+                    <div id="bulkResult"><div class="hint">Every row is POW-mined on-chain and returns its block-hash receipt for payroll/audit sign-off.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-user-clock"></i> Join-Request Approval Queue</h2>
+                    <div class="form-group"><label>Self-registration payload (JSON)</label>
+                        <textarea id="joinPayload" rows="4">{"name":"Rahul Verma","email":"rahul@bel.in","role":"FIELD_ENGINEER","id_number":"BEL-2005","access_level":2,"allowed_resources":["personal_record"]}</textarea>
+                    </div>
+                    <div class="form-group"><label>Join ID (for approve/reject)</label><input type="text" id="joinId" placeholder="JOIN-XXXX"></div>
+                    <div class="form-group">
+                        <button class="btn" onclick="joinSubmit()"><i class="fas fa-paper-plane"></i> Submit Join Request</button>
+                        <button class="btn btn-success" onclick="joinApprove()"><i class="fas fa-check-double"></i> Approve</button>
+                        <button class="btn btn-danger" onclick="joinReject()"><i class="fas fa-times"></i> Reject</button>
+                    </div>
+<div id="joinResult"><div class="hint">Self-registration hangs as PENDING; only admin approval mints the identity on-chain - the multisig quota becomes part of onboarding.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-palette"></i> Visual Hash Identicons</h2>
+                    <p class="muted">Every identity hash renders as one deterministic 5x5 glyph - the same hash always paints the same avatar, making hash collisions impossible to miss visually (SSI-native).</p>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1;"><label>Hash / public id</label><input type="text" id="f15idHash" value="aarav.sharma@bel.gov.in"></div>
+                        <button class="btn btn-primary btn-full" onclick="f15Identicon()" style="max-width:140px;"><i class="fas fa-paint-brush"></i> Render</button>
+                    </div>
+                    <div id="f15identiconResult" style="margin-top:0.6rem;"><div class="hint">Render an identicon for any clipboard-copied identity hash. Neighbouring entries in the registry tab use the same visual language.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-handshake"></i> Web-of-Trust Vouching</h2>
+                    <p class="muted">A new identity cannot self-join. Two HIGH-level peers (access_level &ge; 3 or senior role) must vouch for it - the identity is mined on-chain only after quorum is reached.</p>
+                    <div class="form-group"><label>Pending identity</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15vName" placeholder="Full name" style="flex:1;">
+                            <input type="text" id="f15vEmail" placeholder="email@bel.gov.in" style="flex:1;">
+                            <input type="text" id="f15vId" placeholder="ID" style="flex:1;">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15VouchRegister()"><i class="fas fa-plus"></i> Register for Vouching</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Vouch attestation</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15vTarget" placeholder="target id" style="flex:1;">
+                            <input type="text" id="f15vVoucher" value="aarav.sharma@bel.gov.in" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15VouchAttest()"><i class="fas fa-check"></i> Attest (HIGH peer)</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15VouchList()"><i class="fas fa-list"></i> Pending + Vouched</button>
+                    </div>
+                    <div id="f15vouchResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-radiation"></i> Emergency Containment Revoke</h2>
+                    <p class="muted">Division-level kill-switch: revoke <u>every</u> identity in a department in one action. Each revocation mines its own tamper-proof audit block.</p>
+                    <div class="form-group"><label>Department</label><input type="text" id="f15cDept" value="Operations"></div>
+                    <div class="form-group"><label>Reason</label><input type="text" id="f15cReason" value="division compromise"></div>
+                    <div class="form-group"><label>Actor</label><input type="text" id="f15cActor" value="CISO"></div>
+                    <button class="btn btn-danger btn-full" onclick="f15Containment()"><i class="fas fa-skull"></i> Execute Containment Revoke</button>
+                    <button class="btn btn-secondary btn-full" onclick="f15ContainmentList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Containment History</button>
+                    <div id="f15containResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+
+<section class="workspace" id="ws-verification">
+    <div class="workspace-title"><i class="fas fa-fingerprint"></i> Verification & Zero-Knowledge <span class="workspace-desc">&nbsp;&middot;&nbsp; Passwordless auth, ZK proofs, QR, biometrics and W3C DIDs</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-user-shield"></i> Advanced Verification</h2>
+                    <div class="feature-tabs">
+                        <button class="feature-tab active" data-tab="crypto" onclick="switchTab('crypto', this)">
+                            <i class="fas fa-key"></i> Passwordless Auth
+                        </button>
+                        <button class="feature-tab" data-tab="zkp" onclick="switchTab('zkp', this)">
+                            <i class="fas fa-eye-slash"></i> Zero-Knowledge Proof
+                        </button>
+                        <button class="feature-tab" data-tab="qr" onclick="switchTab('qr', this)">
+                            <i class="fas fa-qrcode"></i> QR Verification
+                        </button>
+                    </div>
+
+                    <!-- ===== PASSWORDLESS AUTH PANEL ===== -->
+                    <div class="feature-panel active" id="panel-crypto">
+                        <div class="zk-steps">
+                            <div class="step">
+                                <div class="step-num">1</div>
+                                <div>Each identity gets a RSA-2048 private/public key pair</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">2</div>
+                                <div>ONLY the public key is stored on the blockchain</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">3</div>
+                                <div>User signs an access request with their private key</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">4</div>
+                                <div>System verifies the signature + timestamp → NO password ever</div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-full" onclick="runPasswordlessDemo()" id="cryptoButton">
+                            <i class="fas fa-bolt"></i> Run Passwordless Auth Demo
+                        </button>
+                        <div id="cryptoResult" style="margin-top:0.8rem;"></div>
+                    </div>
+
+                    <!-- ===== Zero-Knowledge Proof Panel ===== -->
+                    <div class="feature-panel" id="panel-zkp">
+                        <div class="zk-steps">
+                            <div class="step">
+                                <div class="step-num">1</div>
+                                <div>Prover enters their identity hash + resource</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">2</div>
+                                <div>System generates a commitment + proof (secret is hashed with a random nonce)</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">3</div>
+                                <div>Verifier confirms access WITHOUT ever seeing the identity hash</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Identity Hash (known only to the prover)</label>
+                            <input type="text" id="zkpHash" placeholder="Paste your identity hash (stays private)">
+                        </div>
+                        <div class="form-group">
+                            <label>Resource to prove access for</label>
+                            <select id="zkpResource">
+                                <option value="admin_dashboard">admin_dashboard</option>
+                                <option value="sensitive_data">sensitive_data</option>
+                                <option value="user_management">user_management</option>
+                                <option value="network_access">network_access</option>
+                                <option value="blockchain_console">blockchain_console</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-full" onclick="runZkpDemo()" id="zkpButton">
+                            <i class="fas fa-user-secret"></i> Run ZK Proof Demo
+                        </button>
+                        <div id="zkpResult" style="margin-top:0.8rem;"></div>
+                    </div>
+
+                    <!-- ===== QR Verification Panel ===== -->
+                    <div class="feature-panel" id="panel-qr">
+                        <div class="zk-steps">
+                            <div class="step">
+                                <div class="step-num">1</div>
+                                <div>Enter a public ID (email / ID number) + resource</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">2</div>
+                                <div>Generate a QR payload (cryptographic, time-limited token)</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-num">3</div>
+                                <div>Scan / verify against the blockchain - no identity hash needed to scan</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Public Identifier (Email or ID Number)</label>
+                            <input type="text" id="qrPublicId" placeholder="e.g., aarav.sharma@bel.gov.in">
+                        </div>
+                        <div class="form-group">
+                            <label>Resource</label>
+                            <select id="qrResource">
+                                <option value="admin_dashboard">admin_dashboard</option>
+                                <option value="sensitive_data">sensitive_data</option>
+                                <option value="user_management">user_management</option>
+                                <option value="network_access">network_access</option>
+                                <option value="analytics_dashboard">analytics_dashboard</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-primary btn-full" onclick="generateQR()">
+                                <i class="fas fa-qrcode"></i> Generate QR
+                            </button>
+                            <button class="btn btn-success btn-full" onclick="verifyQR()">
+                                <i class="fas fa-check"></i> Verify QR
+                            </button>
+                        </div>
+                        <div id="qrPreview" class="qr-preview">
+                            <div class="qr-placeholder">
+                                <div>
+                                    <i class="fas fa-qrcode" style="font-size:2.5rem; display:block; margin-bottom:0.5rem;"></i>
+                                    QR code will appear here
+                                </div>
+                            </div>
+                        </div>
+                        <div id="qrPayloadDisplay"></div>
+                        <div id="qrResult"></div>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-fingerprint"></i> Biometric Verification</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div>Enroll a biometric template (face / fingerprint) for an identity</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div>Only the template <b>hash</b> is stored on-chain (raw biometrics never stored)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>A live "capture" (with sensor noise) is matched against the template</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Identity Email / ID</label>
+                        <input type="text" id="bioPublicId" placeholder="e.g., aarav.sharma@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Biometric Type</label>
+                        <select id="bioType">
+                            <option value="face">Face Recognition</option>
+                            <option value="fingerprint">Fingerprint</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="runBiometricDemo()" id="bioButton">
+                        <i class="fas fa-user-check"></i> Run Biometric Verification Demo
+                    </button>
+                    <div id="bioResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card accent-zk">
+                    <h2><i class="fas fa-id-card"></i> ZK Self-Sovereign Identity (DID + VC)</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div>Each subject gets a <b>W3C DID</b> (<code>did:zk:...</code>); only its public verification method is anchored on-chain</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div>An issuer DID signs a <b>Verifiable Credential</b> (e.g. <code>security_clearance: LEVEL-3</code>); only a <b>salted commitment</b> of the claims goes on-chain</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>The holder proves a <b>predicate</b> (<code>clearance &gt;= LEVEL-3</code>) against a challenge - the verifier learns only GRANTED/DENIED, never <i>who</i></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="runZkSsiDemo()" id="zkSsiButton">
+                        <i class="fas fa-user-secret"></i> Run ZK-SSI Demo (prove attribute, not identity)
+                    </button>
+                    <button class="btn btn-outline btn-full" onclick="listDids()" style="margin-top:0.5rem;">
+                        <i class="fas fa-list"></i> List Registered DIDs
+                    </button>
+                    <div id="zkSsiResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card accent-zk">
+                    <h2><i class="fas fa-life-ring"></i> DID Rescue Kits</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Shamir secret-split the identity across guardian shares</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Recovery needs the threshold of shares - e.g. 2 of 3</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Locked-out / compromised identity can be recovered only by guardians</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="kitPublicId" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Threshold</label><input type="number" id="kitThreshold" value="2" min="1"></div>
+                        <div class="form-group" style="flex:1;"><label>Total shares</label><input type="number" id="kitShares" value="3" min="2"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="rescueCreate()"><i class="fas fa-box-open"></i> Create Rescue Kit</button>
+                    <div id="kitResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-id-badge"></i> Credential Lifecycle (Expiry + Refresh)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Set an expiry on a Verifiable Credential</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Expired VCs are flagged - refresh only after re-verification</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Every refresh is an audited, counted on-chain event</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="vcPublicId" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Credential ID</label>
+                        <input type="text" id="vcCredId" value="VC-SEC-001">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="vcExpiry()"><i class="fas fa-calendar-times"></i> Set Expiry</button>
+                        <button class="btn btn-success btn-full" onclick="vcRefresh()"><i class="fas fa-redo"></i> Refresh</button>
+                    </div>
+                    <button class="btn btn-secondary btn-full" onclick="vcLifecycle()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Lifecycle Table</button>
+                    <div id="vcResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-qrcode"></i> Physical Check-In (QR Pass)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Mint a timeboxed QR check-in pass for a facility (e.g. SEC-7)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>PPE + location gate are enforced at the physical entry point</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Single-use pass - consumed after one successful check-in</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="ckPublicId" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Facility</label><input type="text" id="ckFacility" value="SEC-7"></div>
+                        <div class="form-group" style="flex:1;"><label>Valid minutes</label><input type="number" id="ckMinutes" value="15" min="1"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="checkinCreate()"><i class="fas fa-qrcode"></i> Issue Check-In Pass</button>
+                    <div class="form-group">
+                        <label>Pass Token (from Issue)</label>
+                        <input type="text" id="ckToken" placeholder="paste token">
+                    </div>
+                    <button class="btn btn-success btn-full" onclick="checkinVerify()"><i class="fas fa-check"></i> Verify At Gate (Consume)</button>
+                    <button class="btn btn-secondary btn-full" onclick="checkinList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> All Passes</button>
+                    <div id="ckResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card accent-zk">
+                    <h2><i class="fas fa-scale-balanced"></i> ZK Range Proof (Clearance &ge; Bound)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Prover secretly holds clearance level (e.g. 7); bound is public (e.g. 3)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Only high-digit information needed to bound the value is revealed</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Verifier confirms level &ge; 3 WITHOUT ever seeing the level or the employee identity</div></div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Secret clearance level</label><input type="number" id="zrSecret" value="7" min="0"></div>
+                        <div class="form-group" style="flex:1;"><label>Minimum bound</label><input type="number" id="zrBound" value="3" min="0"></div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-primary btn-full" onclick="zrProve()"><i class="fas fa-ghost"></i> Generate Range Proof</button>
+                        <button class="btn btn-success btn-full" onclick="zrVerify()"><i class="fas fa-check-double"></i> Verify Last Proof</button>
+                    </div>
+                    <div id="zrResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card accent-zk">
+                    <h2><i class="fas fa-atom"></i> Post-Quantum Identity (Lamport / SLH-DSA)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Key material is a hash-based Winternitz/Merkle OTS tree (SPHINCS+ family)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Only the Merkle ROOT is anchored on-chain - leaf keys stay off-device</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Harvest-now / decrypt-later attacks fail: no quantum computer breaks hashes</div></div>
+                    </div>
+                    <div class="form-group"><label>Public identifier</label>
+                        <input type="text" id="pqPublicId" value="pq.quantum@bel.gov"></div>
+                    <button class="btn btn-primary btn-full" onclick="pqRegister()"><i class="fas fa-atom"></i> Register PQ Identity</button>
+                    <button class="btn btn-success btn-full" onclick="pqAuth()" style="margin-top:0.4rem;"><i class="fas fa-unlock"></i> Authenticate (OTS + Merkle Witness)</button>
+                    <button class="btn btn-secondary btn-full" onclick="pqList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> List PQ Identities</button>
+                    <div id="pqResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card accent-zk">
+                    <h2><i class="fas fa-key"></i> Key Transparency Log (CONIKS-style)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Every rotation chains to its predecessor via previous_hash</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Signed attestation proves who rotated and why</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Auditors verify no key was silently swapped</div></div>
+                    </div>
+                    <div class="form-group"><label>Public identifier</label>
+                        <input type="text" id="ktPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>New key fingerprint</label>
+                        <input type="text" id="ktFingerprint" value="KP-9F3A"></div>
+                    <button class="btn btn-primary btn-full" onclick="ktRotate()"><i class="fas fa-arrows-rotate"></i> Record Key Rotation</button>
+                    <button class="btn btn-success btn-full" onclick="ktChain()" style="margin-top:0.4rem;"><i class="fas fa-chain"></i> Verify Rotation Chain</button>
+                    <button class="btn btn-secondary btn-full" onclick="ktListAll()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> All Transparency Logs</button>
+                    <div id="ktResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card accent-zk">
+                    <h2><i class="fas fa-face-smile-wink"></i> Biometric Liveness Challenge</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Server issues a random "blink twice / turn head left" prompt + fresh nonce</div></div>
+                        <div class="step"><div class="step-num">2</div><div>The subject must present the challenge WITH the nonce within 30s</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Photo-replay kills: a static image can't answer a random prompt nonce</div></div>
+                    </div>
+                    <div class="form-group"><label>Public identifier</label>
+                        <input type="text" id="lvPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Challenge ID (from Issue)</label>
+                        <input type="text" id="lvChallengeId" placeholder="paste challenge id"></div>
+                    <div class="form-group"><label>Response nonce (from Issue)</label>
+                        <input type="text" id="lvNonce" placeholder="paste nonce"></div>
+                    <button class="btn btn-primary btn-full" onclick="lvIssue()"><i class="fas fa-question"></i> Issue Liveness Challenge</button>
+                    <button class="btn btn-success btn-full" onclick="lvVerify()" style="margin-top:0.4rem;"><i class="fas fa-video"></i> Verify (Simulate Live Capture)</button>
+                    <div id="lvResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-puzzle-piece"></i> Selective-Disclosure Claim Picker <span class="tag tag-new">NEW</span></h2>
+                    <p class="muted">Issue a credential with many claims, then disclose <u>only the ones a verifier needs</u> - "prove you are 18+, not when you were born". The verifier only ever sees the sub-digest of the withheld claims.</p>
+                    <div class="form-group"><label>Holder public id</label><input type="text" id="f15sHolder" value="priya.patel@bel.gov.in"></div>
+                    <div class="form-group"><label>Claims (JSON array)</label>
+                        <textarea id="f15sClaims" rows="5">[{"key":"name","value":"Priya Patel"},{"key":"age","value":"31"},{"key":"clearance","value":"LEVEL-2"},{"key":"id","value":"PRIYA00"}]</textarea>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15SdIssue()"><i class="fas fa-id-card"></i> Issue Credential (ipfs + digest)</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>VC ID + Reveal keys (comma separated)</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15sVc" placeholder="VC-XXXX" style="flex:1;">
+                            <input type="text" id="f15sReveal" value="age,clearance" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15SdDisclose()"><i class="fas fa-eye"></i> Disclose Subset</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15SdList()"><i class="fas fa-list"></i> Credentials</button>
+                    </div>
+                    <div id="f15sdResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-user-group"></i> Witness Co-Signing</h2>
+                    <p class="muted">A sensitive action (e.g. blueprint export) requires a second nearby identity to co-sign inside a time window. The forging is QR-paired: a wrong pairing code means no proximity.</p>
+                    <div class="form-group"><label>Requester + Resource</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15wRequester" value="priya.patel@bel.gov.in" style="flex:1;">
+                            <input type="text" id="f15wResource" value="blueprint_export" style="flex:1;">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15WitnessOpen()"><i class="fas fa-qrcode"></i> Open Witness Window</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Co-sign (witness identity + pairing code)</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15wReq" placeholder="WIT-XXXX" style="flex:1;">
+                            <input type="text" id="f15wWitness" value="aarav.sharma@bel.gov.in" style="flex:1;">
+                            <input type="text" id="f15wCode" placeholder="pairing code" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15WitnessCosign()"><i class="fas fa-signature"></i> Co-Sign</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15WitnessList()"><i class="fas fa-list"></i> Requests</button>
+                    </div>
+                    <div id="f15witnessResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-arrows-rotate"></i> Identity Lifecycle Cascade</h2>
+                    <p class="muted">Promotion/transfer is not a grant change - it is a <u>cascade</u>: the moment the identity moves, every stale grant auto-revokes and only the new role's clearances remain.</p>
+                    <div class="form-group"><label>Public id</label><input type="text" id="f15lPid" value="priya.patel@bel.gov.in"></div>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Change</label><select id="f15lType"><option>PROMOTION</option><option>TRANSFER</option><option>DEMOTION</option></select></div>
+                        <div style="flex:1;"><label>New role</label><input type="text" id="f15lRole" value="SENIOR_ANALYST"></div>
+                        <div style="flex:1;"><label>New level</label><input type="number" id="f15lLevel" value="3" min="0" max="6"></div>
+                    </div>
+                    <div class="form-group"><label>New resource grants (comma separated)</label><input type="text" id="f15lRes" value="reporting, sensitive_data"></div>
+                    <button class="btn btn-primary btn-full" onclick="f15Lifecycle()"><i class="fas fa-triangle-exclamation"></i> Apply Cascade Change</button>
+                    <button class="btn btn-secondary btn-full" onclick="f15LifecycleList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Cascade Events</button>
+                    <div id="f15lifecycleResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+
+<section class="workspace" id="ws-access">
+    <div class="workspace-title"><i class="fas fa-lock"></i> Access Control <span class="workspace-desc">&nbsp;&middot;&nbsp; Smart-contract rules and attribute-based access control</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-file-contract"></i> Smart Contract Access Rules</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div>Condition-based access: time-of-day, day-of-week, role hierarchy</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div>Geo-fencing: only allow access within a defined area</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>Rules enforced deterministically (like a smart contract)</div>
+                        </div>
+                    </div>
+                    <div class="feature-tabs" style="margin-top:0.5rem;">
+                        <button class="feature-tab active" data-tab2="time" onclick="switchTab2('time', this)">
+                            <i class="fas fa-clock"></i> Time Rules
+                        </button>
+                        <button class="feature-tab" data-tab2="geo" onclick="switchTab2('geo', this)">
+                            <i class="fas fa-map-marker-alt"></i> Geo-fencing
+                        </button>
+                    </div>
+                    <div class="feature-panel active" id="panel2-time">
+                        <button class="btn btn-primary btn-full" onclick="runTimeWindowDemo()" id="timeButton">
+                            <i class="fas fa-calendar-check"></i> Test Work-Hours Rule
+                        </button>
+                        <div id="timeResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                    <div class="feature-panel" id="panel2-geo">
+                        <button class="btn btn-primary btn-full" onclick="runGeoDemo()" id="geoButton">
+                            <i class="fas fa-map-marked-alt"></i> Test Geo-fence Rule
+                        </button>
+                        <div id="geoResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card accent-abac">
+                    <h2><i class="fas fa-map-marked-alt"></i> Attribute-Based Access Control (ABAC)</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div><b>Dynamic smart-contract policy</b> - not rigid RBAC</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div><code>Access = Role ∧ SecurityClearance ∧ Geofence ∧ DeviceSecurityHash</code></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>A blueprint is auto-revoked outside the BEL perimeter or from an untrusted device - even for an Admin</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="abacPublicId" value="aarav.sharma@bel.gov.in" placeholder="aarav.sharma@bel.gov.in">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="runAbacDemo()" id="abacButton">
+                        <i class="fas fa-shield-alt"></i> Run ABAC Demo (ALL 4 attributes)
+                    </button>
+                    <div id="abacResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-hourglass-half"></i> Disposable / Timed Access Tokens</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Mint a short-lived token bound to one identity + resource + action</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Token auto-expires (TTL) and has a strict use budget</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Consume / revoke at the tap of a button - zero standing access</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="dspPublicId" value="aarav.sharma@bel.gov.in" placeholder="email / id">
+                    </div>
+                    <div class="form-group">
+                        <label>Resource</label>
+                        <input type="text" id="dspResource" value="armory" placeholder="e.g. armory">
+                    </div>
+                    <div class="form-group">
+                        <label>Actions (comma-separated)</label>
+                        <input type="text" id="dspActions" value="enter,exit" placeholder="enter,exit">
+                    </div>
+                    <div class="form-group">
+                        <label>Max uses</label>
+                        <input type="number" id="dspMaxUses" value="2" min="1">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="disposeMint()"><i class="fas fa-key"></i> Mint Token</button>
+                        <button class="btn btn-secondary btn-full" onclick="disposeList()"><i class="fas fa-list"></i> List Tokens</button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="disposeConsume()"><i class="fas fa-check"></i> Consume</button>
+                        <button class="btn btn-danger btn-full" onclick="disposeRevoke()"><i class="fas fa-ban"></i> Revoke</button>
+                    </div>
+                    <div id="dspResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-people-arrows"></i> Delegation Chains</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Delegator grants a subset of access to a delegate</div></div>
+                        <div class="step"><div class="step-num">2</div><div>TTL + optional single-use chain prevents standing delegation</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Chain evaluations are audited on-chain</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Delegator</label>
+                        <input type="text" id="dlgDelegator" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Delegate</label>
+                        <input type="text" id="dlgDelegate" value="priya.patel@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Resource</label>
+                        <input type="text" id="dlgResource" value="gsec_hq">
+                    </div>
+                    <div class="form-group">
+                        <label>Action</label>
+                        <input type="text" id="dlgAction" value="read">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="delegationGrant()"><i class="fas fa-hand-holding"></i> Grant Delegation</button>
+                        <button class="btn btn-secondary btn-full" onclick="delegationList()"><i class="fas fa-list"></i> List Delegations</button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="delegationEvaluate()"><i class="fas fa-search"></i> Evaluate Delegate</button>
+                        <button class="btn btn-danger btn-full" onclick="delegationRevoke()"><i class="fas fa-unlink"></i> Revoke</button>
+                    </div>
+                    <div id="dlgResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-plane"></i> Travel-Mode Context Access</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Enable a warzone / overseas travel mode for a deployed agent</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Identity gains context-granted access only to authorized destinations</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Mode auto-expires - no manual cleanup needed</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="trvPublicId" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Mode</label>
+                        <input type="text" id="trvMode" value="warzone">
+                    </div>
+                    <div class="form-group">
+                        <label>Destinations (comma-separated)</label>
+                        <input type="text" id="trvDest" value="Zone-A,Zone-B">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="travelEnable()"><i class="fas fa-play"></i> Enable Mode</button>
+                        <button class="btn btn-danger btn-full" onclick="travelDisable()"><i class="fas fa-stop"></i> Disable</button>
+                    </div>
+                    <button class="btn btn-success btn-full" onclick="travelEvaluate()" style="margin-top:0.4rem;"><i class="fas fa-check-double"></i> Evaluate Context Access</button>
+                    <button class="btn btn-secondary btn-full" onclick="travelList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Active Travel Modes</button>
+                    <div id="trvResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-microscope"></i> Rule Dry-Run Simulator</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Evaluate ABAC + smart-contract rules BEFORE touching the chain</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Zero audit blocks written - a true "what-if" simulator</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Add optional custom rules (field, op, value)</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Identifier</label>
+                        <input type="text" id="dryPublicId" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Resource</label>
+                        <input type="text" id="dryResource" value="armory">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;">
+                            <label>Rule field</label>
+                            <input type="text" id="dryField" value="access_level">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Operator</label>
+                            <select id="dryOp"><option value=">=">&gt;=</option><option value="<=">&lt;=</option><option value="==">==</option></select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Value</label>
+                            <input type="text" id="dryValue" value="LEVEL-2">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="dryRunRules()"><i class="fas fa-flask"></i> Dry-Run Evaluation</button>
+                    <div id="dryResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-hands-bound"></i> Duress PIN (Silent Alarms)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Enroll a panic PIN alongside the normal PIN</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Entering the duress PIN LOOKS like a normal successful unlock</div></div>
+                        <div class="step"><div class="step-num">3</div><div>In reality a CRITICAL ALERT audit block is written silently</div></div>
+                    </div>
+                    <div class="form-group"><label>Public Identifier</label>
+                        <input type="text" id="dupPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Duress PIN</label>
+                        <input type="text" id="dupPanicPin" value="9999"></div>
+                    <div class="form-group"><label>Normal PIN (default 123456)</label>
+                        <input type="text" id="dupNormalPin" value="123456"></div>
+                    <button class="btn btn-primary btn-full" onclick="dupEnroll()"><i class="fas fa-shield-halved"></i> Enroll Duress PIN</button>
+                    <div class="form-group"><label>PIN to test</label>
+                        <input type="text" id="dupTestPin" value="9999"></div>
+                    <div class="form-group"><label>Resource unlocked</label>
+                        <input type="text" id="dupResource" value="vault"></div>
+                    <button class="btn btn-danger btn-full" onclick="dupAuth()" style="margin-top:0.4rem;"><i class="fas fa-user-shield"></i> Authenticate (Simulate Coercion)</button>
+                    <div id="dupResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-people-roof"></i> Two-Person Integrity at Access Time</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Viewer A opens a window on a guarded resource (e.g. blueprint_export)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>A SECOND distinct identity must co-authorize; neither can view alone</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Only then is read access granted - under an audited dual-signature window</div></div>
+                    </div>
+                    <div class="form-group"><label>Resource</label>
+                        <input type="text" id="tpResource" value="blueprint_export"></div>
+                    <div class="form-group"><label>Viewer A (opener)</label>
+                        <input type="text" id="tpViewerA" value="aarav.sharma@bel.gov.in"></div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="tpOpen()"><i class="fas fa-door-open"></i> Open Two-Person Window</button>
+                        <button class="btn btn-secondary btn-full" onclick="tpWindowList()"><i class="fas fa-list"></i> List Windows</button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Window ID</label><input type="text" id="tpWindowId" placeholder="WIN-XXXX"></div>
+                    </div>
+                    <div class="form-group"><label>Viewer B (second identity)</label>
+                        <input type="text" id="tpViewerB" value="priya.patel@bel.gov.in"></div>
+                    <button class="btn btn-success btn-full" onclick="tpCoauthorize()"><i class="fas fa-user-check"></i> Co-Authorize (Second Person)</button>
+                    <button class="btn btn-warning btn-full" onclick="tpView()" style="margin-top:0.4rem;"><i class="fas fa-eye"></i> Attempt View (As Viewer A)</button>
+                    <div id="tpResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-wave-square"></i> Risk-Adaptive Step-Up Auth</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Anomaly engine scores the identity (velocity/teleport/honeytoken/duress)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>low risk -> ZK proof; medium -> + biometric; high -> + two-person rule</div></div>
+                        <div class="step"><div class="step-num">3</div><div>The score decides the factors that the ABAC engine demands</div></div>
+                    </div>
+                    <div class="form-group"><label>Public Identifier</label>
+                        <input type="text" id="rsPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Resource</label>
+                        <input type="text" id="rsResource" value="vault"></div>
+                    <button class="btn btn-primary btn-full" onclick="rsEvaluate()"><i class="fas fa-gauge-high"></i> Evaluate Required Factors</button>
+                    <button class="btn btn-secondary btn-full" onclick="rsList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Step-Up Policies</button>
+                    <div id="rsResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-tag"></i> Purpose Binding <span class="tag tag-new">NEW</span></h2>
+                    <p class="muted">Right person + <u>right purpose</u> + right time: a valid-role request is DENIED when its purpose is not registered for that resource. Denials are audited on-chain.</p>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Resource</label><input type="text" id="f15pRes" value="reporting"></div>
+                        <div style="flex:1;"><label>Purpose code</label><input type="text" id="f15pCode" value="ANALYTICS"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15PurposeRegister()"><i class="fas fa-plus"></i> Register Purpose</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Access attempt (identity + resource + purpose)</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15aPid" value="priya.patel@bel.gov.in" style="flex:1;">
+                            <input type="text" id="f15aRes" value="reporting" style="flex:1;">
+                            <input type="text" id="f15aCode" value="EMAIL_SPAM" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15PurposeAccess()"><i class="fas fa-key"></i> Attempt Access</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15PurposeList()"><i class="fas fa-list"></i> Policy + Denials</button>
+                    </div>
+                    <div id="f15purposeResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-file-shield"></i> Session Sealing &amp; Mobility Defense</h2>
+                    <p class="muted">Sessions are cryptographically bound to device + IP for a lease. Move to another device/IP and the binding shatters - the "user" is forced to re-authenticate with a risk-score spike.</p>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Public id</label><input type="text" id="f15ssPid" value="priya.patel@bel.gov.in"></div>
+                        <div style="flex:1;"><label>Device hash</label><input type="text" id="f15ssDev" value="DEV-A1B2"></div>
+                    </div>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>IP</label><input type="text" id="f15ssIp" value="10.0.0.7"></div>
+                        <div style="flex:1;"><label>Lease (s)</label><input type="number" id="f15ssLease" value="600"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15SessionSeal()"><i class="fas fa-lock"></i> Seal Session</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Session ID</label><input type="text" id="f15ssSid" placeholder="SES-XXXX"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15SessionValidate()"><i class="fas fa-check"></i> Validate Session</button>
+                        <button class="btn btn-danger btn-full" onclick="f15SessionHijack()"><i class="fas fa-user-secret"></i> Simulate Replay/Hijack</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15SessionList()"><i class="fas fa-list"></i> Sessions</button>
+                    </div>
+                    <div id="f15sessionResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-layer-group"></i> Data-Classification Rule Layers</h2>
+                    <p class="muted">Tag a resource with a classification label once; it inherits the layer's rules (required factors, minimum level, watermark) instantly - no per-resource controls to configure.</p>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Label</label><input type="text" id="f15clLabel" value="RESTRICTED"></div>
+                        <div style="flex:1;"><label>Factors</label><input type="text" id="f15clFactors" value="zk_range_proof,stepup_otp"></div>
+                    </div>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Min level</label><input type="number" id="f15clLevel" value="3" min="0" max="6"></div>
+                        <div style="flex:1;"><label>Watermark</label><input type="text" id="f15clMark" value="BEL-TOP-SECRET"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15ClassifyRegister()"><i class="fas fa-plus"></i> Create Classification Layer</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Assess resource against label</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15cRes" value="blueprint_export" style="flex:1;">
+                            <input type="text" id="f15ccLabel" value="RESTRICTED" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15ClassifyAssess()"><i class="fas fa-scale-balanced"></i> Assess</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15ClassifyList()"><i class="fas fa-list"></i> Layers</button>
+                    </div>
+                    <div id="f15classifyResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+
+<section class="workspace" id="ws-network">
+    <div class="workspace-title"><i class="fas fa-network-wired"></i> Network & IPFS <span class="workspace-desc">&nbsp;&middot;&nbsp; Distributed nodes, consensus and IPFS document storage</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-network-wired"></i> Multi-Node Distributed Network</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div>3 nodes (node_1, node_2, node_3) sync the chain over localhost</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div>Longest-valid-chain consensus resolves conflicts</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>Malicious fork attempts are REJECTED by the network</div>
+                        </div>
+                    </div>
+                    <div class="feature-tabs" style="margin-top:0.5rem;">
+                        <button class="feature-tab active" data-tab3="status" onclick="switchTab3('status', this)">
+                            <i class="fas fa-server"></i> Network Status
+                        </button>
+                        <button class="feature-tab" data-tab3="sync" onclick="switchTab3('sync', this)">
+                            <i class="fas fa-sync-alt"></i> Sync Nodes
+                        </button>
+                        <button class="feature-tab" data-tab3="fork" onclick="switchTab3('fork', this)">
+                            <i class="fas fa-biohazard"></i> Malicious Fork
+                        </button>
+                        <button class="feature-tab" data-tab3="topology" onclick="switchTab3('topology', this)">
+                            <i class="fas fa-project-diagram"></i> Topology
+                        </button>
+                        <button class="feature-tab" data-tab3="health" onclick="switchTab3('health', this)">
+                            <i class="fas fa-heartbeat"></i> Health
+                        </button>
+                    </div>
+                    <div class="feature-panel active" id="panel3-status">
+                        <button class="btn btn-primary btn-full" onclick="loadNetworkStatus()" id="netButton">
+                            <i class="fas fa-server"></i> Load Network Status
+                        </button>
+                        <div id="netStatusResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                    <div class="feature-panel" id="panel3-sync">
+                        <button class="btn btn-primary btn-full" onclick="runNetworkSync()" id="syncButton">
+                            <i class="fas fa-sync-alt"></i> Simulate Chain Sync (node_1 -> node_2)
+                        </button>
+                        <div id="syncResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                    <div class="feature-panel" id="panel3-fork">
+                        <button class="btn btn-primary btn-full" onclick="runMaliciousFork()" id="forkButton">
+                            <i class="fas fa-biohazard"></i> Attack with Malicious Fork (node_3)
+                        </button>
+                        <div id="forkResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                    <div class="feature-panel" id="panel3-topology">
+                        <label>Node ID</label>
+                        <input type="text" id="topoNodeId" value="node_4" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                            <button class="btn btn-primary btn" onclick="topo('add')"><i class="fas fa-plus"></i> Add</button>
+                            <button class="btn btn-danger btn" onclick="topo('remove')"><i class="fas fa-minus"></i> Remove</button>
+                            <button class="btn btn-secondary btn" onclick="topo('offline')"><i class="fas fa-power-off"></i> Offline</button>
+                            <button class="btn btn-secondary btn" onclick="topo('online')"><i class="fas fa-plug"></i> Online</button>
+                            <button class="btn btn-secondary btn" onclick="topo('desync')"><i class="fas fa-unlink"></i> Desync</button>
+                            <button class="btn btn-secondary btn" onclick="topo('reset')"><i class="fas fa-redo"></i> Reset</button>
+                        </div>
+                        <div id="topoResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                    <div class="feature-panel" id="panel3-health">
+                        <button class="btn btn-primary btn-full" onclick="loadNetworkHealth()">
+                            <i class="fas fa-heartbeat"></i> Load Node Health / Divergence Dashboard
+                        </button>
+                        <div id="healthResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-database"></i> IPFS Document Storage</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div>Verifiable documents stored off-chain on IPFS</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div>Only the content CID (hash) is anchored on-chain</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>Tampering detected via CID re-hash verification</div>
+                        </div>
+                    </div>
+                    <div class="feature-tabs" style="margin-top:0.5rem;">
+                        <button class="feature-tab active" data-tab4="add" onclick="switchTab4('add', this)">
+                            <i class="fas fa-plus-circle"></i> Add Document
+                        </button>
+                        <button class="feature-tab" data-tab4="verify" onclick="switchTab4('verify', this)">
+                            <i class="fas fa-shield-alt"></i> Verify / Tamper
+                        </button>
+                    </div>
+                    <div class="feature-panel active" id="panel4-add">
+                        <label>Document Name</label>
+                        <input type="text" id="ipfsDocName" value="classified-report" placeholder="Document name" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <label>Document Content</label>
+                        <textarea id="ipfsDocContent" rows="2" placeholder="Document content..." style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">This is a secure classified BEL document.</textarea>
+                        <button class="btn btn-primary btn-full" onclick="addIpfsDocument()" id="ipfsAddButton">
+                            <i class="fas fa-cloud-upload-alt"></i> Add to IPFS (store CID on-chain)
+                        </button>
+                        <div id="ipfsAddResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                    <div class="feature-panel" id="panel4-verify">
+                        <label>Document CID</label>
+                        <input type="text" id="ipfsVerifyCid" placeholder="Paste CID from Add step" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <button class="btn btn-secondary btn-full" onclick="verifyIpfsDocument()" id="ipfsVerifyButton">
+                            <i class="fas fa-shield-alt"></i> Verify Content vs on-chain CID
+                        </button>
+                        <button class="btn btn-danger btn-full" onclick="tamperIpfsDocument()" id="ipfsTamperButton" style="margin-top:0.5rem;">
+                            <i class="fas fa-exclamation-triangle"></i> Simulate Tampering
+                        </button>
+                        <div id="ipfsVerifyResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-archive"></i> Chain Backups (IPFS Snapshots)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Export the whole chain + registries to a content-addressed backup</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Verify: re-hash the snapshot against its CID (tamper proof)</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Restore rebuilds the exact chain after disaster</div></div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="backupCreate()"><i class="fas fa-save"></i> Create Backup</button>
+                        <button class="btn btn-secondary btn-full" onclick="backupList()"><i class="fas fa-list"></i> List Backups</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Backup ID (from List)</label>
+                        <input type="text" id="bkId" placeholder="backup id">
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="backupVerify()"><i class="fas fa-shield-alt"></i> Verify</button>
+                        <button class="btn btn-danger btn-full" onclick="backupRestore()"><i class="fas fa-undo-alt"></i> Restore</button>
+                    </div>
+                    <div id="bkResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-heartbeat"></i> Cross-Node Trust Scoring</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Score each identity 0..999 from verifications, access and failures</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Revoked / suspicious identities are heavily down-ranked</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Computed on-chain for a reproducible, audit-friendly score</div></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="trustCompute()"><i class="fas fa-calculator"></i> Compute / Refresh Scores</button>
+                    <button class="btn btn-secondary btn-full" onclick="trustList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Show Score Table</button>
+                    <div id="trustResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-suitcase"></i> Air-Gapped Sync Pack</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Sign a bundle of recent blocks with Merkle-chain + head signature</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Carry it as a file / QR across the air gap (BEL facilities are air-gapped)</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Isolated network verifies the head signature before applying blocks</div></div>
+                    </div>
+                    <div class="form-group"><label>Since block</label>
+                        <input type="number" id="agSince" value="0" min="0"></div>
+                    <div class="form-group"><label>Source node</label>
+                        <input type="text" id="agNode" value="NODE-01"></div>
+                    <button class="btn btn-primary btn-full" onclick="agCreate()"><i class="fas fa-box-archive"></i> Create Signed Sync Pack</button>
+                    <button class="btn btn-secondary btn-full" onclick="agList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Available Packs</button>
+                    <div id="agResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-circle-nodes"></i> Split-Brain Partition Drill</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Cut the network into two partitions - both keep mining independently</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Watch two divergent heads appear (split-brain)</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Reconnect: longest-valid-chain auto-resolves the split</div></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="partStart()"><i class="fas fa-share-nodes"></i> Start Partition Drill</button>
+                    <div class="form-group"><label>Drill ID</label>
+                        <input type="text" id="partDrill" placeholder="drill id from start"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-secondary btn-full" onclick="partMine('A')"><i class="fas fa-hammer"></i> Mine Partition A</button>
+                        <button class="btn btn-secondary btn-full" onclick="partMine('B')"><i class="fas fa-hammer"></i> Mine Partition B</button>
+                    </div>
+                    <button class="btn btn-success btn-full" onclick="partHeal()" style="margin-top:0.4rem;"><i class="fas fa-plug-circle-bolt"></i> Heal (Reconnect + Resolve)</button>
+                    <button class="btn btn-secondary btn-full" onclick="partLog()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Drill Log</button>
+                    <div id="partResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-thumbtack"></i> Pinning Reputation &amp; Node-Loss Re-Pin</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Track which nodes pin which CIDs + replica counts</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Kill a node live - its pins re-pin automatically elsewhere</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Surviving nodes' reputation absorbs the loss</div></div>
+                    </div>
+                    <div class="form-group"><label>Node ID</label>
+                        <input type="text" id="pinNode" value="NODE-01"></div>
+                    <div class="form-group"><label>CID (for assign)</label>
+                        <input type="text" id="pinCid" value="QmABCDEF"></div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-full" onclick="pinStatus()"><i class="fas fa-thumbtack"></i> Pinning Status</button>
+                        <button class="btn btn-secondary btn-full" onclick="pinAssign()"><i class="fas fa-plus"></i> Assign CID</button>
+                    </div>
+                    <button class="btn btn-danger btn-full" onclick="pinFail()" style="margin-top:0.4rem;"><i class="fas fa-skull"></i> Simulate Node Loss (Re-Pin)</button>
+                    <div id="pinResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-flask-vial"></i> Chaos Engineering Suite <span class="tag tag-new">NEW</span></h2>
+                    <p class="muted">Break the network on purpose: node-death, packet-loss, desync or clock-skew. The skew probe then smuggles a stale signed request and the monotonic-nonce defense blocks it.</p>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Node ID</label><input type="text" id="f15chNode" value="NODE-1"></div>
+                        <div style="flex:1;"><label>Mode</label><select id="f15chMode"><option value="clock-skew">clock-skew</option><option value="node-death">node-death</option><option value="packet-loss">packet-loss</option><option value="desync">desync</option></select></div>
+                        <div style="flex:1;"><label>Value</label><input type="text" id="f15chValue" value="7200"></div>
+                    </div>
+                    <button class="btn btn-danger btn-full" onclick="f15ChaosInject()"><i class="fas fa-bomb"></i> Inject Fault</button>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15ChaosVerify()"><i class="fas fa-microscope"></i> Verify (smuggle stale request)</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15ChaosList()"><i class="fas fa-list"></i> Faults + Events</button>
+                    </div>
+                    <div id="f15chaosResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-id-badge"></i> Node PKI (Signed Gossip)</h2>
+                    <p class="muted">Every node gets a registry identity; gossip is HMAC-signed per node. An unregistered rogue node is rejected at the protocol layer, and revoked nodes are dropped instantly.</p>
+                    <div class="form-group"><label>Node ID</label><input type="text" id="f15pkiNode" value="NODE-1"></div>
+                    <div class="form-group"><label>Message (for gossip)</label><input type="text" id="f15pkiMsg" value="hello-network"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-primary btn-full" onclick="f15PkiJoin()"><i class="fas fa-plus"></i> Enroll Node</button>
+                        <button class="btn btn-success btn-full" onclick="f15PkiGossip()"><i class="fas fa-comment-dots"></i> Send Signed Gossip</button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
+                        <button class="btn btn-danger btn-full" onclick="f15PkiRogue()"><i class="fas fa-bug"></i> Rogue Node Attack</button>
+                        <button class="btn btn-warning btn-full" onclick="f15PkiRevoke()"><i class="fas fa-ban"></i> Revoke Node</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15PkiList()"><i class="fas fa-list"></i> Registry</button>
+                    </div>
+                    <div id="f15pkiResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-landmark"></i> Audit-Root Notarization</h2>
+                    <p class="muted">Periodically anchor the audit trail's Merkle root as an IPFS CID. Tamper-evidence survives even a full chain rebuild - re-run verify after any forensic tamper to watch it flip to TAMPERED.</p>
+                    <button class="btn btn-primary btn-full" onclick="f15NotarizeAnchor()"><i class="fas fa-anchor"></i> Anchor Current Audit Root</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Anchor ID (to verify)</label><input type="text" id="f15ntAnchor" placeholder="anchor id"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15NotarizeVerify()"><i class="fas fa-check-double"></i> Verify Anchor</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15NotarizeList()"><i class="fas fa-list"></i> Anchors</button>
+                    </div>
+                    <div id="f15notarizeResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+
+<section class="workspace" id="ws-assets">
+    <div class="workspace-title"><i class="fas fa-cubes"></i> Digital Assets & Storage <span class="workspace-desc">&nbsp;&middot;&nbsp; Dynamic lifecycle NFTs and dual-layer encrypted storage</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card accent-nft">
+                    <h2><i class="fas fa-cubes"></i> Dynamic Lifecycle NFTs (dNFTs)</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div><b>Hardware</b>: Manufactured → Deployed → Under Maintenance → Decommissioned</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div><b>Blueprints</b>: Draft → Released(vN) → Superseded → Retired, with version control + download authorizations</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>State only advances via <b>cryptographically signed IoT telemetry</b> (oracle); forged rollbacks are rejected</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="runNftDemo()" id="nftButton">
+                        <i class="fas fa-bolt"></i> Run dNFT Lifecycle Demo
+                    </button>
+                    <button class="btn btn-outline btn-full" onclick="listNfts()" style="margin-top:0.5rem;">
+                        <i class="fas fa-list"></i> List Minted Assets
+                    </button>
+                    <div id="nftResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card accent-enc">
+                    <h2><i class="fas fa-lock"></i> Dual-Layer Encrypted Storage</h2>
+                    <div class="zk-steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div>Payload is encrypted <b>client-side with AES-256-GCM</b> before it reaches IPFS - the public CID returns only ciphertext</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div>The AES key is <b>Shamir-split</b> across 5 threshold nodes (reconstruct needs 3)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div>Nodes release shares <b>only after the smart contract verifies a ZK attribute proof</b> of the required clearance</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Document content (kept secret)</label>
+                        <input type="text" id="encipfsPlaintext" value="RADAR-BLUEPRINT-X | Antenna array 1.2 GHz | BEL-RESTRICTED">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="encipfsStore()" id="encipfsStoreButton">
+                        <i class="fas fa-user-lock"></i> Encrypt &amp; Publish to IPFS
+                    </button>
+                    <button class="btn btn-success btn-full" onclick="runEncipfsDemo()" id="encipfsButton" style="margin-top:0.5rem;">
+                        <i class="fas fa-bolt"></i> Run Full Dual-Layer Demo
+                    </button>
+                    <div id="encipfsResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-microchip"></i> Firmware / SBOM Integrity Gate</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Anchor firmware hash + SBOM package list on-chain</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Deploy gate refuses ANY unanchored (or tampered) firmware hash</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Recalled versions are refused chain-wide; dNFT records authorized version</div></div>
+                    </div>
+                    <div class="form-group"><label>Unit ID</label>
+                        <input type="text" id="fwUnit" value="unit-7"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Version</label><input type="text" id="fwVersion" value="2.3.1"></div>
+                        <div class="form-group" style="flex:1;"><label>Firmware hash</label><input type="text" id="fwHash" value="HASH-AB12"></div>
+                    </div>
+                    <div class="form-group"><label>SBOM packages (comma-separated)</label>
+                        <input type="text" id="fwSbom" value="openssl,wiringpi"></div>
+                    <button class="btn btn-primary btn-full" onclick="fwAnchor()"><i class="fas fa-anchor"></i> Anchor Firmware + SBOM</button>
+                    <button class="btn btn-success btn-full" onclick="fwDeploy()" style="margin-top:0.4rem;"><i class="fas fa-flash"></i> Attempt Deploy (gate check)</button>
+                    <button class="btn btn-secondary btn-full" onclick="fwList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Firmware Registry</button>
+                    <div id="fwResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-sitemap"></i> Supply-Chain Provenance Graph</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Vendor hands unit to BEL - BOTH parties must sign</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Each custody hop chains to the previous via its hash</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Breach attempt (wrong holder) is refused outright</div></div>
+                    </div>
+                    <div class="form-group"><label>Unit ID</label>
+                        <input type="text" id="prUnit" value="unit-7"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>From</label><input type="text" id="prFrom" value="vendor"></div>
+                        <div class="form-group" style="flex:1;"><label>To</label><input type="text" id="prTo" value="BEL"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="prTransfer()"><i class="fas fa-handshake"></i> Record Signed Transfer</button>
+                    <button class="btn btn-success btn-full" onclick="prGraph()" style="margin-top:0.4rem;"><i class="fas fa-diagram-project"></i> Provenance Graph</button>
+                    <button class="btn btn-secondary btn-full" onclick="prList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> All Units</button>
+                    <div id="prResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-triangle-exclamation"></i> Recall Campaign</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Launch a recall for a firmware version - every affected unit flagged</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Deploy gate immediately refuses that version</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Per-unit acknowledgment tracking records compliance</div></div>
+                    </div>
+                    <div class="form-group"><label>Campaign name</label>
+                        <input type="text" id="rcName" value="Battery Drain Fix"></div>
+                    <div class="form-group"><label>Firmware version</label>
+                        <input type="text" id="rcVersion" value="2.3.1"></div>
+                    <button class="btn btn-primary btn-full" onclick="rcCreate()"><i class="fas fa-bullhorn"></i> Launch Recall</button>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Campaign ID</label><input type="text" id="rcCampaign" placeholder="RC-XXXX"></div>
+                        <div class="form-group" style="flex:1;"><label>Unit</label><input type="text" id="rcUnit" value="unit-7"></div>
+                    </div>
+                    <button class="btn btn-success btn-full" onclick="rcAck()"><i class="fas fa-clipboard-check"></i> Acknowledge Unit</button>
+                    <button class="btn btn-secondary btn-full" onclick="rcList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Campaigns</button>
+                    <div id="rcResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-location-crosshairs"></i> Custody-Geofence Binding</h2>
+                    <p class="muted">Each dNFT embeds its permitted geo-perimeter. IoT telemetry landing outside it auto-flags the asset and raises a HIGH anomaly alert - pillar-2 x pillar-3 fusion.</p>
+                    <div class="form-group"><label>Unit ID (token / geofence key)</label><input type="text" id="f15gfUnit" value="FIELD-UNIT-7"></div>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Center lat</label><input type="text" id="f15gfLat" value="28.6139"></div>
+                        <div style="flex:1;"><label>Center lng</label><input type="text" id="f15gfLng" value="77.2090"></div>
+                        <div style="flex:1;"><label>Radius (km)</label><input type="text" id="f15gfRad" value="50"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15GeofenceRegister()"><i class="fas fa-boundary"></i> Bind Geo-Perimeter</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Telemetry ping (unit + lat + lng)</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15gfTUnit" value="FIELD-UNIT-7" style="flex:1;">
+                            <input type="text" id="f15gfTLat" value="28.6140" style="flex:1;">
+                            <input type="text" id="f15gfTLng" value="77.2091" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15GeofenceTelemetry()"><i class="fas fa-satellite-dish"></i> Send Telemetry</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15GeofenceList()"><i class="fas fa-list"></i> Geofences + Alerts</button>
+                    </div>
+                    <div id="f15geofenceResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-screwdriver-wrench"></i> Maintenance Work Orders</h2>
+                    <p class="muted">Moving a unit <b>UNDER_MAINTENANCE</b> requires a signed work order (technician + parts list). The lifecycle history gains real depth: mint &rarr; deploy &rarr; maintenance &rarr; back to service.</p>
+                    <div class="form-group"><label>Unit ID</label><input type="text" id="f15woUnit" value="FIELD-UNIT-7"></div>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Technician</label><input type="text" id="f15woTech" value="tech.rahul"></div>
+                        <div style="flex:1;"><label>Parts</label><input type="text" id="f15woParts" value="NUT-BOLT-KIT"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15WoCreate()"><i class="fas fa-file-circle-plus"></i> Open Work Order</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Order ID</label><input type="text" id="f15woId" placeholder="WO-XXXX"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-warning btn-full" onclick="f15WoBegin()"><i class="fas fa-play"></i> Begin (unit &rarr; UNDER_MAINTENANCE)</button>
+                        <button class="btn btn-success btn-full" onclick="f15WoComplete()"><i class="fas fa-check"></i> Complete</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15WoList()"><i class="fas fa-list"></i> Orders</button>
+                    </div>
+                    <div id="f15woResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-chart-gantt"></i> Lifecycle Timeline Visualizer</h2>
+                    <p class="muted">Reconstruct one asset's complete on-chain history - minting, deployments, geofence binding, maintenance windows and breach alerts - as a chronological event strip.</p>
+                    <div class="form-group"><label>Unit ID</label><input type="text" id="f15tlUnit" value="FIELD-UNIT-7"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-primary btn-full" onclick="f15Timeline()"><i class="fas fa-route"></i> Render Timeline</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15TimelineAssets()"><i class="fas fa-list"></i> All Assets</button>
+                    </div>
+                    <div id="f15timelineResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+
+<section class="workspace" id="ws-audit">
+    <div class="workspace-title"><i class="fas fa-history"></i> Audit & Security <span class="workspace-desc">&nbsp;&middot;&nbsp; On-chain audit trail, red-team playbook and chain portability</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-history"></i> Audit Trail &amp; Advanced Security</h2>
+                    <div class="feature-tabs" style="margin-top:0.5rem;">
+                        <button class="feature-tab active" data-tab5="audit" onclick="switchTab5('audit', this)">
+                            <i class="fas fa-list-alt"></i> Audit Trail
+                        </button>
+                        <button class="feature-tab" data-tab5="revoke" onclick="switchTab5('revoke', this)">
+                            <i class="fas fa-ban"></i> Revoke / Expire
+                        </button>
+                        <button class="feature-tab" data-tab5="multisig" onclick="switchTab5('multisig', this)">
+                            <i class="fas fa-users-cog"></i> Multi-Sig
+                        </button>
+                        <button class="feature-tab" data-tab5="schedule" onclick="switchTab5('schedule', this)">
+                            <i class="fas fa-clock"></i> Time-Lock
+                        </button>
+                        <button class="feature-tab" data-tab5="encrypt" onclick="switchTab5('encrypt', this)">
+                            <i class="fas fa-lock"></i> Encryption
+                        </button>
+                        <button class="feature-tab" data-tab5="zkdoc" onclick="switchTab5('zkdoc', this)">
+                            <i class="fas fa-eye-slash"></i> ZK Doc
+                        </button>
+                    </div>
+
+                    <!-- Audit Trail -->
+                    <div class="feature-panel active" id="panel5-audit">
+                        <button class="btn btn-primary btn-full" onclick="loadAuditTrail()" id="auditButton">
+                            <i class="fas fa-list-alt"></i> Load On-Chain Audit Trail
+                        </button>
+                        <div id="auditStats" style="margin-top:0.8rem;"></div>
+                        <div id="auditResult" style="margin-top:0.8rem;"></div>
+                    </div>
+
+                    <!-- Revoke / Expire -->
+                    <div class="feature-panel" id="panel5-revoke">
+                        <label>Identity Public ID</label>
+                        <input type="text" id="revokePublicId" value="rajesh.kumar@bel.gov.in" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+                            <button class="btn btn-danger btn-full" onclick="revokeIdentity()">
+                                <i class="fas fa-ban"></i> Revoke
+                            </button>
+                            <button class="btn btn-secondary btn-full" onclick="expireIdentity()">
+                                <i class="fas fa-calendar-times"></i> Expire
+                            </button>
+                            <button class="btn btn-primary btn-full" onclick="restoreIdentity()">
+                                <i class="fas fa-undo"></i> Restore
+                            </button>
+                        </div>
+                        <div id="revokeResult" style="margin-top:0.8rem;"></div>
+                        <div style="margin-top:0.5rem;">
+                            <span class="pill pill-purple"><i class="fas fa-shield-alt"></i> Revoked/expired identities are denied ALL future access (on-chain, tamper-proof)</span>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Signature -->
+                    <div class="feature-panel" id="panel5-multisig">
+                        <label>Signers (comma-separated)</label>
+                        <input type="text" id="msSigners" value="admin1, admin2, admin3" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <label>Required approvals</label>
+                        <input type="number" id="msRequired" value="2" min="1" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <button class="btn btn-primary btn-full" onclick="createMultisig()">
+                            <i class="fas fa-file-signature"></i> Create Proposal
+                        </button>
+                        <div id="msResult" style="margin-top:0.8rem;"></div>
+                        <button class="btn btn-secondary btn-full" onclick="loadMultisig()" style="margin-top:0.5rem;">
+                            <i class="fas fa-sync-alt"></i> Load Proposals &amp; Sign
+                        </button>
+                    </div>
+
+                    <!-- Time-Lock Scheduling -->
+                    <div class="feature-panel" id="panel5-schedule">
+                        <label>Identity Public ID</label>
+                        <input type="text" id="schedPublicId" value="priya.patel@bel.gov.in" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <label>Resource</label>
+                        <input type="text" id="schedResource" value="reporting" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <button class="btn btn-primary btn-full" onclick="setAccessSchedule()">
+                            <i class="fas fa-clock"></i> Set Time-Locked Access (now -> +1hr)
+                        </button>
+                        <button class="btn btn-secondary btn-full" onclick="checkAccessSchedule()" style="margin-top:0.5rem;">
+                            <i class="fas fa-search"></i> Check Schedule Status
+                        </button>
+                        <div id="schedResult" style="margin-top:0.8rem;"></div>
+                    </div>
+
+                    <!-- Encryption -->
+                    <div class="feature-panel" id="panel5-encrypt">
+                        <label>Plaintext secret to encrypt</label>
+                        <input type="text" id="encPlain" value="111-22-3333" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <label>Passphrase</label>
+                        <input type="text" id="encPass" value="org-secret-key" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <button class="btn btn-primary btn-full" onclick="encryptValue()">
+                            <i class="fas fa-lock"></i> Encrypt Secret
+                        </button>
+                        <div id="encResult" style="margin-top:0.8rem;"></div>
+                        <button class="btn btn-secondary btn-full" onclick="decryptValue()" style="margin-top:0.5rem;">
+                            <i class="fas fa-unlock"></i> Decrypt using Passphrase
+                        </button>
+                    </div>
+
+                    <!-- ZK Document Possession -->
+                    <div class="feature-panel" id="panel5-zkdoc">
+                        <label>Document CID</label>
+                        <input type="text" id="zkDocCid" value="QmExample123" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <button class="btn btn-primary btn-full" onclick="proveZkDocument()">
+                            <i class="fas fa-eye-slash"></i> Generate ZK Possession Proof
+                        </button>
+                        <div id="zkDocResult" style="margin-top:0.8rem;"></div>
+                        <button class="btn btn-secondary btn-full" onclick="verifyZkDocument()" style="margin-top:0.5rem;">
+                            <i class="fas fa-check"></i> Verify Proof (content never revealed)
+                        </button>
+                    </div>
+                </div><div class="card">
+                    <h2><i class="fas fa-biohazard"></i> Red Team Attack Playbook</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">!</div><div>One-click attack scenarios. The system's blockchain defenses respond automatically.</div></div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                        <button class="btn btn-danger btn-full" onclick="runPlaybook('tamper_block')">
+                            <i class="fas fa-edit"></i> Hash Tampering / Escalation
+                        </button>
+                        <button class="btn btn-danger btn-full" onclick="runPlaybook('fork')">
+                            <i class="fas fa-code-branch"></i> Malicious Fork
+                        </button>
+                        <button class="btn btn-danger btn-full" onclick="runPlaybook('replay')">
+                            <i class="fas fa-redo"></i> Replay Attack
+                        </button>
+                        <button class="btn btn-danger btn-full" onclick="runPlaybook('sniff')">
+                            <i class="fas fa-search"></i> Secret Sniffing
+                        </button>
+                        <button class="btn btn-danger btn-full" onclick="runPlaybook('escalation')">
+                            <i class="fas fa-level-up-alt"></i> Privilege Escalation
+                        </button>
+                    </div>
+                    <div id="playbookResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-file-export"></i> Chain Portability (Export / Import)</h2>
+                    <div class="feature-tabs">
+                        <button class="feature-tab active" data-tab6="export" onclick="switchTab6('export', this)">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="feature-tab" data-tab6="import" onclick="switchTab6('import', this)">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                    </div>
+                    <div class="feature-panel active" id="panel6-export">
+                        <button class="btn btn-primary btn-full" onclick="exportChain()">
+                            <i class="fas fa-download"></i> Export Chain to JSON
+                        </button>
+                        <textarea id="exportOutput" rows="4" readonly style="width:100%;margin-top:0.5rem;padding:0.5rem;border-radius:6px;border:1px solid #ccc;font-family:monospace;font-size:0.7rem;"></textarea>
+                    </div>
+                    <div class="feature-panel" id="panel6-import">
+                        <label>Chain JSON (paste exported output)</label>
+                        <textarea id="importInput" rows="4" placeholder='{"chain": [...]}' style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #ccc;font-family:monospace;font-size:0.7rem;"></textarea>
+                        <button class="btn btn-primary btn-full" onclick="importChain()" style="margin-top:0.5rem;">
+                            <i class="fas fa-upload"></i> Import &amp; Validate Chain
+                        </button>
+                        <div id="importResult" style="margin-top:0.8rem;"></div>
+                    </div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-syringe"></i> Anomaly Scoring &amp; Security Alerts</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Scan recent audit blocks and score suspicious activity (0-100)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>FAILED / DENIED bursts, sensitive resources and delegated caps score higher</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Acknowledge alerts to push them out of the active queue</div></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="anomalyScan()"><i class="fas fa-radar"></i> Run Anomaly Scan</button>
+                    <button class="btn btn-secondary btn-full" onclick="anomalyList()" style="margin-top:0.4rem;"><i class="fas fa-exclamation-triangle"></i> Active Alerts</button>
+                    <div id="anomalyResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-users-cog"></i> Quorum-Approved Privileged Ops</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Propose a privileged op (revoke identity / grant resource / freeze asset)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>N independent approvers must vote before anything executes</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Execution happens atomically at quorum - fully audited</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Operation</label>
+                        <select id="qOp">
+                            <option value="REVOKE_IDENTITY">REVOKE_IDENTITY</option>
+                            <option value="GRANT_RESOURCE">GRANT_RESOURCE</option>
+                            <option value="FREEZE_ASSET">FREEZE_ASSET</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Proposed by / Approver</label>
+                        <input type="text" id="qApprover" value="adhiraj.singh@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Target (public_id / token_id)</label>
+                        <input type="text" id="qTarget" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <div class="form-group">
+                        <label>Resource (for GRANT_RESOURCE)</label>
+                        <input type="text" id="qResource" value="armory">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="quorumCreate()"><i class="fas fa-file-signature"></i> Propose Operation</button>
+                    <button class="btn btn-secondary btn-full" onclick="quorumList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Show Ops + Vote</button>
+                    <div id="quorumResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-shield-virus"></i> Live Defense (Attack + Auto-Response)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Fire a simulated attack (brute-force, replay, insider-threat, ...)</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Auto-response engine revokes the suspicious identity / adds deny rule</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Every containment is logged as a defense event</div></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Attack type</label>
+                        <select id="dfAttack">
+                            <option value="brute-force">brute-force</option>
+                            <option value="replay">replay</option>
+                            <option value="credential-stuffing">credential-stuffing</option>
+                            <option value="insider-threat">insider-threat</option>
+                            <option value="synthetic">synthetic</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Target</label>
+                        <input type="text" id="dfTarget" value="aarav.sharma@bel.gov.in">
+                    </div>
+                    <button class="btn btn-danger btn-full" onclick="defenseRun()"><i class="fas fa-bomb"></i> Launch Attack (Auto-Respond)</button>
+                    <button class="btn btn-secondary btn-full" onclick="defenseList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Defense Event Log</button>
+                    <div id="defenseResult" style="margin-top:0.8rem;"></div>
+                </div><div class="card">
+                    <h2><i class="fas fa-file-invoice"></i> Activity Report (CSV Export)</h2>
+                    <div class="form-group">
+                        <label>Public Identifier (optional filter)</label>
+                        <input type="text" id="repPublicId" placeholder="leave empty for all">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="reportActivity()"><i class="fas fa-download"></i> Generate Activity Report</button>
+                    <div id="repResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+<div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-folder-open"></i> Case Management / Evidence Bundles</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>An incident becomes a case - evidence hashes are attached one-by-one</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Sign-off binds every attached evidence item cryptographically</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Closure freezes the bundle for court / compliance handover</div></div>
+                    </div>
+                    <div class="form-group"><label>Title</label>
+                        <input type="text" id="caseTitle" value="Suspicious access to vault"></div>
+                    <div class="form-group"><label>Severity</label>
+                        <select id="caseSeverity"><option value="low">low</option><option value="medium" selected>medium</option><option value="high">high</option></select>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="caseOpen()"><i class="fas fa-folder-plus"></i> Open Case</button>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Case ID</label><input type="text" id="caseId" placeholder="CASE-XXXX"></div>
+                    </div>
+                    <div class="form-group"><label>Evidence hash / description</label>
+                        <input type="text" id="caseEvidence" value="audit-block#142: duress alert"></div>
+                    <button class="btn btn-secondary btn-full" onclick="caseEvidence()"><i class="fas fa-paperclip"></i> Attach Evidence</button>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="caseSignoff()"><i class="fas fa-file-signature"></i> Sign Off</button>
+                        <button class="btn btn-danger btn-full" onclick="caseClose()"><i class="fas fa-box-archive"></i> Close</button>
+                    </div>
+                    <button class="btn btn-secondary btn-full" onclick="caseList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Cases</button>
+                    <div id="caseResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-clipboard-check"></i> Compliance Mapping Report</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Controls are mapped to ISO 27001 / CERT-In / DPDP frameworks</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Each control reflects its live on-chain implementation evidence</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Gaps surface immediately - audit-ready evidence stays on-chain</div></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="complianceRun()"><i class="fas fa-file-invoice"></i> Generate Compliance Report</button>
+                    <button class="btn btn-secondary btn-full" onclick="complianceList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Report History</button>
+                    <div id="complianceResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-code-compare"></i> Forensic Diff View</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Simulate a tampered ledger by choosing which block to mutate</div></div>
+                        <div class="step"><div class="step-num">2</div><div>The diff engine re-derives each hash and pinpoints the break</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Every corrupt block is reported with its original vs recomputed hash</div></div>
+                    </div>
+                    <div class="form-group"><label>Block index to tamper</label>
+                        <input type="number" id="foIndex" value="1" min="0"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-danger btn-full" onclick="foTamper()"><i class="fas fa-bolt"></i> Simulate Tamper</button>
+                        <button class="btn btn-success btn-full" onclick="foScan()"><i class="fas fa-microscope"></i> Forensic Diff Scan</button>
+                    </div>
+                    <div id="foResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-shekel-sign"></i> Least-Privilege Recommender <span class="tag tag-new">NEW</span></h2>
+                    <p class="muted">Mine the audit trail: which granted resources were <u>never actually accessed</u> in the window? One click turns each stale grant into a quorum-gated prune proposal - no single admins can over-trim.</p>
+                    <div class="form-group"><label>Window (days)</label><input type="number" id="f15lpDays" value="30" min="1"></div>
+                    <button class="btn btn-primary btn-full" onclick="f15LpScan()"><i class="fas fa-magnifying-glass"></i> Scan Assets For Over-Grants</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Propose prune (identity + resource)</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="text" id="f15lpId" value="rajesh.kumar@bel.gov.in" style="flex:1;">
+                            <input type="text" id="f15lpRes" value="network_access" style="flex:1;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-warning btn-full" onclick="f15LpPropose()"><i class="fas fa-scissors"></i> Proposal &rarr; Quorum Queue</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15LpList()"><i class="fas fa-list"></i> Proposals</button>
+                    </div>
+                    <div id="f15lpResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-landmark-dome"></i> Third-Party Attestation Receipts</h2>
+                    <p class="muted">Signed, standalone, hash-verifiable compliance receipts the auditor can carry <u>off-line</u> - no server round-trip needed to check them. Re-hash + HMAC signature = VERIFIED.</p>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Control</label><input type="text" id="f15rControl" value="A.5.4"></div>
+                        <div style="flex:1;"><label>Framework</label><input type="text" id="f15rFramework" value="ISO-27001"></div>
+                    </div>
+                    <div class="form-group" style="display:flex;gap:0.4rem;">
+                        <div style="flex:1;"><label>Subject</label><input type="text" id="f15rSubject" value="BEL-BLUEPRINT-STORE"></div>
+                        <div style="flex:1;"><label>Verifier</label><input type="text" id="f15rVerifier" value="BEL-AUDIT"></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="f15ReceiptIssue()"><i class="fas fa-file-signature"></i> Issue Receipt</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Receipt ID (to verify offline)</label><input type="text" id="f15rId" placeholder="ATT-XXXX"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success btn-full" onclick="f15ReceiptVerify()"><i class="fas fa-check-double"></i> Verify Offline</button>
+                        <button class="btn btn-secondary btn-full" onclick="f15ReceiptList()"><i class="fas fa-list"></i> Receipts</button>
+                    </div>
+                    <div id="f15receiptResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+</div>
+</section>
+<section class="workspace" id="ws-gseries">
+    <div class="workspace-title"><i class="fas fa-shield-halved"></i> G-Series Security <span class="workspace-desc">&nbsp;&middot;&nbsp; Break-glass ledger &middot; Adaptive JIT step-up &middot; TOTP &middot; Revocation list + ZK proofs &middot; Honeytoken deception &middot; Velocity/teleport &middot; k-anonymity &middot; measured-boot attestation &middot; PII redaction &middot; cross-org federation</span></div>
+    <div class="main-grid">
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-unlock-alt"></i> G1 &middot; Break-Glass Emergency Access</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Open a JIT high-privilege window - audited on-chain with a unique emergency id and 10-minute expiry</div></div>
+                        <div class="step"><div class="step-num">2</div><div>A SECOND independent operator MUST approve first (two-person rule), otherwise the window stays unusable</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Every open / approve / use is scored by the anomaly engine - the alert records WHO unlocked it</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity (public id)</label>
+                        <input type="text" id="bgPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Resource</label>
+                        <input type="text" id="bgResource" value="weapons_locker"></div>
+                    <div class="form-group"><label>Requester</label>
+                        <input type="text" id="bgRequester" value="GEN.OPERATOR"></div>
+                    <button class="btn btn-danger btn-full" onclick="bgRequest()"><i class="fas fa-unlock-alt"></i> Open Break-Glass Window</button>
+                    <button class="btn btn-secondary btn-full" onclick="bgApprove()" style="margin-top:0.4rem;"><i class="fas fa-user-check"></i> Approve (second operator)</button>
+                    <button class="btn btn-primary btn-full" onclick="bgUse()" style="margin-top:0.4rem;"><i class="fas fa-bolt"></i> Use Emergency Access</button>
+                    <button class="btn btn-secondary btn-full" onclick="bgList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Break-Glass Ledger</button>
+                    <div id="bgResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-user-shield"></i> G2 &middot; Adaptive (JIT) Step-Up Authentication</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Every access attempt scores a live risk (trust, open anomalies, sensitivity) -> GRANTED / STEP_UP / DENIED</div></div>
+                        <div class="step"><div class="step-num">2</div><div>A STEP_UP verdict opens a just-in-time challenge - nothing is granted until the extra factor verifies</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Successful proof mints a time-boxed JIT grant, anchored on-chain as a JIT-STEPUP-GRANT block</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity (public id)</label>
+                        <input type="text" id="adPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Resource</label>
+                        <input type="text" id="adResource" value="sensitive_data"></div>
+                    <button class="btn btn-primary btn-full" onclick="adEvaluate()"><i class="fas fa-scale-balanced"></i> Evaluate Adaptive Decision</button>
+                    <button class="btn btn-secondary btn-full" onclick="adStepup()" style="margin-top:0.4rem;"><i class="fas fa-hashtag"></i> Open Step-Up Challenge</button>
+                    <button class="btn btn-primary btn-full" onclick="adFulfill()" style="margin-top:0.4rem;"><i class="fas fa-check-double"></i> Fulfill Step-Up (mint JIT grant)</button>
+                    <button class="btn btn-secondary btn-full" onclick="adList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Step-Up Requests &amp; Grants</button>
+                    <div id="adResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-mobile-screen-button"></i> G3 &middot; TOTP Second Factor (RFC 6238)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Enroll generates a fresh base32 secret + otpauth URI, sealed into an on-chain TOTP-ENROLL record</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Verification accepts a time-synchronized 6-digit code within a sliding window of &plusmn;2 steps</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Reset revokes the seed on-chain - the old authenticator dies and the next code is unusable</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity (public id)</label>
+                        <input type="text" id="tpPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>TOTP code (6 digits)</label>
+                        <input type="text" id="tpCode" placeholder="000000"></div>
+                    <button class="btn btn-danger btn-full" onclick="tpEnroll()"><i class="fas fa-qrcode"></i> Enroll &amp; Reveal Secret</button>
+                    <button class="btn btn-success btn-full" onclick="tpVerify()" style="margin-top:0.4rem;"><i class="fas fa-check-double"></i> Verify Code</button>
+                    <button class="btn btn-secondary btn-full" onclick="tpReset()" style="margin-top:0.4rem;"><i class="fas fa-rotate-left"></i> Reset (Revoke Seed)</button>
+                    <button class="btn btn-secondary btn-full" onclick="tpList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Enrolled Factors</button>
+                    <div id="tpResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-user-slash"></i> G4 &middot; Global Revocation List + ZK Status Proof</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Revoked identities land on a release-safe CRL - only one-way commitments are published, never identifiers</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Any relying party can ask <b>REVOKED or NOT?</b> via a ZK proof bound to a fresh single-use challenge</div></div>
+                        <div class="step"><div class="step-num">3</div><div>The identity is never disclosed to the verifier - only a freshly-derived proof token is</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity</label>
+                        <input type="text" id="crlPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Reason</label>
+                        <input type="text" id="crlReason" value="Authorized administrative revocation"></div>
+                    <button class="btn btn-danger btn-full" onclick="crlRevoke()"><i class="fas fa-ban"></i> Add to Revocation List</button>
+                    <button class="btn btn-secondary btn-full" onclick="crlUnrevoke()" style="margin-top:0.4rem;"><i class="fas fa-undo"></i> Remove from Revocation List</button>
+                    <button class="btn btn-secondary btn-full" onclick="crlCheck()" style="margin-top:0.4rem;"><i class="fas fa-search"></i> Check Membership</button>
+                    <button class="btn btn-secondary btn-full" onclick="crlList()" style="margin-top:0.4rem;"><i class="fas fa-file-export"></i> Publishable CRL (commitments only)</button>
+                    <button class="btn btn-primary btn-full" onclick="crlZkProveVerify()" style="margin-top:0.4rem;"><i class="fas fa-eye-slash"></i> ZK Prove &amp; Verify Status</button>
+                    <button class="btn btn-secondary btn-full" onclick="crlZkDemo()" style="margin-top:0.4rem;"><i class="fas fa-theater-masks"></i> Two-Identity ZK Demo</button>
+                    <div id="crlResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-brain"></i> G5 &middot; Honeytoken Deception Trap</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Plant a decoy credential that LOOKS like a high-value secret - real code never touches it</div></div>
+                        <div class="step"><div class="step-num">2</div><div>ANY attempt to use a honeytoken is, by definition, an attacker - freeze a HIGH anomaly alert instantly</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Every plant and every touch is anchored on-chain as HONEYTOKEN-PLANT / HONEYTOKEN-TOUCH blocks</div></div>
+                    </div>
+                    <div class="form-group"><label>Bait identity (public id)</label>
+                        <input type="text" id="htPublicId" value="admin.svc@bel.gov.in"></div>
+                    <div class="form-group"><label>Bait resource</label>
+                        <input type="text" id="htResource" value="vault_master_keys"></div>
+                    <button class="btn btn-danger btn-full" onclick="htPlant()"><i class="fas fa-bone"></i> Plant Honeytoken</button>
+                    <button class="btn btn-primary btn-full" onclick="htTouch()" style="margin-top:0.4rem;"><i class="fas fa-biohazard"></i> Simulate Attacker Touch</button>
+                    <button class="btn btn-secondary btn-full" onclick="htList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Honeytoken Register</button>
+                    <div id="htResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-location-crosshairs"></i> G6 &middot; Physical Velocity / Teleport Detection</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Two check-in locations + elapsed time are reduced to a great-circle distance and a real km/h speed</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Beyond the max speed ceiling the move is TELEPORT - a HIGH-severity anomaly alert auto-fires</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Every move is anchored on-chain as a VELOCITY-CHECK block - even plausible ones</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity (public id)</label>
+                        <input type="text" id="vlPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>From facility</label>
+                        <input type="text" id="vlFrom" value="BEL-Bangalore"></div>
+                    <div class="form-group"><label>To facility</label>
+                        <input type="text" id="vlTo" value="BEL-Chennai"></div>
+                    <div class="form-group"><label>From geo (lat,lng)</label>
+                        <input type="text" id="vlFromGeo" value="12.9716,77.5946"></div>
+                    <div class="form-group"><label>To geo (lat,lng)</label>
+                        <input type="text" id="vlToGeo" value="13.0827,80.2707"></div>
+                    <div class="form-group"><label>Elapsed minutes</label>
+                        <input type="number" id="vlMinutes" value="10"></div>
+                    <button class="btn btn-primary btn-full" onclick="vlAnomaly()"><i class="fas fa-radar"></i> Evaluate &amp; Log Move</button>
+                    <button class="btn btn-secondary btn-full" onclick="vlPlausible()" style="margin-top:0.4rem;"><i class="fas fa-car"></i> Plausible Bound Demo</button>
+                    <button class="btn btn-secondary btn-full" onclick="vlList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Velocity Event Log</button>
+                    <div id="vlResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-chart-column"></i> G7 &middot; k-Anonymity Aggregate Reports</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Export-safe statistics: clearance / role / department / zone / anomaly distributions</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Any bucket with fewer than <b>k</b> records is suppressed (null) - cannot re-identify a single person</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Individual identities appear only as irreversible peppered HMAC pseudonyms</div></div>
+                    </div>
+                    <div class="form-group"><label>k (minimum group size)</label>
+                        <input type="number" id="kaK" value="3" min="1"></div>
+                    <button class="btn btn-primary btn-full" onclick="kaStats()"><i class="fas fa-file-invoice"></i> Generate Export-Safe Statistics</button>
+                    <div id="kaResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-unlock-alt"></i> G8 &middot; PII Redaction / Right-to-Erasure</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Erasure requests tombstone a specific identity field - only an irreversible value hash is stored</div></div>
+                        <div class="step"><div class="step-num">2</div><div>The audit trail records a PII_REDACTION entry with the hash, never the plaintext value</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Prove, on demand, that a field's live value has been redacted - compliance &amp; right-to-erasure</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity</label>
+                        <input type="text" id="rdPublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Field</label>
+                        <input type="text" id="rdField" value="email"></div>
+                    <button class="btn btn-danger btn-full" onclick="rdApply()"><i class="fas fa-user-slash"></i> Redact Identity Field</button>
+                    <button class="btn btn-secondary btn-full" onclick="rdCheck()" style="margin-top:0.4rem;"><i class="fas fa-search"></i> Check Redaction Status</button>
+                    <button class="btn btn-secondary btn-full" onclick="rdList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Redaction Register</button>
+                    <div id="rdResult" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-microchip"></i> G9 &middot; Measured-Boot Device Attestation</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Anchor a device's golden measured-boot quote (TPM-style) - only its SHA-256 digest is stored</div></div>
+                        <div class="step"><div class="step-num">2</div><div>Logins ONLY succeed when the presented quote hashes to the golden value; tampered firmware is denied</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Compromise response: revoke the device and its quote is refused chain-wide</div></div>
+                    </div>
+                    <div class="form-group"><label>Identity</label>
+                        <input type="text" id="g9PublicId" value="aarav.sharma@bel.gov.in"></div>
+                    <div class="form-group"><label>Device hash</label>
+                        <input type="text" id="g9Device" value="DEV-TPM-0A1F"></div>
+                    <div class="form-group"><label>Boot measurement (comma-separated or single string)</label>
+                        <input type="text" id="g9Measure" value="boot-state-ok, kernel-image-v3, app-signature-good"></div>
+                    <div class="form-group"><label>Device label</label>
+                        <input type="text" id="g9Label" value="Field laptop #12"></div>
+                    <button class="btn btn-primary btn-full" onclick="g9Register()"><i class="fas fa-microchip"></i> Register Golden Quote</button>
+                    <button class="btn btn-success btn-full" onclick="g9Login(false)" style="margin-top:0.4rem;"><i class="fas fa-door-open"></i> Attest Login (golden)</button>
+                    <button class="btn btn-danger btn-full" onclick="g9Login(true)" style="margin-top:0.4rem;"><i class="fas fa-biohazard"></i> Attest Login (tampered firmware)</button>
+                    <button class="btn btn-secondary btn-full" onclick="g9Revoke()" style="margin-top:0.4rem;"><i class="fas fa-shield-xmark"></i> Revoke Device Attestation</button>
+                    <button class="btn btn-secondary btn-full" onclick="g9List()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Attested Devices</button>
+                    <div id="g9Result" style="margin-top:0.8rem;"></div>
+                </div>
+<div class="card">
+                    <h2><i class="fas fa-globe"></i> G10 &middot; Cross-Org Federation (Trust-Anchored)</h2>
+                    <div class="zk-steps">
+                        <div class="step"><div class="step-num">1</div><div>Partner orgs' DID public keys are pinned on-chain as trust anchors in a federation registry</div></div>
+                        <div class="step"><div class="step-num">2</div><div>A verifier honours a cross-org credential ONLY if its issuer anchor is registered and TRUSTED</div></div>
+                        <div class="step"><div class="step-num">3</div><div>Negative control built in: the same predicate from an untrusted issuer is rejected outright</div></div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="fedDemo()"><i class="fas fa-handshake"></i> Run Cross-Org Demo (trusted vs rogue)</button>
+                    <button class="btn btn-secondary btn-full" onclick="fedList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Federation Registry</button>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>New org id</label>
+                        <input type="text" id="fedOrgId" value="ORG-DEF"></div>
+                    <label style="display:flex;align-items:center;gap:0.4rem;"><input type="checkbox" id="fedTrust" checked> Trust this org</label>
+                    <button class="btn btn-secondary btn-full" onclick="fedRegister()" style="margin-top:0.4rem;"><i class="fas fa-plus-circle"></i> Register Partner Org</button>
+                    <div id="g10Result" style="margin-top:0.8rem;"></div>
+</div>
+    </div>
+</div>
+</section>
+            </main>
+        </div>
+    </div>
+
+    <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleDrawer(false)"></div>
+
+    <aside class="activity-rail" id="activityRail" aria-label="Activity log" aria-live="polite">
+        <div class="activity-head">
+            <i class="fas fa-stream"></i> Activity Log
+            <button class="icon-btn" onclick="toggleActivity(false)" aria-label="Close activity log">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="activity-body" id="activityBody"><div class="empty-state"><i class="fas fa-inbox"></i> Loading&hellip;</div></div>
+    </aside>
+
+    <div id="tourOverlay"></div>
+
+    <script src="/static/js/ui.js?v=3"></script>
+    <script src="/static/js/app.js?v=3"></script>
+    <script src="/static/js/main.js?v=3"></script>
+</body>
+</html>

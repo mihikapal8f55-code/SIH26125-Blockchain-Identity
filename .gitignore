@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# Deploy state (ephemeral on Render; regenerated from code on startup)
+blockchain_data.json
+
+# Optional post-quantum native library source (not needed to run -
+# the app falls back to its pure-Python SPHINCS-family backend)
+liboqs/
+
+# Backups / editor cruft
+*.bak
+*.bak-pq
+.vs/
+.idea/
+.vscode/
