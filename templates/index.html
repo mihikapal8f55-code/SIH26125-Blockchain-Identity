@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#1d4ed8">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=3">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/app.css?v=4">
+    <link rel="stylesheet" href="/static/css/app.css?v=5">
 </head>
 <body>
     <div class="app-shell">
@@ -32,29 +32,31 @@
                 <i class="fas fa-chart-pie"></i> Dashboard
             </button>
 
-            <div class="nav-group">Identity &amp; Access</div>
+            <div class="nav-group">Act 1 &middot; Establish Identity</div>
             <button class="nav-item" data-ws="ws-identity" onclick="gotoSection('ws-identity', this)" role="tab" aria-selected="false" aria-controls="ws-identity" title="Identity &amp; Registration">
                 <i class="fas fa-users"></i> Identity &amp; Registration
             </button>
             <button class="nav-item" data-ws="ws-verification" onclick="gotoSection('ws-verification', this)" role="tab" aria-selected="false" aria-controls="ws-verification" title="Verification &amp; ZK">
                 <i class="fas fa-fingerprint"></i> Verification &amp; ZK
             </button>
+
+            <div class="nav-group">Act 2 &middot; Gate Access</div>
             <button class="nav-item" data-ws="ws-access" onclick="gotoSection('ws-access', this)" role="tab" aria-selected="false" aria-controls="ws-access" title="Access Control">
                 <i class="fas fa-lock"></i> Access Control
             </button>
 
-            <div class="nav-group">Network &amp; Storage</div>
+            <div class="nav-group">Act 3 &middot; Operate &amp; Govern</div>
             <button class="nav-item" data-ws="ws-network" onclick="gotoSection('ws-network', this)" role="tab" aria-selected="false" aria-controls="ws-network" title="Network &amp; IPFS">
                 <i class="fas fa-network-wired"></i> Network &amp; IPFS
             </button>
             <button class="nav-item" data-ws="ws-assets" onclick="gotoSection('ws-assets', this)" role="tab" aria-selected="false" aria-controls="ws-assets" title="Digital Assets">
                 <i class="fas fa-cubes"></i> Digital Assets
             </button>
-
-            <div class="nav-group">Security</div>
             <button class="nav-item" data-ws="ws-audit" onclick="gotoSection('ws-audit', this)" role="tab" aria-selected="false" aria-controls="ws-audit" title="Audit &amp; Security">
                 <i class="fas fa-history"></i> Audit &amp; Security
             </button>
+
+            <div class="nav-group">Vault &middot; G-Series Lab</div>
             <button class="nav-item" data-ws="ws-gseries" onclick="gotoSection('ws-gseries', this)" role="tab" aria-selected="false" aria-controls="ws-gseries" title="G-Series Security">
                 <i class="fas fa-shield-halved"></i> G-Series Security
             </button>
@@ -85,6 +87,9 @@
             </button>
             <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
                 <i class="fas fa-moon"></i>
+            </button>
+            <button class="icon-btn" id="inspectorToggle" onclick="INSPECTOR.toggle()" title="Result Inspector (I)" aria-label="Toggle result inspector">
+                <i class="fas fa-terminal"></i>
             </button>
             <button class="btn btn-danger btn-small" onclick="resetBlockchain()">
                 <i class="fas fa-sync"></i> <span>Reset</span>
@@ -126,7 +131,58 @@
                 <div class="stat-label"><i class="fas fa-clock"></i> Genesis Block Created</div>
             </div>
         </div>
-        <div class="dash-section-divider"><i class="fas fa-wave-square"></i> Live Chain &amp; Consensus</div>
+        <div class="dash-section-divider dash-div-primary"><i class="fas fa-bullseye"></i> Your mission &mdash; Issue &rarr; Verify &rarr; Gate &rarr; Govern</div>
+<div class="mission-grid">
+        <button class="launch-tile" onclick="gotoSection('ws-identity')" data-go="identity">
+            <span class="launch-icon"><i class="fas fa-users"></i></span>
+            <span class="launch-body">
+                <span class="launch-title">1 &middot; Establish identity</span>
+                <span class="launch-sub">Register &middot; mine &middot; review</span>
+            </span>
+            <span class="launch-count" id="msiIdentity">0</span>
+        </button>
+        <button class="launch-tile" onclick="gotoSection('ws-verification')" data-go="verify">
+            <span class="launch-icon"><i class="fas fa-fingerprint"></i></span>
+            <span class="launch-body">
+                <span class="launch-title">2 &middot; Prove &amp; verify</span>
+                <span class="launch-sub">ZK &middot; QR &middot; biometrics &middot; DIDs</span>
+            </span>
+            <span class="launch-count" id="msiVerify">ZK</span>
+        </button>
+        <button class="launch-tile" onclick="gotoSection('ws-access')" data-go="access">
+            <span class="launch-icon"><i class="fas fa-lock"></i></span>
+            <span class="launch-body">
+                <span class="launch-title">3 &middot; Gate access</span>
+                <span class="launch-sub">Smart contracts &middot; ABAC &middot; step-up</span>
+            </span>
+            <span class="launch-count" id="msiAccess">SC</span>
+        </button>
+        <button class="launch-tile" onclick="gotoSection('ws-network')" data-go="network">
+            <span class="launch-icon"><i class="fas fa-network-wired"></i></span>
+            <span class="launch-body">
+                <span class="launch-title">4 &middot; Network &amp; storage</span>
+                <span class="launch-sub">Consensus &middot; IPFS &middot; backups</span>
+            </span>
+            <span class="launch-count" id="msiNetwork">0</span>
+        </button>
+        <button class="launch-tile" onclick="gotoSection('ws-assets')" data-go="assets">
+            <span class="launch-icon"><i class="fas fa-cubes"></i></span>
+            <span class="launch-body">
+                <span class="launch-title">5 &middot; Assets &amp; NFTs</span>
+                <span class="launch-sub">dNFTs &middot; encrypted storage</span>
+            </span>
+            <span class="launch-count" id="msiAssets">0</span>
+        </button>
+        <button class="launch-tile" onclick="gotoSection('ws-audit')" data-go="govern">
+            <span class="launch-icon"><i class="fas fa-landmark"></i></span>
+            <span class="launch-body">
+                <span class="launch-title">6 &middot; Govern &amp; audit</span>
+                <span class="launch-sub">Forensics &middot; portability &middot; compliance</span>
+            </span>
+            <span class="launch-count" id="msiGovern">0</span>
+        </button>
+    </div>
+<div class="dash-section-divider"><i class="fas fa-wave-square"></i> Live Chain &amp; Consensus</div>
 <div class="main-grid">
     <div>
 <div class="card">
@@ -167,6 +223,7 @@
                 </div>
     </div>
 </div>
+<div class="dash-section-divider"><i class="fas fa-flask-vial"></i> Security Posture &amp; Incident Lab</div>
 <div class="main-grid">
     <div>
 <div class="card">
@@ -227,7 +284,7 @@
 </section>
 
 <section class="workspace" id="ws-identity">
-    <div class="workspace-title"><i class="fas fa-users"></i> Identity & Registration <span class="workspace-desc">&nbsp;&middot;&nbsp; Register, verify, and check access for identities</span></div>
+    <div class="workspace-title"><i class="fas fa-users"></i> Identity & Registration <span class="workspace-desc">&nbsp;&middot;&nbsp; Register, verify, and check access for identities</span><button class="btn btn-outline btn-small fill-btn" onclick="fillDemoSection('ws-identity')"><i class="fas fa-wand-magic-sparkles"></i> Fill demo fields</button></div>
     <div class="main-grid">
     <div>
 <div class="card">
@@ -433,7 +490,7 @@
 </section>
 
 <section class="workspace" id="ws-verification">
-    <div class="workspace-title"><i class="fas fa-fingerprint"></i> Verification & Zero-Knowledge <span class="workspace-desc">&nbsp;&middot;&nbsp; Passwordless auth, ZK proofs, QR, biometrics and W3C DIDs</span></div>
+    <div class="workspace-title"><i class="fas fa-fingerprint"></i> Verification & Zero-Knowledge <span class="workspace-desc">&nbsp;&middot;&nbsp; Passwordless auth, ZK proofs, QR, biometrics and W3C DIDs</span><button class="btn btn-outline btn-small fill-btn" onclick="fillDemoSection('ws-verification')"><i class="fas fa-wand-magic-sparkles"></i> Fill demo fields</button></div>
     <div class="main-grid">
     <div>
 <div class="card">
@@ -828,7 +885,7 @@
 </section>
 
 <section class="workspace" id="ws-access">
-    <div class="workspace-title"><i class="fas fa-lock"></i> Access Control <span class="workspace-desc">&nbsp;&middot;&nbsp; Smart-contract rules and attribute-based access control</span></div>
+    <div class="workspace-title"><i class="fas fa-lock"></i> Access Control <span class="workspace-desc">&nbsp;&middot;&nbsp; Smart-contract rules and attribute-based access control</span><button class="btn btn-outline btn-small fill-btn" onclick="fillDemoSection('ws-access')"><i class="fas fa-wand-magic-sparkles"></i> Fill demo fields</button></div>
     <div class="main-grid">
     <div>
 <div class="card">
@@ -1163,7 +1220,7 @@
 </section>
 
 <section class="workspace" id="ws-network">
-    <div class="workspace-title"><i class="fas fa-network-wired"></i> Network & IPFS <span class="workspace-desc">&nbsp;&middot;&nbsp; Distributed nodes, consensus and IPFS document storage</span></div>
+    <div class="workspace-title"><i class="fas fa-network-wired"></i> Network & IPFS <span class="workspace-desc">&nbsp;&middot;&nbsp; Distributed nodes, consensus and IPFS document storage</span><button class="btn btn-outline btn-small fill-btn" onclick="fillDemoSection('ws-network')"><i class="fas fa-wand-magic-sparkles"></i> Fill demo fields</button></div>
     <div class="main-grid">
     <div>
 <div class="card">
@@ -1430,7 +1487,7 @@
 </section>
 
 <section class="workspace" id="ws-assets">
-    <div class="workspace-title"><i class="fas fa-cubes"></i> Digital Assets & Storage <span class="workspace-desc">&nbsp;&middot;&nbsp; Dynamic lifecycle NFTs and dual-layer encrypted storage</span></div>
+    <div class="workspace-title"><i class="fas fa-cubes"></i> Digital Assets & Storage <span class="workspace-desc">&nbsp;&middot;&nbsp; Dynamic lifecycle NFTs and dual-layer encrypted storage</span><button class="btn btn-outline btn-small fill-btn" onclick="fillDemoSection('ws-assets')"><i class="fas fa-wand-magic-sparkles"></i> Fill demo fields</button></div>
     <div class="main-grid">
     <div>
 <div class="card accent-nft">
@@ -1614,7 +1671,7 @@
 </section>
 
 <section class="workspace" id="ws-audit">
-    <div class="workspace-title"><i class="fas fa-history"></i> Audit & Security <span class="workspace-desc">&nbsp;&middot;&nbsp; On-chain audit trail, red-team playbook and chain portability</span></div>
+    <div class="workspace-title"><i class="fas fa-history"></i> Audit & Security <span class="workspace-desc">&nbsp;&middot;&nbsp; On-chain audit trail, red-team playbook and chain portability</span><button class="btn btn-outline btn-small fill-btn" onclick="fillDemoSection('ws-audit')"><i class="fas fa-wand-magic-sparkles"></i> Fill demo fields</button></div>
     <div class="main-grid">
     <div>
 <div class="card">
@@ -2160,8 +2217,30 @@
 
     <div id="tourOverlay"></div>
 
-    <script src="/static/js/ui.js?v=3"></script>
-    <script src="/static/js/app.js?v=3"></script>
-    <script src="/static/js/main.js?v=3"></script>
+    <div class="inspector" id="inspector" aria-label="Result inspector">
+        <div class="inspector-head">
+            <span class="inspector-title"><i class="fas fa-terminal"></i> Result Inspector</span>
+            <span class="inspector-tools">
+                <button class="icon-btn" onclick="INSPECTOR.copyLast()" title="Copy last result" aria-label="Copy last result"><i class="fas fa-copy"></i></button>
+                <button class="icon-btn" onclick="INSPECTOR.clear()" title="Clear results" aria-label="Clear results"><i class="fas fa-broom"></i></button>
+                <button class="icon-btn" onclick="INSPECTOR.toggle()" title="Collapse inspector" aria-label="Collapse inspector"><i class="fas fa-angle-down"></i></button>
+            </span>
+        </div>
+        <div class="inspector-body" id="inspectorBody"><div class="empty-state"><i class="fas fa-wave-square"></i> Results stream here as you run demos &mdash; every operation, one place.</div></div>
+        <label class="inspector-live"><input type="checkbox" id="inspectorLive" checked> <span><i class="fas fa-circle"></i> live</span></label>
+    </div>
+
+    <nav class="bottom-nav" aria-label="Quick journey">
+        <button class="bn-item" onclick="gotoSection('ws-identity')" aria-label="Identity"><i class="fas fa-users"></i></button>
+        <button class="bn-item" onclick="gotoSection('ws-verification')" aria-label="Verify"><i class="fas fa-fingerprint"></i></button>
+        <button class="bn-item" onclick="gotoSection('ws-access')" aria-label="Access"><i class="fas fa-lock"></i></button>
+        <button class="bn-item" onclick="gotoSection('ws-network')" aria-label="Network"><i class="fas fa-network-wired"></i></button>
+        <button class="bn-item" onclick="gotoSection('ws-assets')" aria-label="Assets"><i class="fas fa-cubes"></i></button>
+        <button class="bn-item" onclick="gotoSection('ws-audit')" aria-label="Audit"><i class="fas fa-history"></i></button>
+    </nav>
+
+    <script src="/static/js/ui.js?v=5"></script>
+    <script src="/static/js/app.js?v=5"></script>
+    <script src="/static/js/main.js?v=5"></script>
 </body>
 </html>

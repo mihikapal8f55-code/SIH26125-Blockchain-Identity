@@ -4,5 +4,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     initShell();
+    initV5();
     loadBlockchainData();
 });

@@ -13,6 +13,14 @@ function showAlert(message, type = 'success', timeout = 4000) {
     alert.setAttribute('role', type === 'error' ? 'alert' : 'status');
     container.appendChild(alert);
 
+    if (window.INSPECTOR) {
+        window.INSPECTOR.add(
+            type === 'error' ? 'FAILED' : type === 'info' ? 'INFO' : 'OK',
+            message.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220),
+            type
+        );
+    }
+
     setTimeout(() => {
         alert.style.opacity = '0';
         alert.style.transition = 'opacity 0.5s';
@@ -68,6 +76,12 @@ async function fetchAPI(url, options = {}) {
         const ok = !!(data && data.success !== false);
         const verb = options.method && options.method !== 'GET' ? options.method : 'GET';
         ACTIVITY.add(`${verb} ${url}`, ok ? 'OK' : 'failed', ok ? 'info' : 'error');
+        if (window.INSPECTOR) {
+            const detail = data && data.error ? String(data.error).slice(0, 180)
+                : data && data.message ? String(data.message).slice(0, 180)
+                : `HTTP API — ${url}`;
+            window.INSPECTOR.add(`${verb} ${url.replace(/^\/api/, '')}`, detail, ok ? 'info' : 'error');
+        }
         return data;
     } catch (error) {
         showAlert(`API Error: ${error.message}`, 'error');
@@ -349,10 +363,222 @@ function initShell() {
                       '4': 'ws-access', '5': 'ws-network', '6': 'ws-assets', '7': 'ws-audit', '8': 'ws-gseries' };
         if (map[e.key]) gotoSection(map[e.key]);
         if (e.key === 'l' || e.key === 'L') toggleActivity();
+        if (e.key === 'i' || e.key === 'I') INSPECTOR.toggle();
         if (e.key === 't' || e.key === 'T') startTour();
         if (e.key === 'Escape' && TOUR.active) endTour();
     });
 
     refreshTopbar();
     ACTIVITY.add('System online', 'Dashboard ready');
+}
+
+// ==================================================================
+// SIH26125 — v5 UX: Result Inspector, demo-field filler, tab
+// keyboard nav, click-to-copy hash handling, mission launcher.
+// ==================================================================
+
+/* ---------- Result Inspector: one shared surface for every operation ---------- */
+
+const INSPECTOR = {
+    el: null, body: null, live: true, items: 0,
+    init() {
+        this.el = document.getElementById('inspector');
+        this.body = document.getElementById('inspectorBody');
+        try { this.live = !document.getElementById('inspectorLive') || document.getElementById('inspectorLive').checked; } catch (e) { /* ignore */ }
+    },
+    add(label, detail, level = 'info') {
+        if (this.live === false) return;
+        if (!this.body) this.init();
+        if (!this.body) return;
+        const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        const short = String(detail == null ? '' : detail).replace(/[\r\n]+/g, ' ').slice(0, 180);
+        const entry = document.createElement('div');
+        entry.className = 'insp-entry level-' + (level || 'info');
+        entry.title = 'Click to copy';
+        entry.innerHTML = `<div class="insp-time">${t}</div>
+            <div class="insp-main"><b>${escapeHtml(label)}</b><div class="insp-detail">${escapeHtml(short)}</div></div>`;
+        entry.onclick = () => copyToClipboard(String(detail == null ? label : short));
+        this.body.prepend(entry);
+        this.items++;
+        while (this.body.children.length > 40) this.body.lastChild.remove();
+    },
+    toggle() {
+        if (!this.el) this.init();
+        if (!this.el) return;
+        const open = this.el.classList.toggle('open');
+        const btn = document.getElementById('inspectorToggle');
+        if (btn) {
+            btn.style.color = open ? 'var(--primary)' : '';
+            btn.style.borderColor = open ? 'var(--primary)' : '';
+            btn.title = open ? 'Close result inspector' : 'Open result inspector';
+        }
+        ACTIVITY.add('Inspector', open ? 'Opened result inspector' : 'Closed result inspector');
+    },
+    clear() {
+        if (this.body) this.body.innerHTML = '<div class="empty-state"><i class="fas fa-wave-square"></i> Results stream here as you run demos.</div>';
+        this.items = 0;
+    },
+    copyLast() {
+        const last = this.body && this.body.querySelector('.insp-entry');
+        if (!last) { showAlert('<i class="fas fa-info-circle"></i> Nothing to copy yet', 'info', 2000); return; }
+        const b = last.querySelector('.insp-detail');
+        copyToClipboard(b ? b.textContent : last.textContent);
+    }
+};
+window.INSPECTOR = INSPECTOR;
+
+/* ---------- "Fill demo fields": safe defaults for every tool ---------- */
+
+const DEMO_DEFAULTS = {
+    // Identity & Registration
+    name: 'Ananya Kulkarni', role: 'Security Analyst', email: 'ananya.k@bel.gov.in',
+    department: 'Cyber Security', accessLevel: 'HIGH', idNumber: 'BEL-3104',
+    allowedResources: 'admin_dashboard, sensitive_data, network_access',
+    metadata: '{"badge":"OR-7","shift":"day"}',
+    verifyHash: 'aarav.sharma@bel.gov.in', accessHash: 'aarav.sharma@bel.gov.in',
+    resourceSelect: 'sensitive_data',
+    dupName: 'Aarav Sharma', dupEmail: 'aarav@bel-bengaluru.in', dupId: 'BEL-EMP-VIP',
+    bulkCsv: 'name|id_number|role|email\nSuresh Kumar|BEL-1001|TECH|suresh@bel.in\nPriya Sharma|BEL-1002|SECURITY|priya@bel.in',
+    bulkLabel: 'factory-shift-1', joinId: 'JOIN-0001', f15idHash: 'aarav.sharma@bel.gov.in',
+    f15vName: 'Ishita Nair', f15vEmail: 'ishita@bel.in', f15vId: 'BEL-2090',
+    f15vTarget: 'BEL-2090', f15vVoucher: 'aarav.sharma@bel.gov.in',
+    f15cDept: 'Operations', f15cReason: 'division compromise drill', f15cActor: 'CISO',
+    // Verification & ZK
+    adPublicId: 'aarav.sharma@bel.gov.in', adResource: 'personal_record',
+    bioPublicId: 'aarav.sharma@bel.gov.in', bioType: 'fingerprint',
+    zrSecret: 'shunya', zrBound: '3', zrResource: 'vault',
+    qrPublicId: 'aarav.sharma@bel.gov.in', qrResource: 'building_5',
+    vcPublicId: 'aarav.sharma@bel.gov.in', vcCredId: 'cred:bel:employee:001',
+    kitPublicId: 'aarav.sharma@bel.gov.in', kitThreshold: '2', kitShares: '3',
+    pqPublicId: 'aarav.sharma@bel.gov.in',
+    lvPublicId: 'aarav.sharma@bel.gov.in', lvNonce: '0110', lvChallengeId: 'CH-1',
+    ktPublicId: 'aarav.sharma@bel.gov.in', ktFingerprint: 'A1B2C3D4',
+    f15sHolder: 'aarav.sharma@bel.gov.in', f15sVc: 'cred:bel:employee:001',
+    f15sClaims: 'clearance,name,dept', f15sReveal: 'clearance',
+    f15wRequester: 'aarav.sharma@bel.gov.in', f15wResource: 'vault', f15wWitness: 'priya@bel.in',
+    repPublicId: 'aarav.sharma@bel.gov.in',
+    vlPublicId: 'aarav.sharma@bel.gov.in', vlMinutes: '30', vlFrom: 'HQ', vlTo: 'Plant 2',
+    // Access Control
+    abacPublicId: 'aarav.sharma@bel.gov.in', abacResource: 'personal_record',
+    dupPublicId: 'aarav.sharma@bel.gov.in', dupResource: 'vault',
+    dupNormalPin: '4821', dupPanicPin: '8899', dupTestPin: '4821',
+    dupPublicId: 'aarav.sharma@bel.gov.in',
+    dryPublicId: 'aarav.sharma@bel.gov.in', dryResource: 'vault', dryOp: 'read', dryField: 'clearance', dryValue: '3',
+    rsPublicId: 'aarav.sharma@bel.gov.in', rsResource: 'vault',
+    schedPublicId: 'aarav.sharma@bel.gov.in', schedResource: 'vault',
+    dlgDelegator: 'aarav.sharma@bel.gov.in', dlgDelegate: 'priya@bel.in', dlgResource: 'reports', dlgAction: 'read',
+    htPublicId: 'aarav.sharma@bel.gov.in', htResource: 'vault',
+    f15lPid: 'aarav.sharma@bel.gov.in', f15lRes: 'vault', f15lType: 'read',
+    f15lpRes: 'vault', f15lpDays: '5', f15lLevel: 'MEDIUM', f15lRole: 'Internal',
+    adResource: 'personal_record',
+    // Network & IPFS
+    agNode: 'node_1', agSince: '20', ipfsDocName: 'statement.pdf',
+    ipfsDocContent: 'BEL quarterly access statement — sample document for on-chain CID anchoring.',
+    ipfsVerifyCid: '', pinNode: 'node_2', pinCid: '',
+    topoNodeId: 'node_2', partDrill: 'node_3',
+    bgRequester: 'aarav.sharma@bel.gov.in', bgResource: 'vault', bgPublicId: 'aarav.sharma@bel.gov.in',
+    f15chNode: 'node_2', f15chValue: '0.05', f15gfLng: '77.59', f15gfLat: '12.97',
+    f15gfTLng: '77.60', f15gfTLat: '12.98', f15gfUnit: 'km', f15gfRad: '1',
+    f15pkiNode: 'node_2', f15pkiMsg: 'signed-gossip-hello',
+    fedOrgId: 'defensor.india', f15ntAnchor: 'aarav.sharma@bel.gov.in',
+    // Assets & dNFTs
+    fwHash: 'a1b2c3d4e5f60718293a', fwVersion: 'v2.4.1', fwSbom: 'debian:12, openssl:3',
+    fwUnit: 'ESP07', rcCampaign: 'CAM-2026-03', rcName: 'firmware 2.4.1', rcUnit: 'ESP07', rcVersion: '2.4.1',
+    encPlain: 'NDA clause 12: BEL critical-infrastructure design notes for evaluation.',
+    encPass: 'demo-pass-431', encipfsPlaintext: 'encrypted backing of an internal spreadsheet.',
+    f15woId: 'WO-104', f15woParts: 'sensor-lid,seal', f15woTech: 'priya@bel.in', f15woUnit: 'ESP07',
+    f15rControl: 'SOC-2', f15rFramework: 'ISO 27001', f15rId: 'BEL-STA-07', f15rSubject: 'Aarav Sharma', f15rVerifier: 'cert.bel.gov.in',
+    f15wReq: 'exhibit-b', f15wRequester: 'aarav.sharma@bel.gov.in', f15wResource: 'vault', f15wWitness: 'priya@bel.in',
+    // Audit & Governance
+    prFrom: '2026-09-01', prTo: '2026-09-25', prUnit: 'reports',
+    caseId: 'CASE-9', caseTitle: 'Suspicious geofence breach', caseSeverity: 'HIGH',
+    caseEvidence: 'audit block #18; ipfs CID zXay...',
+    dfAttack: 'burn-injection', dfTarget: 'aarav.sharma@bel.gov.in',
+    msSigners: 'aarav.sharma@bel.gov.in, priya@bel.in', msRequired: '2',
+    qOp: 'revoke', qResource: 'vault', qApprover: 'aarav.sharma@bel.gov.in',
+    foIndex: '12', zkDocCid: ''
+};
+
+function fillDemoSection(ws) {
+    const section = document.getElementById(ws);
+    if (!section) return;
+    let count = 0;
+    section.querySelectorAll('input, select, textarea').forEach(el => {
+        const val = DEMO_DEFAULTS[el.id];
+        if (val === undefined) return;
+        if (el.tagName === 'SELECT' && !Array.from(el.options).some(o => o.value === val)) return;
+        el.value = val;
+        count++;
+    });
+    const full = count === 0;
+    showAlert(`<i class="fas fa-wand-magic-sparkles"></i> ${full ? 'Nothing to fill here' : `Filled ${count} demo ${count === 1 ? 'field' : 'fields'} — press Run`}`, 'info', 2600);
+    window.INSPECTOR && window.INSPECTOR.add('demo-fill', `${ws} → ${count} field${count === 1 ? '' : 's'} prefilled`, 'info');
+}
+
+/* ---------- Keyboard-friendly tabs (Arrow / Home / End) ---------- */
+
+document.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
+    const t = e.target;
+    if (!t || !(t.classList && t.classList.contains('feature-tab'))) return;
+    e.preventDefault();
+    const tabs = Array.from(t.parentNode.querySelectorAll('.feature-tab'));
+    const i = tabs.indexOf(t);
+    if (i < 0) return;
+    let n = i;
+    if (e.key === 'ArrowLeft') n = i - 1;
+    else if (e.key === 'ArrowRight') n = i + 1;
+    else if (e.key === 'Home') n = 0;
+    else n = tabs.length - 1;
+    n = (n + tabs.length) % tabs.length;
+    const next = tabs[n];
+    if (next) { next.click(); next.focus(); }
+});
+
+/* ---------- Click any <code> hash to copy it ---------- */
+
+document.addEventListener('click', e => {
+    const code = e.target.closest('code');
+    if (!code) return;
+    if (e.target.closest('.hb-reveal')) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const txt = (code.getAttribute('data-full') || code.textContent || '').trim();
+    if (!txt || txt.length < 12) return;
+    if (code.closest('pre') && code.closest('pre').classList.contains('no-copy')) return;
+    copyToClipboard(txt);
+});
+
+/* ---------- Mission launcher counters on the dashboard ---------- */
+
+async function loadMissionLauncher() {
+    try {
+        const info = await fetchAPI('/api/blockchain/info');
+        if (info && info.success) {
+            const d = info.data || {};
+            const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setT('msiIdentity', d.total_identities != null ? d.total_identities : '0');
+            setT('msiGovern', d.total_blocks != null ? d.total_blocks : '0');
+        }
+        const m = await fetchAPI('/api/metrics');
+        if (m && m.success && m.network) {
+            const el = document.getElementById('msiNetwork');
+            if (el) el.textContent = m.network.node_count != null ? m.network.node_count : '0';
+        }
+        const inj = await fetchAPI('/api/nft/list');
+        if (inj && inj.success) {
+            const el = document.getElementById('msiAssets');
+            if (el) el.textContent = inj.assets ? inj.assets.length : '0';
+        }
+    } catch (e) { /* mission launcher is non-critical */ }
+}
+
+/* ---------- v5 init ---------- */
+
+function initV5() {
+    INSPECTOR.init();
+    try {
+        const liveEl = document.getElementById('inspectorLive');
+        if (liveEl) liveEl.addEventListener('change', () => { INSPECTOR.live = liveEl.checked; });
+    } catch (e) { /* ignore */ }
+    loadMissionLauncher();
 }
