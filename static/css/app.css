@@ -276,16 +276,25 @@
             text-transform: uppercase;
         }
 
-        .badge-high { background: #fee2e2; color: var(--danger); }
-        .badge-medium { background: #fef3c7; color: #d97706; }
-        .badge-low { background: #d1fae5; color: var(--success); }
+.badge-high { background: var(--err-fill); color: var(--err-ink); }
+.badge-medium { background: var(--warn-fill); color: var(--warn-ink); }
+.badge-low { background: var(--ok-fill); color: var(--ok-ink); }
 
-        .chain-visualization {
-            display: flex;
-            gap: 0.5rem;
-            overflow-x: auto;
-            padding: 1rem 0;
-        }
+/* The result console wraps every observed output in a .vc-raw disclosure.
+   Inside the chain strip that wrapper would swallow the whole flex row into
+   a single child, so the blocks would stack vertically instead of sitting
+   side by side. `display: contents` removes the wrapper from layout, letting
+   each .chain-block become a flex item of .chain-visualization again.
+   :not([hidden]) keeps the collapsed state working. */
+.chain-visualization > .vc-raw:not([hidden]) { display: contents; }
+
+.chain-visualization {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+    }
+
 
         .chain-block {
             min-width: 120px;
@@ -298,16 +307,24 @@
             flex-shrink: 0;
         }
 
-        .chain-block.genesis {
-            background: #e0e7ff;
-            border-color: var(--primary);
-        }
+/* Genesis reads as a plain white card with near-black text in the light
+   theme; the dark theme override below gives it the same surface as every
+   other block. */
+.chain-block.genesis {
+    background: var(--surface);
+    border-color: var(--c-hairline);
+    color: var(--c-ink);
+    }
 
-        .chain-block .block-index {
-            font-weight: 700;
-            font-size: 0.8rem;
-            color: var(--dark);
-        }
+
+    .chain-block .block-index {
+    font-weight: 700;
+    font-size: 0.8rem;
+    /* --c-ink flips with the theme (#1e293b light / #e2e8f0 dark). --dark
+       does not, which left every block title near-black on a dark card. */
+    color: var(--c-ink);
+    }
+
 
         .chain-block .block-hash {
             font-size: 0.6rem;
@@ -518,10 +535,13 @@
             border: 1px solid var(--border);
         }
 
-        .pill-green { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-        .pill-red { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-        .pill-blue { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
-        .pill-purple { background: #e9d5ff; color: #6b21a8; border-color: #d8b4fe; }
+.pill-green { background: var(--ok-fill); color: var(--ok-ink); border-color: var(--ok-line); }
+.pill-red { background: var(--err-fill); color: var(--err-ink); border-color: var(--err-line); }
+.pill-blue { background: var(--info-fill); color: var(--info-ink); border-color: var(--info-line); }
+.pill-purple { background: var(--vio-fill); color: var(--vio-ink); border-color: var(--vio-line); }
+.pill-orange { background: var(--amb-fill); color: var(--amb-ink); border-color: var(--amb-line); }
+.pill-yellow { background: var(--warn-fill); color: var(--warn-ink); border-color: var(--warn-line); }
+.pill-teal { background: var(--teal-fill); color: var(--teal-ink); border-color: var(--teal-line); }
 
         @media (max-width: 768px) {
             .main-grid { grid-template-columns: 1fr; }
@@ -536,6 +556,7 @@
 :root {
     --surface: #ffffff;
     --surface-2: #f8fafc;
+    --surface-3: #eef2f7;
     --bg-app: #eef2f7;
     --sidebar-bg: #f8fafc;
     --sidebar-text: #334155;
@@ -555,6 +576,26 @@
     --accent-nft: #ea580c;
     --accent-enc: #0891b2;
     --topbar-h: 60px;
+
+    /* ---------- Semantic palette ----------
+       Every colour in the stylesheet resolves to one of these names, so a
+       theme swap is a single block instead of 217 scattered hex literals. */
+    --c-ink: #1e293b;          /* headings, primary text on light surfaces  */
+    --c-body: #334155;         /* body copy                                */
+    --c-muted: #64748b;        /* labels, secondary text                   */
+    --c-faint: #94a3b8;        /* placeholders, dividers                   */
+    --c-hairline: #e2e8f0;     /* borders                                 */
+    --c-wash: #f1f5f9;         /* zebra rows, subtle fills                 */
+    --c-on-accent: #ffffff;
+
+    /* Status: paired soft fill / strong text / hairline */
+    --ok-fill: #d1fae5;   --ok-ink: #065f46;   --ok-line: #a7f3d0;   --ok-strong: #10b981;
+    --warn-fill: #fef3c7; --warn-ink: #92400e; --warn-line: #fde68a; --warn-strong: #f59e0b;
+    --err-fill: #fee2e2;  --err-ink: #991b1b;  --err-line: #fecaca; --err-strong: #ef4444;
+    --info-fill: #dbeafe; --info-ink: #1d4ed8; --info-line: #bfdbfe;
+    --vio-fill: #ede9fe;  --vio-ink: #5b21b6;  --vio-line: #ddd6fe;  --vio-strong: #7c3aed;
+    --teal-fill: #cffafe; --teal-ink: #0e7490; --teal-line: #a5f3fc; --teal-strong: #0891b2;
+    --amb-fill: #ffedd5;  --amb-ink: #9a3412;  --amb-line: #fed7aa; --amb-strong: #ea580c;
 }
 
 body {
@@ -696,6 +737,13 @@ body {
     border-bottom: 1px solid var(--border);
     height: var(--topbar-h);
     padding: 0 1.2rem;
+    /* The bar is ONE line at every width: it never wraps, and it never lets a
+       child spill past its right edge. Space pressure is absorbed by the
+       shrinkable children (search label, then context), not by wrapping. */
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
 }
 .icon-btn {
     width: 36px; height: 36px;
@@ -709,7 +757,7 @@ body {
 }
 .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
 .menu-btn { display: none; }
-.topbar-pills { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.topbar-pills { display: flex; gap: .5rem; align-items: center; flex-wrap: nowrap; min-width: 0; overflow: hidden; }
 .status-pill {
     display: inline-flex; align-items: center; gap: .35rem;
     padding: .32rem .7rem;
@@ -717,14 +765,16 @@ body {
     background: var(--surface-2);
     border: 1px solid var(--border);
     font-size: .74rem; font-weight: 600;
-    color: var(--text-light);
+    /* never squash or wrap the text - the group clips instead */
+    flex-shrink: 0;
     white-space: nowrap;
+
 }
 .status-pill i { color: var(--primary); }
-.status-pill.chain-ok { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
-.status-pill.chain-ok i { color: var(--success); }
-.status-pill.chain-bad { color: #991b1b; background: #fee2e2; border-color: #fecaca; }
-.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
+.status-pill.chain-ok { color: var(--ok-ink); background: var(--ok-fill); border-color: var(--ok-line); }
+.status-pill.chain-ok i { color: var(--ok-strong); }
+.status-pill.chain-bad { color: var(--err-ink); background: var(--err-fill); border-color: var(--err-line); }
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 .nav-item .key-hint { margin-left: auto; font-size: .62rem; color: #64748b; letter-spacing: .05em; }
 
 .container { max-width: 1400px; margin: 0 auto; padding: 1.4rem 1.2rem 3.5rem; }
@@ -843,6 +893,92 @@ html[data-theme="dark"] .page > main.container::-webkit-scrollbar-thumb { backgr
     box-shadow: var(--focus-ring);
 }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Neutral button. The markup uses `.btn-secondary` in 71 places but no rule
+   ever defined it, so those buttons rendered as unstyled text on the card
+   surface. This is the missing tier of the button scale. */
+.btn-secondary,
+.btn-neutral {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover,
+.btn-neutral:hover {
+    background: var(--surface);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: var(--shadow-md);
+}
+html[data-theme="dark"] .btn-secondary,
+html[data-theme="dark"] .btn-neutral { background: var(--surface-2); color: var(--text); border-color: #334155; }
+html[data-theme="dark"] .btn-secondary:hover,
+html[data-theme="dark"] .btn-neutral:hover { background: #0b1220; border-color: var(--primary); color: #93c5fd; }
+.btn-sm { padding: .3rem .65rem; font-size: .76rem; border-radius: 7px; }
+
+/* Standalone field. A handful of panels (revoke, multisig, time-lock,
+   encryption, IPFS, topology, chain import/export) place a bare <label> +
+   <input> directly inside a feature panel instead of a .form-group, and
+   used to carry a hardcoded `border:1px solid #ccc` inline style that ignored
+   the theme. These now route through the same field treatment. */
+.feature-panel > label,
+.card > label {
+    display: block;
+    margin: .75rem 0 .3rem;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+.field-block,
+.card > input,
+.card > select,
+.card > textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: .55rem .75rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: .9rem;
+    transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.field-block:hover { border-color: var(--c-faint); }
+.field-block:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--ring-primary);
+}
+.field-block::placeholder { color: var(--c-faint); }
+textarea.field-block { min-height: 84px; resize: vertical; }
+.field-mono { font-family: var(--font-mono) !important; font-size: .76rem !important; line-height: 1.5; }
+.mt-1 { margin-top: .5rem; }
+html[data-theme="dark"] .field-block,
+html[data-theme="dark"] .card > input,
+html[data-theme="dark"] .card > select,
+html[data-theme="dark"] .card > textarea { background: var(--surface-3); border-color: var(--c-hairline); color: var(--text); }
+html[data-theme="dark"] .field-block:focus { border-color: var(--primary); }
+
+/* Inline helper copy. `.hint` appears 47 times across the template and app.js
+   but had no rule, so the explanatory text under each tool had no visual
+   treatment at all. */
+.hint {
+    display: flex;
+    gap: .45rem;
+    align-items: flex-start;
+    margin-top: .5rem;
+    padding: .5rem .65rem;
+    border-left: 2px solid var(--border);
+    border-radius: 0 7px 7px 0;
+    background: var(--surface-2);
+    color: var(--text-light);
+    font-size: .78rem;
+    line-height: 1.5;
+}
+.hint:empty { display: none; }
+.hint code { font-size: .95em; }
 
 /* ---------- Feature accent cards (SIH flagship features) ---------- */
 .card.accent-zk { border-top: 3px solid var(--accent-zk); }
@@ -1002,6 +1138,7 @@ html[data-theme="dark"] {
     --light: #0f172a;
     --surface: #0f172a;
     --surface-2: #1e293b;
+    --surface-3: #0b1220;
     --bg-app: #0b1220;
     --sidebar-bg: #0f172a;
     --sidebar-text: #cbd5e1;
@@ -1013,6 +1150,23 @@ html[data-theme="dark"] {
     --dark: #0f172a;
     --shadow-md: 0 4px 14px rgba(0, 0, 0, .4);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, .55);
+
+    /* Dark palette: same semantic names, inverted fills with light ink. */
+    --c-ink: #e2e8f0;
+    --c-body: #cbd5e1;
+    --c-muted: #94a3b8;
+    --c-faint: #64748b;
+    --c-hairline: #334155;
+    --c-wash: #1e293b;
+    --c-on-accent: #0b1220;
+
+    --ok-fill: #064e3b;   --ok-ink: #a7f3d0;   --ok-line: #065f46;
+    --warn-fill: #78350f; --warn-ink: #fde68a; --warn-line: #92400e;
+    --err-fill: #7f1d1d;  --err-ink: #fecaca;  --err-line: #991b1b;
+    --info-fill: #1e3a8a; --info-ink: #bfdbfe; --info-line: #1d4ed8;
+    --vio-fill: #581c87;  --vio-ink: #e9d5ff;  --vio-line: #6b21a8;
+    --teal-fill: #0e4a5a; --teal-ink: #a5f3fc; --teal-line: #155e75;
+    --amb-fill: #7c2d12;  --amb-ink: #fed7aa;  --amb-line: #9a3412;
 }
 html[data-theme="dark"] .card,
 html[data-theme="dark"] .stat-card,
@@ -1025,31 +1179,31 @@ html[data-theme="dark"] .tour-bubble,
 html[data-theme="dark"] .activity-rail {
     background: var(--surface);
 }
-html[data-theme="dark"] th { background: #1e293b; color: #e2e8f0; border-bottom-color: #334155; }
-html[data-theme="dark"] td { border-bottom-color: #1e293b; }
-html[data-theme="dark"] tr:hover { background: #1e293b; }
+html[data-theme="dark"] th { background: var(--surface-2); color: var(--c-ink); border-bottom-color: var(--c-hairline); }
+html[data-theme="dark"] td { border-bottom-color: var(--border); }
+html[data-theme="dark"] tr:hover { background: var(--surface-2); }
 html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea {
-    background: #0b1220; border-color: #334155; color: var(--text);
+    background: var(--surface-3); border-color: var(--c-hairline); color: var(--text);
 }
 html[data-theme="dark"] .form-group input, html[data-theme="dark"] .form-group select, html[data-theme="dark"] .form-group textarea,
-html[data-theme="dark"] .feature-tab { border-color: #334155; color: var(--text); }
+html[data-theme="dark"] .feature-tab { border-color: var(--c-hairline); color: var(--text); }
 html[data-theme="dark"] .feature-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-html[data-theme="dark"] .chain-block { background: #1e293b; border-color: #334155; }
-html[data-theme="dark"] .chain-block.genesis { background: #1e3a8a; border-color: var(--primary); }
+html[data-theme="dark"] .chain-block { background: var(--surface-2); border-color: var(--c-hairline); }
+html[data-theme="dark"] .chain-block.genesis { background: var(--surface-2); border-color: var(--c-hairline); color: var(--c-ink); }
 html[data-theme="dark"] .zk-steps { background: #111c2e; }
-html[data-theme="dark"] .stats-grid .stat-card .stat-value { color: #e2e8f0; }
-html[data-theme="dark"] .alert-success { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
-html[data-theme="dark"] .alert-error { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
-html[data-theme="dark"] .alert-info { background: #1e3a8a; color: #bfdbfe; border-color: #1d4ed8; }
-html[data-theme="dark"] .alert-danger { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
-html[data-theme="dark"] .alert-warning { background: #78350f; color: #fde68a; border-color: #92400e; }
-html[data-theme="dark"] .pill { background: #1e293b; color: #cbd5e1; border-color: #334155; }
-html[data-theme="dark"] .pill-green { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
-html[data-theme="dark"] .pill-red { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
-html[data-theme="dark"] .pill-blue { background: #1e3a8a; color: #bfdbfe; border-color: #1d4ed8; }
-html[data-theme="dark"] .pill-purple { background: #581c87; color: #e9d5ff; border-color: #6b21a8; }
-html[data-theme="dark"] .status-pill { background: #1e293b; border-color: #334155; }
-html[data-theme="dark"] .status-pill.chain-ok { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
+html[data-theme="dark"] .stats-grid .stat-card .stat-value { color: var(--c-ink); }
+html[data-theme="dark"] .alert-success { background: var(--ok-fill); color: var(--ok-ink); border-color: var(--ok-line); }
+html[data-theme="dark"] .alert-error { background: var(--err-fill); color: var(--err-ink); border-color: var(--err-line); }
+html[data-theme="dark"] .alert-info { background: var(--info-fill); color: var(--info-ink); border-color: var(--info-line); }
+html[data-theme="dark"] .alert-danger { background: var(--err-fill); color: var(--err-ink); border-color: var(--err-line); }
+html[data-theme="dark"] .alert-warning { background: var(--warn-fill); color: var(--warn-ink); border-color: var(--warn-line); }
+html[data-theme="dark"] .pill { background: var(--surface-2); color: var(--c-body); border-color: var(--c-hairline); }
+html[data-theme="dark"] .pill-green { background: var(--ok-fill); color: var(--ok-ink); border-color: var(--ok-line); }
+html[data-theme="dark"] .pill-red { background: var(--err-fill); color: var(--err-ink); border-color: var(--err-line); }
+html[data-theme="dark"] .pill-blue { background: var(--info-fill); color: var(--info-ink); border-color: var(--info-line); }
+html[data-theme="dark"] .pill-purple { background: var(--vio-fill); color: var(--vio-ink); border-color: var(--vio-line); }
+html[data-theme="dark"] .status-pill { background: var(--surface-2); border-color: var(--c-hairline); }
+html[data-theme="dark"] .status-pill.chain-ok { background: var(--ok-fill); color: var(--ok-ink); border-color: var(--ok-line); }
 
 /* ---------- Dashboard overview orientation ---------- */
 /* Give the dashboard a scannable top-to-bottom information hierarchy:
@@ -1074,14 +1228,31 @@ html[data-theme="dark"] .status-pill.chain-ok { background: #064e3b; color: #a7f
 }
 .dash-section-divider i { color: var(--primary); }
 
-/* Dashboard reads top-to-bottom: chain visualization first, then the
-   consensus metrics, each spanning the full workspace width. */
+/* Dashboard sections read top-to-bottom: the cards inside each section stack
+   in a single full-width column, one after another -- Chain & Consensus puts
+   the chain visualisation above the consensus metrics, Security Posture
+   stacks its four, Scenario Lab its three. This deliberately overrides the
+   shared .tool-group-body auto-fit grid, which would otherwise place them
+   side by side. */
+#ws-dashboard .tool-group-body {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* Identity & Registration reads top-to-bottom: the cards in each section
+   stack in a single full-width column, one after another, overriding the
+   shared .tool-group-body auto-fit grid that would place them side by side. */
+#ws-identity .tool-group-body {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* Pre-JS fallback: same single column, in case organize.js ever leaves the
+   authored .main-grid blocks in place instead of replacing them with groups. */
 #ws-dashboard > .main-grid {
     grid-template-columns: minmax(0, 1fr);
 }
 #ws-dashboard > .main-grid .card { margin-bottom: 0; min-width: 0; }
 #ws-dashboard > .main-grid .card + .card { margin-top: 1.1rem; }
-html[data-theme="dark"] .status-pill.chain-bad { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
+html[data-theme="dark"] .status-pill.chain-bad { background: var(--err-fill); color: var(--err-ink); border-color: var(--err-line); }
 html[data-theme="dark"] .skeleton { background: #1e293b; }
 html[data-theme="dark"] .skeleton::after {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .08), transparent);
@@ -1388,10 +1559,10 @@ tbody tr:hover td { background: rgba(37, 99, 235, .07); }
     from { opacity: 0; transform: translateY(-8px) scale(.98); }
     to { opacity: 1; transform: none; }
 }
-.alert-success { border-left-color: var(--success); }
-.alert-error, .alert-danger { border-left-color: var(--danger); }
-.alert-info { border-left-color: var(--primary); }
-.alert-warning { border-left-color: var(--warning); }
+.alert-success { border-left-color: var(--ok-strong); background: var(--ok-fill); color: var(--ok-ink); border-color: var(--ok-line); }
+.alert-error, .alert-danger { border-left-color: var(--err-strong); background: var(--err-fill); color: var(--err-ink); border-color: var(--err-line); }
+.alert-info { border-left-color: var(--primary); background: var(--info-fill); color: var(--info-ink); border-color: var(--info-line); }
+.alert-warning { border-left-color: var(--warn-strong); background: var(--warn-fill); color: var(--warn-ink); border-color: var(--warn-line); }
 
 /* ---------- Feature tabs & tags ---------- */
 .feature-tab {
@@ -1413,8 +1584,10 @@ tbody tr:hover td { background: rgba(37, 99, 235, .07); }
     box-shadow: var(--shadow-sm);
     transition: box-shadow .18s var(--ease), transform .18s var(--ease), border-color .18s;
 }
-.chain-block:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); border-color: var(--primary); }
-.chain-block.genesis { background: linear-gradient(135deg, #1d4ed8, #4338ca); border-color: transparent; color: #fff; }
+    .chain-block:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); border-color: var(--primary); }
+    /* .chain-block.genesis colours live with the base chain-block rules; the
+       old blue-gradient override here used to win the cascade. */
+
 
 /* ---------- Activity rail ---------- */
 .activity-rail { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
@@ -1579,28 +1752,32 @@ body {
 .card.accent-nft::before { background: linear-gradient(180deg, var(--accent-nft), transparent); }
 .card.accent-enc::before { background: linear-gradient(180deg, var(--accent-enc), transparent); }
 
-@supports (selector(:has(*))) {
-    .card::after {
-        content: "CARD";
-        position: absolute;
-        top: 10px; right: 10px;
-        padding: .1rem .45rem;
-        border-radius: 999px;
-        font-size: .58rem; font-weight: 700;
-        letter-spacing: .08em; text-transform: uppercase;
-        color: var(--text-light);
-        background: var(--surface-2);
-        border: 1px solid var(--border);
-        pointer-events: none;
-        user-select: none;
-    }
-    .card:has(.feature-tabs)::after { content: "LAB"; color: #7c3aed; border-color: rgba(124, 58, 237, .35); background: rgba(124, 58, 237, .08); }
-    .card:has(canvas)::after { content: "VISUAL"; color: #0891b2; border-color: rgba(8, 145, 178, .35); background: rgba(8, 145, 178, .08); }
-    .card:has(.table-container)::after { content: "TABLE"; color: var(--text-light); }
-    .card:has(input):not(:has(.feature-tabs)):not(:has(canvas)):not(:has(.table-container))::after { content: "TOOL"; color: #2563eb; border-color: rgba(37, 99, 235, .35); background: rgba(37, 99, 235, .08); }
-    .card:not(:has(input)):not(:has(.feature-tabs)):not(:has(canvas)):not(:has(.table-container))::after { content: "DEMO"; color: #059669; border-color: rgba(5, 150, 105, .35); background: rgba(5, 150, 105, .08); }
-    .card:hover::after { opacity: .75; }
+/* Archetype marker: a single quiet letter-tag in the card header, driven by an
+   explicit `data-kind` attribute. The previous build stamped a literal "CARD" /
+   "TOOL" / "DEMO" pill on all 84 cards via ::after, which added noise instead of
+   hierarchy. `data-kind` is set by app.js from the card's own contents. */
+.card[data-kind] > h2::after {
+    content: attr(data-kind);
+    margin-left: auto;
+    padding: .12rem .45rem;
+    border-radius: 999px;
+    font-size: .56rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    pointer-events: none;
+    user-select: none;
+    flex-shrink: 0;
 }
+.card[data-kind="LAB"] > h2::after { color: #7c3aed; border-color: rgba(124, 58, 237, .35); background: rgba(124, 58, 237, .08); }
+.card[data-kind="VISUAL"] > h2::after { color: #0891b2; border-color: rgba(8, 145, 178, .35); background: rgba(8, 145, 178, .08); }
+.card[data-kind="TABLE"] > h2::after { color: var(--text-light); }
+.card[data-kind="TOOL"] > h2::after { color: #2563eb; border-color: rgba(37, 99, 235, .35); background: rgba(37, 99, 235, .08); }
+.card[data-kind="DEMO"] > h2::after { color: #059669; border-color: rgba(5, 150, 105, .35); background: rgba(5, 150, 105, .08); }
+.card:hover > h2::after { opacity: .75; }
 
 /* "Fill demo fields" helper in page headers */
 .fill-btn { margin-left: auto; white-space: nowrap; }
@@ -1700,7 +1877,7 @@ html[data-theme="dark"] body {
     background-attachment: fixed, fixed;
 }
 @media (max-width: 640px) {
-    .card::after { display: none; }
+    .card[data-kind] > h2::after { display: none; }
     .mission-grid { grid-template-columns: 1fr 1fr; }
 }
 html[data-theme="dark"] .launch-tile:hover { border-color: rgba(96, 165, 250, .4); }

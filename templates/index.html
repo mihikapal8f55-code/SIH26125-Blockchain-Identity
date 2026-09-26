@@ -7,10 +7,13 @@
     <meta name="description" content="Blockchain platform for identity &amp; access control: ZK self-sovereign identity, ABAC, dynamic lifecycle NFTs and dual-layer encrypted storage.">
     <meta name="theme-color" content="#1d4ed8">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=3">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/app.css?v=5">
+    <link href="{{ url_for('static', filename='vendor/font-awesome/css/all.min.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css?v=11">
+<link rel="stylesheet" href="/static/css/v6.css?v=7">
+
 </head>
 <body>
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
     <div class="app-shell">
 <aside class="sidebar" id="sidebar" aria-label="Main navigation">
         <div class="sidebar-brand">
@@ -25,36 +28,36 @@
         </div>
         <nav aria-label="Sections">
             <div class="nav-group">Overview</div>
-            <button class="nav-item active" data-ws="ws-dashboard" onclick="gotoSection('ws-dashboard', this)" role="tab" aria-selected="true" aria-controls="ws-dashboard" title="Dashboard">
+            <button class="nav-item active" data-ws="ws-dashboard" onclick="gotoSection('ws-dashboard', this)" aria-current="page" title="Dashboard">
                 <i class="fas fa-chart-pie"></i> Dashboard
             </button>
 
             <div class="nav-group">Act 1 &middot; Establish Identity</div>
-            <button class="nav-item" data-ws="ws-identity" onclick="gotoSection('ws-identity', this)" role="tab" aria-selected="false" aria-controls="ws-identity" title="Identity &amp; Registration">
+            <button class="nav-item" data-ws="ws-identity" onclick="gotoSection('ws-identity', this)" aria-current="false" title="Identity &amp; Registration">
                 <i class="fas fa-users"></i> Identity &amp; Registration
             </button>
-            <button class="nav-item" data-ws="ws-verification" onclick="gotoSection('ws-verification', this)" role="tab" aria-selected="false" aria-controls="ws-verification" title="Verification &amp; ZK">
+            <button class="nav-item" data-ws="ws-verification" onclick="gotoSection('ws-verification', this)" aria-current="false" title="Verification &amp; ZK">
                 <i class="fas fa-fingerprint"></i> Verification &amp; ZK
             </button>
 
             <div class="nav-group">Act 2 &middot; Gate Access</div>
-            <button class="nav-item" data-ws="ws-access" onclick="gotoSection('ws-access', this)" role="tab" aria-selected="false" aria-controls="ws-access" title="Access Control">
+            <button class="nav-item" data-ws="ws-access" onclick="gotoSection('ws-access', this)" aria-current="false" title="Access Control">
                 <i class="fas fa-lock"></i> Access Control
             </button>
 
             <div class="nav-group">Act 3 &middot; Operate &amp; Govern</div>
-            <button class="nav-item" data-ws="ws-network" onclick="gotoSection('ws-network', this)" role="tab" aria-selected="false" aria-controls="ws-network" title="Network &amp; IPFS">
+            <button class="nav-item" data-ws="ws-network" onclick="gotoSection('ws-network', this)" aria-current="false" title="Network &amp; IPFS">
                 <i class="fas fa-network-wired"></i> Network &amp; IPFS
             </button>
-            <button class="nav-item" data-ws="ws-assets" onclick="gotoSection('ws-assets', this)" role="tab" aria-selected="false" aria-controls="ws-assets" title="Digital Assets">
+            <button class="nav-item" data-ws="ws-assets" onclick="gotoSection('ws-assets', this)" aria-current="false" title="Digital Assets">
                 <i class="fas fa-cubes"></i> Digital Assets
             </button>
-            <button class="nav-item" data-ws="ws-audit" onclick="gotoSection('ws-audit', this)" role="tab" aria-selected="false" aria-controls="ws-audit" title="Audit &amp; Security">
+            <button class="nav-item" data-ws="ws-audit" onclick="gotoSection('ws-audit', this)" aria-current="false" title="Audit &amp; Security">
                 <i class="fas fa-history"></i> Audit &amp; Security
             </button>
 
             <div class="nav-group">Vault &middot; G-Series Lab</div>
-            <button class="nav-item" data-ws="ws-gseries" onclick="gotoSection('ws-gseries', this)" role="tab" aria-selected="false" aria-controls="ws-gseries" title="G-Series Security">
+            <button class="nav-item" data-ws="ws-gseries" onclick="gotoSection('ws-gseries', this)" aria-current="false" title="G-Series Security">
                 <i class="fas fa-shield-halved"></i> G-Series Security
             </button>
 </nav>
@@ -65,9 +68,14 @@
         </div>
     </aside>
         <div class="page">
-<header class="topbar">
+    <header class="topbar">
         <button class="icon-btn menu-btn" onclick="toggleDrawer(true)" aria-label="Open navigation menu">
             <i class="fas fa-bars"></i>
+        </button>
+        <button class="palette-trigger" id="paletteTrigger" type="button" onclick="PALETTE.show()" title="Search tools, workspaces and endpoints (Ctrl+K)">
+            <i class="fas fa-magnifying-glass"></i>
+            <span class="pal-label">Search tools, actions, endpoints…</span>
+            <span class="pal-kbd">Ctrl K</span>
         </button>
         <div class="topbar-pills" aria-label="System status">
             <span class="status-pill" id="topBlocks"><i class="fas fa-cubes"></i> -- blocks</span>
@@ -75,9 +83,24 @@
             <span class="status-pill chain-ok" id="topChainStatus"><i class="fas fa-shield-alt"></i> Chain VALID</span>
             <span class="status-pill" id="topNodeCount"><i class="fas fa-server"></i> -- nodes</span>
         </div>
+        <div class="ctx" role="group" aria-label="Demo context — applies to every tool">
+            <label for="ctxIdentity"><i class="fas fa-user"></i>Identity</label>
+            <input type="text" id="ctxIdentity" value="aarav.sharma@bel.gov.in" spellcheck="false" autocomplete="off"
+                   title="Set once, applied to every identity field in every tool">
+            <span class="ctx-sep" aria-hidden="true"></span>
+            <label for="ctxResource"><i class="fas fa-box"></i>Resource</label>
+            <input type="text" id="ctxResource" value="vault" spellcheck="false" autocomplete="off"
+                   title="Default resource for the access tools">
+            <button class="ctx-reset" id="ctxReset" type="button" title="Reset to the demo persona" aria-label="Reset context">
+                <i class="fas fa-rotate-left"></i>
+            </button>
+        </div>
         <div class="topbar-actions">
             <button class="icon-btn" onclick="toggleActivity()" title="Activity log (L)" aria-label="Toggle activity log">
                 <i class="fas fa-stream"></i>
+            </button>
+            <button class="icon-btn" id="vcToggle" onclick="CONSOLE.toggle()" title="Result console (C)" aria-label="Toggle result console" aria-expanded="false">
+                <i class="fas fa-layer-group"></i>
             </button>
             <button class="icon-btn" onclick="startTour()" title="Guided tour (T)" aria-label="Start guided tour">
                 <i class="fas fa-compass"></i>
@@ -85,22 +108,15 @@
             <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
                 <i class="fas fa-moon"></i>
             </button>
-            <button class="icon-btn" id="inspectorToggle" onclick="INSPECTOR.toggle()" title="Result Inspector (I)" aria-label="Toggle result inspector">
-                <i class="fas fa-terminal"></i>
-            </button>
-            <button class="btn btn-danger btn-small" onclick="resetBlockchain()">
-                <i class="fas fa-sync"></i> <span>Reset</span>
-            </button>
         </div>
     </header>
             <main class="container" id="mainContent">
 <div class="hero">
         <div>
-            <span class="hero-badge"><i class="fas fa-bolt"></i> SIH 2024 Problem Statement 26125</span>
             <h2><i class="fas fa-shield-halved"></i> Blockchain for Identity &amp; Access Control</h2>
-            <p>Self-sovereign identity (W3C DIDs), attribute-based access control, dynamic lifecycle NFTs and
-               dual-layer encrypted storage &mdash; all protected by a tamper-proof Proof-of-Work blockchain
-               built for Bharat Electronics Limited (BEL).</p>
+            <p>Self-sovereign identity (W3C DIDs), role-based access control strengthened by attribute rules,
+               dynamic lifecycle NFTs and dual-layer encrypted storage &mdash; all protected by a tamper-proof
+               Proof-of-Work blockchain built for Bharat Electronics Limited (BEL).</p>
         </div>
         <div class="hero-actions">
             <button class="btn btn-primary" onclick="startTour()"><i class="fas fa-compass"></i> Take the guided tour</button>
@@ -179,7 +195,6 @@
             <span class="launch-count" id="msiGovern">0</span>
         </button>
     </div>
-<div class="dash-section-divider"><i class="fas fa-wave-square"></i> Live Chain &amp; Consensus</div>
 <div class="main-grid">
     <div>
 <div class="card">
@@ -198,7 +213,6 @@
                 </div>
     </div>
 </div>
-<div class="dash-section-divider"><i class="fas fa-shield-halved"></i> Security Posture &amp; Incident Command</div>
 <div class="main-grid">
     <div>
 <div class="card">
@@ -220,7 +234,6 @@
                 </div>
     </div>
 </div>
-<div class="dash-section-divider"><i class="fas fa-flask-vial"></i> Security Posture &amp; Incident Lab</div>
 <div class="main-grid">
     <div>
 <div class="card">
@@ -244,6 +257,32 @@
 <div class="card">
                     <h2><i class="fas fa-shield-heart"></i> Posture Breakdown</h2>
                     <div id="postureDetail"><div class="hint">Each component of the 0-100 score: chain validity, revocation health, open anomaly alerts, node health and timing consistency.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-flag"></i> BEL Defense Unified Mission Showcase <span class="tag tag-new">E2E</span></h2>
+                    <p class="muted">Unified 7-step defense workflow: Identity &rarr; W3C DID &rarr; Smart-Contract RBAC &rarr; Defense NFT Minting &rarr; DID Binding &rarr; Cryptographic Access Request &rarr; Merkle-Sealed Audit Trail.</p>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>Applicant Name</label>
+                            <input type="text" id="belShowcaseName" value="Vikram Rao" class="field-block">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Assigned Role</label>
+                            <select id="belShowcaseRole" class="field-block">
+                                <option value="MANAGER" selected>MANAGER (Defense Ops)</option>
+                                <option value="AUDITOR">AUDITOR (Compliance)</option>
+                                <option value="USER">USER (Field Personnel)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Defense Asset (dNFT Blueprint)</label>
+                        <input type="text" id="belShowcaseAsset" value="BEL Coastal Surveillance Radar Mk-IV Blueprint" class="field-block">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="runBelMissionShowcase()"><i class="fas fa-play"></i> Run Full 7-Step Mission</button>
+                    <div id="belMissionResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
     <div>
@@ -427,9 +466,19 @@
                         <textarea id="joinPayload" rows="4">{"name":"Rahul Verma","email":"rahul@bel.in","role":"FIELD_ENGINEER","id_number":"BEL-2005","access_level":2,"allowed_resources":["personal_record"]}</textarea>
                     </div>
                     <div class="form-group"><label>Join ID (for approve/reject)</label><input type="text" id="joinId" placeholder="JOIN-XXXX"></div>
+                    <div class="form-group"><label>Role to grant on approval</label>
+                        <select id="joinRoleSel" class="field-block">
+                            <option>USER</option><option>MANAGER</option><option>AUDITOR</option><option>ADMINISTRATOR</option>
+                        </select>
+                        <div class="hint">Approving with a non-USER role needs the <b>rbac.role.assign</b> capability, so only an administrator can grant elevated access. Denials show the full gate trace.</div>
+                    </div>
+                    <div class="form-group"><label>Approver (must be a registered identity)</label>
+                        <input type="text" id="joinApprover" value="aarav.sharma@bel.gov.in" placeholder="aarav.sharma@bel.gov.in">
+                        <div class="hint">The approver is a real identity whose role is evaluated. Set it to <b>rajesh.kumar@bel.gov.in</b> (role <code>USER</code>) and re-approve to watch an elevated grant be refused — the request then stays <code>PENDING</code>.</div>
+                    </div>
                     <div class="form-group">
                         <button class="btn" onclick="joinSubmit()"><i class="fas fa-paper-plane"></i> Submit Join Request</button>
-                        <button class="btn btn-success" onclick="joinApprove()"><i class="fas fa-check-double"></i> Approve</button>
+                        <button class="btn btn-success" onclick="joinApprove()"><i class="fas fa-check-double"></i> Approve &amp; Grant Role</button>
                         <button class="btn btn-danger" onclick="joinReject()"><i class="fas fa-times"></i> Reject</button>
                     </div>
 <div id="joinResult"><div class="hint">Self-registration hangs as PENDING; only admin approval mints the identity on-chain - the multisig quota becomes part of onboarding.</div></div>
@@ -621,38 +670,7 @@
                 </div>
     </div>
     <div>
-<div class="card">
-                    <h2><i class="fas fa-fingerprint"></i> Biometric Verification</h2>
-                    <div class="zk-steps">
-                        <div class="step">
-                            <div class="step-num">1</div>
-                            <div>Enroll a biometric template (face / fingerprint) for an identity</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-num">2</div>
-                            <div>Only the template <b>hash</b> is stored on-chain (raw biometrics never stored)</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-num">3</div>
-                            <div>A live "capture" (with sensor noise) is matched against the template</div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Identity Email / ID</label>
-                        <input type="text" id="bioPublicId" placeholder="e.g., aarav.sharma@bel.gov.in">
-                    </div>
-                    <div class="form-group">
-                        <label>Biometric Type</label>
-                        <select id="bioType">
-                            <option value="face">Face Recognition</option>
-                            <option value="fingerprint">Fingerprint</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary btn-full" onclick="runBiometricDemo()" id="bioButton">
-                        <i class="fas fa-user-check"></i> Run Biometric Verification Demo
-                    </button>
-                    <div id="bioResult" style="margin-top:0.8rem;"></div>
-                </div><div class="card accent-zk">
+<div class="card accent-zk">
                     <h2><i class="fas fa-id-card"></i> ZK Self-Sovereign Identity (DID + VC)</h2>
                     <div class="zk-steps">
                         <div class="step">
@@ -762,22 +780,7 @@
                     <div id="zrResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
-    <div>
-<div class="card accent-zk">
-                    <h2><i class="fas fa-atom"></i> Post-Quantum Identity (Lamport / SLH-DSA)</h2>
-                    <div class="zk-steps">
-                        <div class="step"><div class="step-num">1</div><div>Key material is a hash-based Winternitz/Merkle OTS tree (SPHINCS+ family)</div></div>
-                        <div class="step"><div class="step-num">2</div><div>Only the Merkle ROOT is anchored on-chain - leaf keys stay off-device</div></div>
-                        <div class="step"><div class="step-num">3</div><div>Harvest-now / decrypt-later attacks fail: no quantum computer breaks hashes</div></div>
-                    </div>
-                    <div class="form-group"><label>Public identifier</label>
-                        <input type="text" id="pqPublicId" value="pq.quantum@bel.gov"></div>
-                    <button class="btn btn-primary btn-full" onclick="pqRegister()"><i class="fas fa-atom"></i> Register PQ Identity</button>
-                    <button class="btn btn-success btn-full" onclick="pqAuth()" style="margin-top:0.4rem;"><i class="fas fa-unlock"></i> Authenticate (OTS + Merkle Witness)</button>
-                    <button class="btn btn-secondary btn-full" onclick="pqList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> List PQ Identities</button>
-                    <div id="pqResult" style="margin-top:0.8rem;"></div>
-                </div>
-    </div>
+
     <div>
 <div class="card accent-zk">
                     <h2><i class="fas fa-key"></i> Key Transparency Log (CONIKS-style)</h2>
@@ -797,13 +800,9 @@
                 </div>
     </div>
     <div>
-<div class="card accent-zk">
-                    <h2><i class="fas fa-face-smile-wink"></i> Biometric Liveness Challenge</h2>
-                    <div class="zk-steps">
-                        <div class="step"><div class="step-num">1</div><div>Server issues a random "blink twice / turn head left" prompt + fresh nonce</div></div>
-                        <div class="step"><div class="step-num">2</div><div>The subject must present the challenge WITH the nonce within 30s</div></div>
-                        <div class="step"><div class="step-num">3</div><div>Photo-replay kills: a static image can't answer a random prompt nonce</div></div>
-                    </div>
+        <div class="card">
+                    <h2><i class="fas fa-video"></i> Interactive Liveness Verification</h2>
+                    <p class="muted">Challenge-response liveness protocol preventing replay attacks on identity credentials.</p>
                     <div class="form-group"><label>Public identifier</label>
                         <input type="text" id="lvPublicId" value="aarav.sharma@bel.gov.in"></div>
                     <div class="form-group"><label>Challenge ID (from Issue)</label>
@@ -929,11 +928,11 @@
                     <div class="zk-steps">
                         <div class="step">
                             <div class="step-num">1</div>
-                            <div><b>Dynamic smart-contract policy</b> - not rigid RBAC</div>
+                            <div><b>Dynamic smart-contract policy</b> - RBAC as the backbone, attributes layered on top</div>
                         </div>
                         <div class="step">
                             <div class="step-num">2</div>
-                            <div><code>Access = Role ∧ SecurityClearance ∧ Geofence ∧ DeviceSecurityHash</code></div>
+                            <div><code>Access = Role ∧ Capability ∧ Resource ∧ SecurityClearance ∧ Geofence ∧ DeviceSecurityHash</code></div>
                         </div>
                         <div class="step">
                             <div class="step-num">3</div>
@@ -1074,31 +1073,6 @@
                     <div id="dryResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
-</div>
-<div class="main-grid">
-    <div>
-<div class="card">
-                    <h2><i class="fas fa-hands-bound"></i> Duress PIN (Silent Alarms)</h2>
-                    <div class="zk-steps">
-                        <div class="step"><div class="step-num">1</div><div>Enroll a panic PIN alongside the normal PIN</div></div>
-                        <div class="step"><div class="step-num">2</div><div>Entering the duress PIN LOOKS like a normal successful unlock</div></div>
-                        <div class="step"><div class="step-num">3</div><div>In reality a CRITICAL ALERT audit block is written silently</div></div>
-                    </div>
-                    <div class="form-group"><label>Public Identifier</label>
-                        <input type="text" id="dupPublicId" value="aarav.sharma@bel.gov.in"></div>
-                    <div class="form-group"><label>Duress PIN</label>
-                        <input type="text" id="dupPanicPin" value="9999"></div>
-                    <div class="form-group"><label>Normal PIN (default 123456)</label>
-                        <input type="text" id="dupNormalPin" value="123456"></div>
-                    <button class="btn btn-primary btn-full" onclick="dupEnroll()"><i class="fas fa-shield-halved"></i> Enroll Duress PIN</button>
-                    <div class="form-group"><label>PIN to test</label>
-                        <input type="text" id="dupTestPin" value="9999"></div>
-                    <div class="form-group"><label>Resource unlocked</label>
-                        <input type="text" id="dupResource" value="vault"></div>
-                    <button class="btn btn-danger btn-full" onclick="dupAuth()" style="margin-top:0.4rem;"><i class="fas fa-user-shield"></i> Authenticate (Simulate Coercion)</button>
-                    <div id="dupResult" style="margin-top:0.8rem;"></div>
-                </div>
-    </div>
     <div>
 <div class="card">
                     <h2><i class="fas fa-people-roof"></i> Two-Person Integrity at Access Time</h2>
@@ -1122,7 +1096,7 @@
                         <input type="text" id="tpViewerB" value="priya.patel@bel.gov.in"></div>
                     <button class="btn btn-success btn-full" onclick="tpCoauthorize()"><i class="fas fa-user-check"></i> Co-Authorize (Second Person)</button>
                     <button class="btn btn-warning btn-full" onclick="tpView()" style="margin-top:0.4rem;"><i class="fas fa-eye"></i> Attempt View (As Viewer A)</button>
-                    <div id="tpResult" style="margin-top:0.8rem;"></div>
+                    <div id="tpwResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
     <div>
@@ -1165,28 +1139,7 @@
                     <div id="f15purposeResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
-    <div>
-<div class="card">
-                    <h2><i class="fas fa-file-shield"></i> Session Sealing &amp; Mobility Defense</h2>
-                    <p class="muted">Sessions are cryptographically bound to device + IP for a lease. Move to another device/IP and the binding shatters - the "user" is forced to re-authenticate with a risk-score spike.</p>
-                    <div class="form-group" style="display:flex;gap:0.4rem;">
-                        <div style="flex:1;"><label>Public id</label><input type="text" id="f15ssPid" value="priya.patel@bel.gov.in"></div>
-                        <div style="flex:1;"><label>Device hash</label><input type="text" id="f15ssDev" value="DEV-A1B2"></div>
-                    </div>
-                    <div class="form-group" style="display:flex;gap:0.4rem;">
-                        <div style="flex:1;"><label>IP</label><input type="text" id="f15ssIp" value="10.0.0.7"></div>
-                        <div style="flex:1;"><label>Lease (s)</label><input type="number" id="f15ssLease" value="600"></div>
-                    </div>
-                    <button class="btn btn-primary btn-full" onclick="f15SessionSeal()"><i class="fas fa-lock"></i> Seal Session</button>
-                    <div class="form-group" style="margin-top:0.6rem;"><label>Session ID</label><input type="text" id="f15ssSid" placeholder="SES-XXXX"></div>
-                    <div style="display:flex;gap:0.4rem;">
-                        <button class="btn btn-success btn-full" onclick="f15SessionValidate()"><i class="fas fa-check"></i> Validate Session</button>
-                        <button class="btn btn-danger btn-full" onclick="f15SessionHijack()"><i class="fas fa-user-secret"></i> Simulate Replay/Hijack</button>
-                        <button class="btn btn-secondary btn-full" onclick="f15SessionList()"><i class="fas fa-list"></i> Sessions</button>
-                    </div>
-                    <div id="f15sessionResult" style="margin-top:0.8rem;"></div>
-                </div>
-    </div>
+
     <div>
 <div class="card">
                     <h2><i class="fas fa-layer-group"></i> Data-Classification Rule Layers</h2>
@@ -1211,6 +1164,85 @@
                         <button class="btn btn-secondary btn-full" onclick="f15ClassifyList()"><i class="fas fa-list"></i> Layers</button>
                     </div>
                     <div id="f15classifyResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-user-shield"></i> Role-Based Access Control Panel</h2>
+                    <p class="muted">Four canonical roles &mdash; ADMINISTRATOR, MANAGER, AUDITOR, USER &mdash; plus any custom role you define. Every privileged action passes the same on-chain gate: <b>role AND capability AND resource</b>.</p>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.6rem;">
+                        <button class="btn btn-primary" onclick="rbacLoadPanel()"><i class="fas fa-users-gear"></i> Load Roles &amp; Members</button>
+                        <button class="btn" onclick="rbacVerifyCapability()"><i class="fas fa-circle-question"></i> Verify Capability</button>
+                        <button class="btn btn-danger" onclick="rbacDenyByDefault()"><i class="fas fa-ban"></i> Deny-by-Default Demo</button>
+                    </div>
+                    <div class="form-group"><label>Acting as (admin email)</label>
+                        <input type="text" id="rbacActor" value="aarav.sharma@bel.gov.in" class="field-block"></div>
+                    <div class="form-group"><label>Subject (identity being evaluated)</label>
+                        <input type="text" id="rbacSubject" value="rajesh.kumar@bel.gov.in" class="field-block"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Capability</label><input type="text" id="rbacCap" value="nft.mint" class="field-block"></div>
+                        <div class="form-group" style="flex:1;"><label>Resource</label><input type="text" id="rbacRes" value="nft.mint" class="field-block"></div>
+                    </div>
+                    <div class="form-group"><label>Assign role to subject</label>
+                        <select id="rbacAssignRoleSel" class="field-block">
+                            <option>ADMINISTRATOR</option><option>MANAGER</option><option>AUDITOR</option><option>USER</option>
+                        </select></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn btn-success" onclick="rbacAssignRole()"><i class="fas fa-user-gear"></i> Assign Role</button>
+                    </div>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Define custom role</label>
+                        <input type="text" id="rbacNewRole" placeholder="INCIDENT_RESPONDER" class="field-block"></div>
+                    <div class="form-group"><label>Capabilities (comma separated)</label>
+                        <input type="text" id="rbacNewCaps" value="nft.mint, audit.view" class="field-block"></div>
+                    <div class="form-group"><label>Resources (comma separated)</label>
+                        <input type="text" id="rbacNewRes" value="audit.trail" class="field-block"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn" onclick="rbacDefineRole()"><i class="fas fa-plus"></i> Define Custom Role</button>
+                    </div>
+<div id="rbacPanelResult" style="margin-top:0.8rem;"><div class="hint">Load the panel to see every role, its capabilities, and who currently holds it. Denied actions show the full gate trace instead of a bare error.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-list-check"></i> RBAC Permissions Matrix Visualizer <span class="tag tag-new">LIVE</span></h2>
+                    <p class="muted">Live multi-role permissions matrix across canonical roles (ADMINISTRATOR, MANAGER, AUDITOR, USER) against operations, with instantaneous ABAC policy simulation.</p>
+                    <div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;">
+                        <button class="btn btn-primary" onclick="loadRbacMatrix()"><i class="fas fa-sync"></i> Refresh Matrix</button>
+                    </div>
+                    <div id="rbacMatrixContainer" style="margin-bottom:0.8rem;overflow-x:auto;">
+                        <div class="hint">Click "Refresh Matrix" to view the live cross-role capabilities table.</div>
+                    </div>
+                    <div style="border-top: 1px solid var(--border); padding-top: 0.6rem;">
+                        <h4 style="margin: 0.2rem 0 0.5rem 0; font-size: 0.9rem;"><i class="fas fa-vial"></i> Interactive RBAC Policy Simulator</h4>
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>Simulated Role</label>
+                                <select id="matSimRole" class="field-block">
+                                    <option value="ADMINISTRATOR">ADMINISTRATOR</option>
+                                    <option value="MANAGER" selected>MANAGER</option>
+                                    <option value="AUDITOR">AUDITOR</option>
+                                    <option value="USER">USER</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Operation / Capability</label>
+                                <select id="matSimCap" class="field-block">
+                                    <option value="nft.view" selected>nft.view (Read Blueprint)</option>
+                                    <option value="nft.mint">nft.mint (Mint Defense NFT)</option>
+                                    <option value="nft.transfer">nft.transfer (Transfer Asset)</option>
+                                    <option value="audit.view">audit.view (Audit Inspection)</option>
+                                    <option value="rbac.role.assign">rbac.role.assign (Assign Role)</option>
+                                    <option value="identity.register">identity.register (Register Identity)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Resource Target</label>
+                            <input type="text" id="matSimRes" value="BEL-RADAR-MK4-SCHEMATIC" class="field-block">
+                        </div>
+                        <button class="btn btn-success btn-full" onclick="simulateMatrixPermission()"><i class="fas fa-circle-check"></i> Evaluate Role Policy</button>
+                        <div id="rbacMatrixSimResult" style="margin-top:0.6rem;"></div>
+                    </div>
                 </div>
     </div>
 </div>
@@ -1273,7 +1305,7 @@
                     </div>
                     <div class="feature-panel" id="panel3-topology">
                         <label>Node ID</label>
-                        <input type="text" id="topoNodeId" value="node_4" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="topoNodeId" value="node_4" class="field-block">
                         <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
                             <button class="btn btn-primary btn" onclick="topo('add')"><i class="fas fa-plus"></i> Add</button>
                             <button class="btn btn-danger btn" onclick="topo('remove')"><i class="fas fa-minus"></i> Remove</button>
@@ -1319,9 +1351,9 @@
                     </div>
                     <div class="feature-panel active" id="panel4-add">
                         <label>Document Name</label>
-                        <input type="text" id="ipfsDocName" value="classified-report" placeholder="Document name" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="ipfsDocName" value="classified-report" placeholder="Document name" class="field-block">
                         <label>Document Content</label>
-                        <textarea id="ipfsDocContent" rows="2" placeholder="Document content..." style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">This is a secure classified BEL document.</textarea>
+                        <textarea id="ipfsDocContent" rows="2" placeholder="Document content..." class="field-block">This is a secure classified BEL document.</textarea>
                         <button class="btn btn-primary btn-full" onclick="addIpfsDocument()" id="ipfsAddButton">
                             <i class="fas fa-cloud-upload-alt"></i> Add to IPFS (store CID on-chain)
                         </button>
@@ -1329,7 +1361,7 @@
                     </div>
                     <div class="feature-panel" id="panel4-verify">
                         <label>Document CID</label>
-                        <input type="text" id="ipfsVerifyCid" placeholder="Paste CID from Add step" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="ipfsVerifyCid" placeholder="Paste CID from Add step" class="field-block">
                         <button class="btn btn-secondary btn-full" onclick="verifyIpfsDocument()" id="ipfsVerifyButton">
                             <i class="fas fa-shield-alt"></i> Verify Content vs on-chain CID
                         </button>
@@ -1434,23 +1466,6 @@
     </div>
     <div>
 <div class="card">
-                    <h2><i class="fas fa-flask-vial"></i> Chaos Engineering Suite <span class="tag tag-new">NEW</span></h2>
-                    <p class="muted">Break the network on purpose: node-death, packet-loss, desync or clock-skew. The skew probe then smuggles a stale signed request and the monotonic-nonce defense blocks it.</p>
-                    <div class="form-group" style="display:flex;gap:0.4rem;">
-                        <div style="flex:1;"><label>Node ID</label><input type="text" id="f15chNode" value="NODE-1"></div>
-                        <div style="flex:1;"><label>Mode</label><select id="f15chMode"><option value="clock-skew">clock-skew</option><option value="node-death">node-death</option><option value="packet-loss">packet-loss</option><option value="desync">desync</option></select></div>
-                        <div style="flex:1;"><label>Value</label><input type="text" id="f15chValue" value="7200"></div>
-                    </div>
-                    <button class="btn btn-danger btn-full" onclick="f15ChaosInject()"><i class="fas fa-bomb"></i> Inject Fault</button>
-                    <div style="display:flex;gap:0.4rem;margin-top:0.4rem;">
-                        <button class="btn btn-success btn-full" onclick="f15ChaosVerify()"><i class="fas fa-microscope"></i> Verify (smuggle stale request)</button>
-                        <button class="btn btn-secondary btn-full" onclick="f15ChaosList()"><i class="fas fa-list"></i> Faults + Events</button>
-                    </div>
-                    <div id="f15chaosResult" style="margin-top:0.8rem;"></div>
-                </div>
-    </div>
-    <div>
-<div class="card">
                     <h2><i class="fas fa-id-badge"></i> Node PKI (Signed Gossip)</h2>
                     <p class="muted">Every node gets a registry identity; gossip is HMAC-signed per node. An unregistered rogue node is rejected at the protocol layer, and revoked nodes are dropped instantly.</p>
                     <div class="form-group"><label>Node ID</label><input type="text" id="f15pkiNode" value="NODE-1"></div>
@@ -1512,36 +1527,7 @@
                     <div id="nftResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
-    <div>
-<div class="card accent-enc">
-                    <h2><i class="fas fa-lock"></i> Dual-Layer Encrypted Storage</h2>
-                    <div class="zk-steps">
-                        <div class="step">
-                            <div class="step-num">1</div>
-                            <div>Payload is encrypted <b>client-side with AES-256-GCM</b> before it reaches IPFS - the public CID returns only ciphertext</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-num">2</div>
-                            <div>The AES key is <b>Shamir-split</b> across 5 threshold nodes (reconstruct needs 3)</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-num">3</div>
-                            <div>Nodes release shares <b>only after the smart contract verifies a ZK attribute proof</b> of the required clearance</div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Document content (kept secret)</label>
-                        <input type="text" id="encipfsPlaintext" value="RADAR-BLUEPRINT-X | Antenna array 1.2 GHz | BEL-RESTRICTED">
-                    </div>
-                    <button class="btn btn-primary btn-full" onclick="encipfsStore()" id="encipfsStoreButton">
-                        <i class="fas fa-user-lock"></i> Encrypt &amp; Publish to IPFS
-                    </button>
-                    <button class="btn btn-success btn-full" onclick="runEncipfsDemo()" id="encipfsButton" style="margin-top:0.5rem;">
-                        <i class="fas fa-bolt"></i> Run Full Dual-Layer Demo
-                    </button>
-                    <div id="encipfsResult" style="margin-top:0.8rem;"></div>
-                </div>
-    </div>
+
 </div>
 <div class="main-grid">
     <div>
@@ -1561,7 +1547,7 @@
                     <div class="form-group"><label>SBOM packages (comma-separated)</label>
                         <input type="text" id="fwSbom" value="openssl,wiringpi"></div>
                     <button class="btn btn-primary btn-full" onclick="fwAnchor()"><i class="fas fa-anchor"></i> Anchor Firmware + SBOM</button>
-                    <button class="btn btn-success btn-full" onclick="fwDeploy()" style="margin-top:0.4rem;"><i class="fas fa-flash"></i> Attempt Deploy (gate check)</button>
+                    <button class="btn btn-success btn-full" onclick="fwDeploy()" style="margin-top:0.4rem;"><i class="fas fa-bolt"></i> Attempt Deploy (gate check)</button>
                     <button class="btn btn-secondary btn-full" onclick="fwList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Firmware Registry</button>
                     <div id="fwResult" style="margin-top:0.8rem;"></div>
                 </div>
@@ -1618,7 +1604,7 @@
                         <div style="flex:1;"><label>Center lng</label><input type="text" id="f15gfLng" value="77.2090"></div>
                         <div style="flex:1;"><label>Radius (km)</label><input type="text" id="f15gfRad" value="50"></div>
                     </div>
-                    <button class="btn btn-primary btn-full" onclick="f15GeofenceRegister()"><i class="fas fa-boundary"></i> Bind Geo-Perimeter</button>
+                    <button class="btn btn-primary btn-full" onclick="f15GeofenceRegister()"><i class="fas fa-vector-square"></i> Bind Geo-Perimeter</button>
                     <div class="form-group" style="margin-top:0.6rem;"><label>Telemetry ping (unit + lat + lng)</label>
                         <div style="display:flex;gap:0.4rem;">
                             <input type="text" id="f15gfTUnit" value="FIELD-UNIT-7" style="flex:1;">
@@ -1664,6 +1650,68 @@
                     <div id="f15timelineResult" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-shield-halved"></i> dNFT Minting &amp; Ownership Governance</h2>
+                    <p class="muted">Minting is an administrator capability. Try it as a plain USER and the policy gate refuses with a readable <b>role AND capability AND resource</b> trace. Allocation only succeeds against a verified identity or an anchored DID.</p>
+                    <div class="form-group"><label>Acting as (must be ADMINISTRATOR)</label>
+                        <input type="text" id="nftGovActor" value="aarav.sharma@bel.gov.in" class="field-block"></div>
+                    <div class="form-group"><label>Owner (identity public ID or did:&hellip;)</label>
+                        <input type="text" id="nftGovOwner" value="priya.patel@bel.gov.in" class="field-block"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Asset name</label><input type="text" id="nftGovName" value="Governed dNFT" class="field-block"></div>
+                        <div class="form-group" style="flex:1;"><label>Type</label>
+                            <select id="nftGovType" class="field-block"><option>hardware</option><option>blueprint</option><option>document</option></select></div>
+                    </div>
+                    <div class="form-group"><label>Token ID (for ownership &amp; lineage)</label>
+                        <input type="text" id="nftGovToken" placeholder="paste a token id" class="field-block"></div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="nftGovernMint()" id="nftGovMintBtn"><i class="fas fa-shield-halved"></i> Mint (gate enforced)</button>
+                        <button class="btn" onclick="nftGovOwnership()"><i class="fas fa-user-check"></i> Check Ownership</button>
+                        <button class="btn" onclick="nftGovLineage()"><i class="fas fa-route"></i> Ownership Lineage</button>
+                    </div>
+<div id="nftGovResult" style="margin-top:0.8rem;"><div class="hint">Set the actor to <b>rajesh.kumar@bel.gov.in</b> (a USER) and mint to watch the smart-contract gate refuse the request and explain which leg failed.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-fingerprint"></i> DID-Based NFT Ownership</h2>
+                    <p class="muted">Register &rarr; DID &rarr; mint. A DID may <b>hold</b> a dNFT, but it can never <b>act</b> as an RBAC operator &mdash; a self-asserted identifier must not be able to buy privilege.</p>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Holder name</label><input type="text" id="didOwnName" value="DID Asset Holder" class="field-block"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="text" id="didOwnEmail" value="did.holder@bel.gov.in" class="field-block"></div>
+                    </div>
+                    <div class="form-group"><label>Actor (admin who mints to the DID)</label>
+                        <input type="text" id="didOwnActor" value="aarav.sharma@bel.gov.in" class="field-block"></div>
+                    <div class="form-group"><label>DID</label><input type="text" id="didOwnDid" placeholder="register a DID first" class="field-block"></div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="didBindMint()"><i class="fas fa-id-badge"></i> Register DID</button>
+                        <button class="btn" onclick="didMintToDid()"><i class="fas fa-cubes"></i> Mint dNFT to DID</button>
+                    </div>
+<div id="didOwnResult" style="margin-top:0.8rem;"><div class="hint">Only the public verification method is anchored on-chain &mdash; no PII, no clearance, just the DID document and its key.</div></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-right-left"></i> Ownership Transfer &amp; Consent</h2>
+                    <p class="muted">A dNFT moves only when the current owner presents a valid cryptographic consent signature, or an administrator passes the full override gate. Consent nonces are single-use, so a replayed signature is rejected.</p>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="nftTransferScenario()" id="nftTransferBtn"><i class="fas fa-right-left"></i> Run Transfer Consent Scenarios</button>
+                    </div>
+                    <div class="form-group" style="margin-top:0.6rem;"><label>Actor</label>
+                        <input type="text" id="nftTrActor" value="aarav.sharma@bel.gov.in" class="field-block"></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <div class="form-group" style="flex:1;"><label>Token ID</label><input type="text" id="nftTrToken" placeholder="token id" class="field-block"></div>
+                        <div class="form-group" style="flex:1;"><label>New owner</label><input type="text" id="nftTrNewOwner" value="priya.patel@bel.gov.in" class="field-block"></div>
+                    </div>
+                    <div class="form-group"><label style="display:flex;align-items:center;gap:0.4rem;">
+                        <input type="checkbox" id="nftTrOverride" style="width:auto;"> Administrator override (nft.transfer.admin)</label></div>
+                    <div style="display:flex;gap:0.4rem;">
+                        <button class="btn" onclick="nftTransferGoverned()"><i class="fas fa-arrow-right-arrow-left"></i> Transfer (gate enforced)</button>
+                    </div>
+<div id="nftTransferResult" style="margin-top:0.8rem;"><div class="hint">Run the scenarios to see unauthenticated, stranger, forged-signature and replayed-nonce requests all refused, and only the genuine signed consent allowed.</div></div>
+                </div>
+    </div>
 </div>
 </section>
 
@@ -1706,7 +1754,7 @@
                     <!-- Revoke / Expire -->
                     <div class="feature-panel" id="panel5-revoke">
                         <label>Identity Public ID</label>
-                        <input type="text" id="revokePublicId" value="rajesh.kumar@bel.gov.in" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="revokePublicId" value="rajesh.kumar@bel.gov.in" class="field-block">
                         <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
                             <button class="btn btn-danger btn-full" onclick="revokeIdentity()">
                                 <i class="fas fa-ban"></i> Revoke
@@ -1727,9 +1775,9 @@
                     <!-- Multi-Signature -->
                     <div class="feature-panel" id="panel5-multisig">
                         <label>Signers (comma-separated)</label>
-                        <input type="text" id="msSigners" value="admin1, admin2, admin3" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="msSigners" value="admin1, admin2, admin3" class="field-block">
                         <label>Required approvals</label>
-                        <input type="number" id="msRequired" value="2" min="1" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="number" id="msRequired" value="2" min="1" class="field-block">
                         <button class="btn btn-primary btn-full" onclick="createMultisig()">
                             <i class="fas fa-file-signature"></i> Create Proposal
                         </button>
@@ -1742,9 +1790,9 @@
                     <!-- Time-Lock Scheduling -->
                     <div class="feature-panel" id="panel5-schedule">
                         <label>Identity Public ID</label>
-                        <input type="text" id="schedPublicId" value="priya.patel@bel.gov.in" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="schedPublicId" value="priya.patel@bel.gov.in" class="field-block">
                         <label>Resource</label>
-                        <input type="text" id="schedResource" value="reporting" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="schedResource" value="reporting" class="field-block">
                         <button class="btn btn-primary btn-full" onclick="setAccessSchedule()">
                             <i class="fas fa-clock"></i> Set Time-Locked Access (now -> +1hr)
                         </button>
@@ -1757,9 +1805,9 @@
                     <!-- Encryption -->
                     <div class="feature-panel" id="panel5-encrypt">
                         <label>Plaintext secret to encrypt</label>
-                        <input type="text" id="encPlain" value="111-22-3333" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="encPlain" value="111-22-3333" class="field-block">
                         <label>Passphrase</label>
-                        <input type="text" id="encPass" value="org-secret-key" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="encPass" value="org-secret-key" class="field-block">
                         <button class="btn btn-primary btn-full" onclick="encryptValue()">
                             <i class="fas fa-lock"></i> Encrypt Secret
                         </button>
@@ -1772,7 +1820,7 @@
                     <!-- ZK Document Possession -->
                     <div class="feature-panel" id="panel5-zkdoc">
                         <label>Document CID</label>
-                        <input type="text" id="zkDocCid" value="QmExample123" style="width:100%;padding:0.5rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid #ccc;">
+                        <input type="text" id="zkDocCid" value="QmExample123" class="field-block">
                         <button class="btn btn-primary btn-full" onclick="proveZkDocument()">
                             <i class="fas fa-eye-slash"></i> Generate ZK Possession Proof
                         </button>
@@ -1821,11 +1869,11 @@
                         <button class="btn btn-primary btn-full" onclick="exportChain()">
                             <i class="fas fa-download"></i> Export Chain to JSON
                         </button>
-                        <textarea id="exportOutput" rows="4" readonly style="width:100%;margin-top:0.5rem;padding:0.5rem;border-radius:6px;border:1px solid #ccc;font-family:monospace;font-size:0.7rem;"></textarea>
+                        <textarea id="exportOutput" rows="4" readonly class="field-block field-mono mt-1"></textarea>
                     </div>
                     <div class="feature-panel" id="panel6-import">
                         <label>Chain JSON (paste exported output)</label>
-                        <textarea id="importInput" rows="4" placeholder='{"chain": [...]}' style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #ccc;font-family:monospace;font-size:0.7rem;"></textarea>
+                        <textarea id="importInput" rows="4" placeholder='{"chain": [...]}' class="field-block field-mono"></textarea>
                         <button class="btn btn-primary btn-full" onclick="importChain()" style="margin-top:0.5rem;">
                             <i class="fas fa-upload"></i> Import &amp; Validate Chain
                         </button>
@@ -1841,7 +1889,7 @@
                         <div class="step"><div class="step-num">2</div><div>FAILED / DENIED bursts, sensitive resources and delegated caps score higher</div></div>
                         <div class="step"><div class="step-num">3</div><div>Acknowledge alerts to push them out of the active queue</div></div>
                     </div>
-                    <button class="btn btn-primary btn-full" onclick="anomalyScan()"><i class="fas fa-radar"></i> Run Anomaly Scan</button>
+                    <button class="btn btn-primary btn-full" onclick="anomalyScan()"><i class="fas fa-satellite-dish"></i> Run Anomaly Scan</button>
                     <button class="btn btn-secondary btn-full" onclick="anomalyList()" style="margin-top:0.4rem;"><i class="fas fa-exclamation-triangle"></i> Active Alerts</button>
                     <div id="anomalyResult" style="margin-top:0.8rem;"></div>
                 </div><div class="card">
@@ -1940,6 +1988,33 @@
     </div>
     <div>
 <div class="card">
+                    <h2><i class="fas fa-clipboard-check"></i> Auditor Portal &amp; Compliance Hub <span class="tag tag-new">AUDIT</span></h2>
+                    <p class="muted">Cryptographic verification suite for external &amp; BEL defense auditors: Merkle membership proofs, deep chain continuity scanner, and signed ISO/IEC 27001 compliance certificates.</p>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.6rem;">
+                        <button class="btn btn-primary" onclick="auditorRunDeepScan()"><i class="fas fa-shield-halved"></i> Run Deep Chain Scan</button>
+                        <button class="btn btn-secondary" onclick="auditorGenerateProof()"><i class="fas fa-network-wired"></i> Generate Merkle Proof</button>
+                        <button class="btn btn-warning" onclick="auditorGenerateCertificate()"><i class="fas fa-file-signature"></i> Issue BEL Compliance Certificate</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>Auditor ID</label>
+                            <input type="text" id="auditorIdInput" value="AUDITOR-BEL-01" class="field-block">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Target Entry Leaf Hash (for proof check)</label>
+                            <input type="text" id="auditorProofLeaf" placeholder="SHA-256 leaf hash" class="field-block">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Expected Merkle Root</label>
+                        <input type="text" id="auditorProofRoot" placeholder="Expected 32-byte Merkle root" class="field-block">
+                    </div>
+                    <button class="btn btn-success btn-full" onclick="auditorVerifyMerkle()"><i class="fas fa-check-double"></i> Verify Merkle Path Offline</button>
+                    <div id="auditorResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
                     <h2><i class="fas fa-clipboard-check"></i> Compliance Mapping Report</h2>
                     <div class="zk-steps">
                         <div class="step"><div class="step-num">1</div><div>Controls are mapped to ISO 27001 / CERT-In / DPDP frameworks</div></div>
@@ -2006,6 +2081,26 @@
                         <button class="btn btn-secondary btn-full" onclick="f15ReceiptList()"><i class="fas fa-list"></i> Receipts</button>
                     </div>
                     <div id="f15receiptResult" style="margin-top:0.8rem;"></div>
+                </div>
+    </div>
+    <div>
+<div class="card">
+                    <h2><i class="fas fa-list-check"></i> Auditable Activities</h2>
+                    <p class="muted">The six activities the ledger must be able to prove, each filterable on its own. Filtering happens <b>server-side before the limit</b>, so a long session can never hide an activity behind a page cut-off.</p>
+                    <div id="activityChips" style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.6rem;">
+                        <button class="btn btn-primary" onclick="psLoadActivity('')">All</button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                        <button class="btn" onclick="psLoadActivity('identity_creation')"><i class="fas fa-id-card"></i> Identity creation</button>
+                        <button class="btn" onclick="psLoadActivity('nft_creation')"><i class="fas fa-cubes"></i> NFT creation</button>
+                        <button class="btn" onclick="psLoadActivity('allocation')"><i class="fas fa-people-arrows"></i> Allocation</button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.4rem;">
+                        <button class="btn" onclick="psLoadActivity('access_rights')"><i class="fas fa-key"></i> Access-rights assignment</button>
+                        <button class="btn" onclick="psLoadActivity('ownership_transfer')"><i class="fas fa-right-left"></i> Ownership transfer</button>
+                        <button class="btn" onclick="psLoadActivity('permission_update')"><i class="fas fa-user-gear"></i> Permission update</button>
+                    </div>
+<div id="activityResult" style="margin-top:0.8rem;"><div class="hint">Pick an activity to read its blocks straight from the chain. Counts update on load, so an activity with no blocks yet is visible rather than silently missing.</div></div>
                 </div>
     </div>
 </div>
@@ -2121,7 +2216,7 @@
                         <input type="text" id="vlToGeo" value="13.0827,80.2707"></div>
                     <div class="form-group"><label>Elapsed minutes</label>
                         <input type="number" id="vlMinutes" value="10"></div>
-                    <button class="btn btn-primary btn-full" onclick="vlAnomaly()"><i class="fas fa-radar"></i> Evaluate &amp; Log Move</button>
+                    <button class="btn btn-primary btn-full" onclick="vlAnomaly()"><i class="fas fa-satellite-dish"></i> Evaluate &amp; Log Move</button>
                     <button class="btn btn-secondary btn-full" onclick="vlPlausible()" style="margin-top:0.4rem;"><i class="fas fa-car"></i> Plausible Bound Demo</button>
                     <button class="btn btn-secondary btn-full" onclick="vlList()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Velocity Event Log</button>
                     <div id="vlResult" style="margin-top:0.8rem;"></div>
@@ -2174,7 +2269,7 @@
                     <button class="btn btn-primary btn-full" onclick="g9Register()"><i class="fas fa-microchip"></i> Register Golden Quote</button>
                     <button class="btn btn-success btn-full" onclick="g9Login(false)" style="margin-top:0.4rem;"><i class="fas fa-door-open"></i> Attest Login (golden)</button>
                     <button class="btn btn-danger btn-full" onclick="g9Login(true)" style="margin-top:0.4rem;"><i class="fas fa-biohazard"></i> Attest Login (tampered firmware)</button>
-                    <button class="btn btn-secondary btn-full" onclick="g9Revoke()" style="margin-top:0.4rem;"><i class="fas fa-shield-xmark"></i> Revoke Device Attestation</button>
+                    <button class="btn btn-secondary btn-full" onclick="g9Revoke()" style="margin-top:0.4rem;"><i class="fas fa-user-slash"></i> Revoke Device Attestation</button>
                     <button class="btn btn-secondary btn-full" onclick="g9List()" style="margin-top:0.4rem;"><i class="fas fa-list"></i> Attested Devices</button>
                     <div id="g9Result" style="margin-top:0.8rem;"></div>
                 </div>
@@ -2214,17 +2309,68 @@
 
     <div id="tourOverlay"></div>
 
-    <div class="inspector" id="inspector" aria-label="Result inspector">
-        <div class="inspector-head">
-            <span class="inspector-title"><i class="fas fa-terminal"></i> Result Inspector</span>
-            <span class="inspector-tools">
-                <button class="icon-btn" onclick="INSPECTOR.copyLast()" title="Copy last result" aria-label="Copy last result"><i class="fas fa-copy"></i></button>
-                <button class="icon-btn" onclick="INSPECTOR.clear()" title="Clear results" aria-label="Clear results"><i class="fas fa-broom"></i></button>
-                <button class="icon-btn" onclick="INSPECTOR.toggle()" title="Collapse inspector" aria-label="Collapse inspector"><i class="fas fa-angle-down"></i></button>
+    <!-- ================= RESULT CONSOLE =================
+         One structured surface for every operation on the site. The
+         "Verdicts" tab is fed automatically by a MutationObserver over
+         all 97 result containers; "Traffic" is the raw API stream. -->
+    <aside class="vc" id="vcPanel" aria-label="Result console" aria-hidden="true">
+        <div class="vc-head">
+            <span class="vc-title"><i class="fas fa-layer-group"></i> Result Console</span>
+            <span class="vc-badge" id="vcBadge" aria-label="Result count">0</span>
+            <span class="vc-tools">
+                <button class="icon-btn" onclick="CONSOLE.exportCsv()" title="Export verdicts as CSV" aria-label="Export verdicts as CSV"><i class="fas fa-file-csv"></i></button>
+                <button class="icon-btn" onclick="CONSOLE.exportJson()" title="Export verdicts as JSON" aria-label="Export verdicts as JSON"><i class="fas fa-file-export"></i></button>
+                <button class="icon-btn" onclick="CONSOLE.clear()" title="Clear console" aria-label="Clear result console"><i class="fas fa-broom"></i></button>
+                <button class="icon-btn" onclick="CONSOLE.toggle(false)" title="Close console" aria-label="Close result console"><i class="fas fa-xmark"></i></button>
             </span>
         </div>
-        <div class="inspector-body" id="inspectorBody"><div class="empty-state"><i class="fas fa-wave-square"></i> Results stream here as you run demos &mdash; every operation, one place.</div></div>
-        <label class="inspector-live"><input type="checkbox" id="inspectorLive" checked> <span><i class="fas fa-circle"></i> live</span></label>
+        <div class="vc-tabs" role="tablist" aria-label="Console views">
+            <button class="vc-tab" type="button" role="tab" data-vc-tab="verdicts" aria-selected="true" aria-controls="vcPanel-verdicts">
+                <i class="fas fa-gavel"></i> Verdicts
+            </button>
+            <button class="vc-tab" type="button" role="tab" data-vc-tab="traffic" aria-selected="false" aria-controls="vcPanel-traffic">
+                <i class="fas fa-stream"></i> API Traffic
+            </button>
+        </div>
+        <div class="vc-panel active" id="vcPanel-verdicts" role="tabpanel" aria-label="Verdicts">
+            <div class="vc-filters" role="group" aria-label="Filter verdicts by outcome">
+                <button class="vc-chip" type="button" data-v="all" aria-pressed="true">All</button>
+                <button class="vc-chip" type="button" data-v="granted" aria-pressed="false"><span class="dot"></span>Granted</button>
+                <button class="vc-chip" type="button" data-v="denied" aria-pressed="false"><span class="dot"></span>Denied</button>
+                <button class="vc-chip" type="button" data-v="blocked" aria-pressed="false"><span class="dot"></span>Blocked</button>
+                <button class="vc-chip" type="button" data-v="pending" aria-pressed="false"><span class="dot"></span>Pending</button>
+                <button class="vc-chip" type="button" data-v="info" aria-pressed="false"><span class="dot"></span>Info</button>
+            </div>
+            <div class="vc-body" id="vcList" role="list"></div>
+        </div>
+        <div class="vc-panel" id="vcPanel-traffic" role="tabpanel" aria-label="API traffic">
+            <div class="vc-body">
+                <label class="inspector-live"><input type="checkbox" id="inspectorLive" checked> <span><i class="fas fa-circle"></i> live stream</span></label>
+                <div id="inspectorBody" role="log"><div class="empty-state"><i class="fas fa-plug"></i> Every API call lands here. Click an entry to copy its detail.</div></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ================= COMMAND PALETTE ================= -->
+    <div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Command palette" aria-hidden="true">
+        <div class="palette-scrim"></div>
+        <div class="palette-box">
+            <div class="palette-field">
+                <i class="fas fa-magnifying-glass"></i>
+                <input class="palette-input" id="paletteInput" type="text" autocomplete="off" spellcheck="false"
+                       placeholder="Search 8 workspaces, 89 tools and 88 API endpoints…"
+                       role="combobox" aria-expanded="true" aria-controls="paletteList" aria-autocomplete="list">
+                <span class="palette-kbd">Esc</span>
+            </div>
+            <div class="palette-list" id="paletteList" role="listbox" aria-label="Search results"></div>
+            <div class="palette-foot">
+                <span><b>&uarr;</b> <b>&darr;</b> navigate</span>
+                <span><b>Enter</b> open</span>
+                <span><b>Shift</b>+<b>Enter</b> run action</span>
+                <span class="spacer"></span>
+                <span>Workspaces &middot; Tools &middot; Actions &middot; API</span>
+            </div>
+        </div>
     </div>
 
     <nav class="bottom-nav" aria-label="Quick journey">
@@ -2236,8 +2382,12 @@
         <button class="bn-item" onclick="gotoSection('ws-audit')" aria-label="Audit"><i class="fas fa-history"></i></button>
     </nav>
 
-    <script src="/static/js/ui.js?v=5"></script>
-    <script src="/static/js/app.js?v=5"></script>
-    <script src="/static/js/main.js?v=5"></script>
+    <script src="/static/js/ui.js?v=6"></script>
+    <script src="/static/js/endpoints.js?v=6"></script>
+    <script src="/static/js/app.js?v=6"></script>
+    <script src="/static/js/organize.js?v=9"></script>
+    <script src="/static/js/console.js?v=6"></script>
+    <script src="/static/js/palette.js?v=6"></script>
+    <script src="/static/js/main.js?v=6"></script>
 </body>
 </html>

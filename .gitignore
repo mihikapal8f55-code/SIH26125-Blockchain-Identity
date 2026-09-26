@@ -12,9 +12,11 @@ blockchain_data.json
 # the app falls back to its pure-Python SPHINCS-family backend)
 liboqs/
 
-# Backups / editor cruft
+# Backups / editor cruft / archives / scratch
 *.bak
 *.bak-pq
 .vs/
 .idea/
 .vscode/
+archive/
+scratch/

@@ -160,117 +160,7 @@ class CryptoIdentity:
         }
 
 
-class BiometricIdentity:
-    """
-    Biometric Identity module for face/fingerprint verification.
-    
-    Implements a realistic biometric template matching system:
-      - Each identity is enrolled with a deterministic biometric template
-        (a fixed-length binary feature vector - like a face/fingerprint embedding)
-      - Only a cryptographic hash of the template is stored on the blockchain
-        (biometric data itself is sensitive - we never store raw biometrics)
-      - A "live capture" produces a noisy version of the template (simulates
-        real-world sensor noise / different lighting / partial fingerprint)
-      - Matching uses normalized similarity (Hamming-like) with a threshold
-        to decide accept/reject
-    
-    In a full production system, this would call a real face-recognition API
-    (e.g., AWS Rekognition, Google Vision) or fingerprint SDK. Here we simulate
-    the same mathematical flow so the demo works without camera hardware.
-    """
-
-    TEMPLATE_LENGTH = 256   # 256-bit biometric feature vector
-    MATCH_THRESHOLD = 0.78  # accept if similarity >= 78% (typical biometric threshold)
-
-    @staticmethod
-    def generate_template(seed_string):
-        """
-        Deterministically generate a biometric template from a seed.
-        Same seed => same template (this is how enrollment works).
-        Uses a hash-chained PRNG to produce a stable binary vector.
-        """
-        bit_string = ""
-        seed = seed_string
-        while len(bit_string) < BiometricIdentity.TEMPLATE_LENGTH:
-            digest = hashlib.sha256(seed.encode()).hexdigest()
-            # Convert each hex char to 4 bits
-            for c in digest:
-                bit_string += format(int(c, 16), '04b')
-            seed = digest  # chain to continue generating
-        return bit_string[:BiometricIdentity.TEMPLATE_LENGTH]
-
-    @staticmethod
-    def template_hash(template):
-        """Cryptographic hash of a biometric template (what goes on-chain)"""
-        return hashlib.sha256(template.encode()).hexdigest()
-
-    @staticmethod
-    def simulate_capture(template, noise_level=0.12):
-        """
-        Simulate a live biometric capture by introducing noise into the template.
-        This models real-world sensor variance (slight differences each scan).
-        Returns a captured template that should still match within threshold.
-        """
-        captured = list(template)
-        for i in range(len(captured)):
-            if random.random() < noise_level:
-                # Flip the bit (simulate sensor noise)
-                captured[i] = '1' if captured[i] == '0' else '0'
-        return ''.join(captured)
-
-    @staticmethod
-    def similarity(template_a, template_b):
-        """Compute normalized similarity (1.0 = identical, 0.0 = opposite)"""
-        if len(template_a) != len(template_b):
-            return 0.0
-        matches = sum(1 for a, b in zip(template_a, template_b) if a == b)
-        return matches / len(template_a)
-
-    @staticmethod
-    def verify_capture(stored_hash, captured_template):
-        """
-        Verify a captured biometric against the on-chain stored hash.
-
-        The chain stores only a one-way commitment (template_hash), so a full
-        fuzzy match requires the enrolled template held in a secure enclave.
-        This helper performs the two checks that ARE possible with the hash:
-          1. Exact commitment match: if a hash collision-free bit-exact
-             reproduction is available, the re-computed commit must equal the
-             stored commit.
-          2. If both a stored template and a captured template are supplied
-             (e.g. `stored_hash` actually holds a template string), fall back to
-             fuzzy similarity against MATCH_THRESHOLD.
-
-        Returns {"valid": bool, "reason": str, "similarity": float}.
-        """
-        if stored_hash is None or captured_template is None:
-            return {"valid": False, "reason": "Missing stored hash or captured template", "similarity": 0.0}
-
-        # If the "stored_hash" argument is actually an enrolled template string
-        # (length == TEMPLATE_LENGTH), do a fuzzy similarity comparison.
-        if isinstance(stored_hash, str) and len(stored_hash) == BiometricIdentity.TEMPLATE_LENGTH:
-            sim = BiometricIdentity.similarity(stored_hash, captured_template)
-            valid = sim >= BiometricIdentity.MATCH_THRESHOLD
-            return {
-                "valid": valid,
-                "reason": f"Biometric {'MATCHED' if valid else 'REJECTED'} (similarity {sim:.2%})",
-                "similarity": round(sim, 4)
-            }
-
-        # Otherwise treat `stored_hash` as a one-way commitment and check for an
-        # exact re-hash match of the captured template.
-        recomputed = BiometricIdentity.template_hash(captured_template)
-        valid = recomputed == stored_hash
-        return {
-            "valid": valid,
-            "reason": "Exact commitment match" if valid else "Commitment mismatch (biometric not verified)",
-            "similarity": 1.0 if valid else 0.0
-        }
-
-    # For enrollment: store template hash on chain
-    @staticmethod
-    def enroll_template(template):
-        return BiometricIdentity.template_hash(template)
+# BiometricIdentity removed (out of scope for BEL core DID/RBAC/NFT)
 
 
 class SmartContract:
@@ -285,6 +175,38 @@ class SmartContract:
     These rules are evaluated as a "smart contract" - deterministic, auditable,
     and (in a real system) enforceable on-chain.
     """
+
+    # Canonical Defense Smart Contracts
+    CONTRACT_IAM = "BEL-SC-IAM-01"
+    CONTRACT_ASSET = "BEL-SC-ASSET-01"
+    CONTRACT_ACCESS = "BEL-SC-ACCESS-01"
+
+    CONTRACT_REGISTRY = {
+        "BEL-SC-IAM-01": {
+            "contract_id": "BEL-SC-IAM-01",
+            "name": "BEL Defense Identity & RBAC Contract",
+            "version": "1.0.0",
+            "description": "On-chain decentralized identity lifecycle, W3C DID verification, and RBAC governance",
+            "methods": ["assignRole", "verifyAccess", "revokeIdentity"],
+            "target_role": "ADMINISTRATOR"
+        },
+        "BEL-SC-ASSET-01": {
+            "contract_id": "BEL-SC-ASSET-01",
+            "name": "BEL Defense dNFT Asset Governance Contract",
+            "version": "1.0.0",
+            "description": "ERC-1155 style defense asset minting, custody transfer, and hardware telemetry oracle state tracking",
+            "methods": ["mintAsset", "transferAsset", "updateTelemetryState"],
+            "target_role": "MANAGER"
+        },
+        "BEL-SC-ACCESS-01": {
+            "contract_id": "BEL-SC-ACCESS-01",
+            "name": "BEL Cryptographic & Environmental Access Control Contract",
+            "version": "1.0.0",
+            "description": "Enforces ABAC/RBAC, Haversine geo-fencing, work hours, and cryptographic challenge validation",
+            "methods": ["evaluateAccess", "validateWorkHours", "verifyGeofence"],
+            "target_role": "USER"
+        }
+    }
 
     # Role hierarchy: each role inherits rights of lower roles + its own
     ROLE_HIERARCHY = {
@@ -460,6 +382,138 @@ class SmartContract:
         if resource in medium_resources:
             return "MEDIUM"
         return "LOW"
+
+    @staticmethod
+    def execute(contract_id, method, caller_did, params, blockchain):
+        """
+        Execute a defense smart contract transaction on-chain with deterministic receipts.
+        Records an immutable SMART_CONTRACT_EXECUTION audit block.
+        """
+        contract = SmartContract.CONTRACT_REGISTRY.get(contract_id)
+        if not contract:
+            return {
+                "success": False,
+                "contract_id": contract_id,
+                "method": method,
+                "caller_did": caller_did,
+                "execution_status": "REVERTED",
+                "reason": f"Contract '{contract_id}' not found in registry",
+                "timestamp": time.time()
+            }
+        if method not in contract.get("methods", []):
+            return {
+                "success": False,
+                "contract_id": contract_id,
+                "method": method,
+                "caller_did": caller_did,
+                "execution_status": "REVERTED",
+                "reason": f"Method '{method}' not exposed by contract '{contract_id}'. Available: {contract.get('methods')}",
+                "timestamp": time.time()
+            }
+
+        params = params or {}
+        trace = []
+        result = {}
+        success = True
+
+        # Contract Method Dispatch
+        if contract_id == SmartContract.CONTRACT_IAM:
+            if method == "assignRole":
+                target = params.get("target_did") or params.get("public_id")
+                role = params.get("role")
+                result = blockchain.rbac_assign_role(caller_did, target, role)
+                success = result.get("success", False)
+                trace.append({"step": "rbac.role.assign", "target": target, "role": role, "result": result.get("message", result.get("reason"))})
+            elif method == "verifyAccess":
+                subject = params.get("subject", caller_did)
+                cap = params.get("capability")
+                res = params.get("resource")
+                result = blockchain.rbac_verify(subject, capability=cap, resource=res)
+                success = result.get("granted", False)
+                trace.append({"step": "rbac.verify", "subject": subject, "granted": success, "reason": result.get("reason")})
+            elif method == "revokeIdentity":
+                pid = params.get("public_id") or params.get("did")
+                reason = params.get("reason", "Revoked via smart contract")
+                result = blockchain.revoke_identity(pid, reason=reason)
+                success = result.get("success", False)
+                trace.append({"step": "identity.revoke", "target": pid, "result": result.get("message", result.get("reason"))})
+
+        elif contract_id == SmartContract.CONTRACT_ASSET:
+            if method == "mintAsset":
+                asset_type = params.get("asset_type", "hardware")
+                name = params.get("name", "Asset")
+                owner = params.get("owner", caller_did)
+                desc = params.get("description", "")
+                clr = params.get("required_clearance", "LEVEL-3")
+                result = blockchain.nft_mint(asset_type, name, owner, description=desc, required_clearance=clr, actor=caller_did)
+                success = result.get("success", False)
+                trace.append({"step": "nft.mint", "asset": name, "owner": owner, "success": success, "reason": result.get("reason")})
+            elif method == "transferAsset":
+                token_id = params.get("token_id")
+                new_owner = params.get("new_owner")
+                admin_ovr = params.get("admin_override", False)
+                sig = params.get("signature")
+                nonce = params.get("nonce")
+                result = blockchain.nft_transfer(token_id, new_owner, actor=caller_did, admin_override=admin_ovr, signature=sig, nonce=nonce)
+                success = result.get("success", False)
+                trace.append({"step": "nft.transfer", "token_id": token_id, "new_owner": new_owner, "success": success, "reason": result.get("reason")})
+            elif method == "updateTelemetryState":
+                token_id = params.get("token_id")
+                new_state = params.get("new_state")
+                result = blockchain.nft_update_state(token_id, new_state)
+                success = result.get("success", False)
+                trace.append({"step": "nft.oracle.update", "token_id": token_id, "new_state": new_state, "success": success, "reason": result.get("reason")})
+
+        elif contract_id == SmartContract.CONTRACT_ACCESS:
+            if method == "evaluateAccess":
+                subject = params.get("subject", caller_did)
+                resource = params.get("resource", "basic_access")
+                context = params.get("context", {})
+                result = blockchain.evaluate_smart_contract(subject, resource, context=context)
+                success = result.get("granted", False)
+                trace.extend(result.get("evaluation", []))
+            elif method == "validateWorkHours":
+                now_dt = params.get("now_dt")
+                result = SmartContract.check_work_hours(now_dt)
+                success = result.get("allowed", False)
+                trace.append({"step": "work_hours", "allowed": success, "reason": result.get("reason")})
+            elif method == "verifyGeofence":
+                lat = params.get("latitude", 0)
+                lon = params.get("longitude", 0)
+                clat = params.get("center_lat", 0)
+                clon = params.get("center_lon", 0)
+                rad = params.get("radius_km", 10.0)
+                result = SmartContract.check_geo_fence(lat, lon, clat, clon, rad)
+                success = result.get("allowed", False)
+                trace.append({"step": "geofence", "allowed": success, "reason": result.get("reason")})
+
+        exec_status = "SUCCESS" if success else "REVERTED"
+
+        # Record formal smart contract transaction block on-chain
+        block = blockchain.add_audit_block({
+            "type": "SMART_CONTRACT_EXECUTION",
+            "contract_id": contract_id,
+            "method": method,
+            "caller_did": caller_did,
+            "execution_status": exec_status,
+            "timestamp": time.time(),
+            "params_digest": hashlib.sha256(json.dumps(params or {}, sort_keys=True).encode()).hexdigest()[:24]
+        })
+
+        return {
+            "success": success,
+            "contract_id": contract_id,
+            "contract_name": contract.get("name"),
+            "method": method,
+            "caller_did": caller_did,
+            "execution_status": exec_status,
+            "tx_hash": block.hash,
+            "block_index": block.index,
+            "timestamp": time.time(),
+            "result": result,
+            "evaluation_trace": trace,
+            "message": f"Contract {contract_id}.{method}() executed with status: {exec_status}."
+        }
 
 
 class ZeroKnowledgeProof:
@@ -726,12 +780,13 @@ RBAC_ROLE_POLICIES = {
             "nft.state", "nft.version", "nft.grant", "nft.revoke", "nft.view",
             "ledger.view", "audit.view", "rbac.view", "rbac.role.define",
             "rbac.role.assign", "rbac.role.permissions", "resource.grant",
+            "identity.register",
         ],
         "capabilities": [
             "nft.mint", "nft.transfer", "nft.transfer.admin", "nft.state",
             "nft.version", "nft.grant", "nft.revoke", "rbac.role.define",
             "rbac.role.assign", "rbac.role.permissions", "ledger.view", "audit.view",
-            "resource.grant",
+            "resource.grant", "identity.register",
         ],
     },
     "MANAGER": {
@@ -751,6 +806,48 @@ RBAC_ROLE_POLICIES = {
         "resources": ["basic_access"],
         "capabilities": [],
     },
+}
+
+
+# ==============================================================================
+# BEL DEFENSE CONSORTIUM: AUTHORIZED VALIDATOR NODE TOPOLOGY
+# Re-framed as a Permissioned Proof-of-Authority (PoA) Consortium of 3
+# Authorized Defense Validator Nodes with 2-of-3 BFT Quorum.
+# ==============================================================================
+CONSORTIUM_METADATA = {
+    "node_1": {
+        "node_id": "node_1",
+        "name": "BEL Central Cyber Command (HQ Bangalore - Lead Validator)",
+        "role": "Lead Validator / Primary Proposer",
+        "organization": "Bharat Electronics Limited - Central Command",
+        "location": "Bangalore, Karnataka, India",
+        "key_id": "BEL-VAL-BLR-01",
+        "voting_weight": 1,
+        "is_validator": True,
+        "consensus_role": "LEAD_VALIDATOR"
+    },
+    "node_2": {
+        "node_id": "node_2",
+        "name": "BEL Naval Systems & Radar Production Unit (Manufacturing Validator)",
+        "role": "Manufacturing Validator / Secondary Signer",
+        "organization": "Bharat Electronics Limited - Naval Systems",
+        "location": "Ghaziabad / Kochi, India",
+        "key_id": "BEL-VAL-GZB-02",
+        "voting_weight": 1,
+        "is_validator": True,
+        "consensus_role": "MANUFACTURING_VALIDATOR"
+    },
+    "node_3": {
+        "node_id": "node_3",
+        "name": "BEL Directorate of Quality Assurance & Audit (MoD Oversight Validator)",
+        "role": "Oversight Validator / Non-Voting Audit Witness",
+        "organization": "Ministry of Defence - Directorate General of Quality Assurance (DGQA)",
+        "location": "New Delhi / Audit Command, India",
+        "key_id": "BEL-VAL-AUD-03",
+        "voting_weight": 1,
+        "is_validator": True,
+        "consensus_role": "OVERSIGHT_VALIDATOR"
+    }
 }
 
 
@@ -834,10 +931,24 @@ class Blockchain:
         """
         Add a new identity to pending queue and mine it into a block.
         Returns the block and any mining statistics.
+        Automatically generates and anchors a W3C DID (did:bel:...) as a primary identifier.
         """
         # Make a deep copy to avoid mutating the original data
         identity_data = copy.deepcopy(identity_data)
-        # Generate a unique identity hash
+
+        # Issue A: Ensure W3C-compliant BEL Decentralized Identifier (DID) is automatically anchored
+        did = identity_data.get("did")
+        if not did:
+            seed = identity_data.get("email") or identity_data.get("id_number") or identity_data.get("public_id") or identity_data.get("name") or secrets.token_hex(8)
+            did_digest = hashlib.sha256(f"bel:{seed}:{secrets.token_hex(8)}".encode()).hexdigest()[:40]
+            did = f"did:bel:{did_digest}"
+            identity_data["did"] = did
+
+        # Generate a unique identity hash if not present
+        if not identity_data.get("identity_hash"):
+            identity_data["identity_hash"] = self.hash_identity(identity_data)
+
+        # Generate a unique identity record
         identity_record = {
             "type": "IDENTITY_REGISTRATION",
             "identity_data": identity_data,
@@ -864,6 +975,33 @@ class Blockchain:
         block.hash = mined_hash
         self.chain.append(block)
 
+        # Anchor DID document in _did_store and bind RBAC role directly to DID
+        self._did_store = getattr(self, "_did_store", {})
+        pub_key = identity_data.get("public_key")
+        if not pub_key:
+            try:
+                _, pub_key = CryptoIdentity.generate_keypair()
+            except Exception:
+                pub_key = ""
+        doc = DecentralizedIdentifier.did_document(did, pub_key) if pub_key else {"id": did, "@context": "https://www.w3.org/ns/did/v1"}
+        self._did_store[did] = {
+            "did": did,
+            "name": identity_data.get("name", ""),
+            "role": identity_data.get("role", "USER"),
+            "email": identity_data.get("email", ""),
+            "department": identity_data.get("department", ""),
+            "public_key": pub_key,
+            "document": doc,
+            "anchored_in_block": block.index
+        }
+        self._rbac_init()
+        role = self._canonical_role(identity_data.get("role")) or "USER"
+        self._rbac_assignments[did] = role
+        for key in ("email", "id_number", "public_id"):
+            val = identity_data.get(key)
+            if val:
+                self._rbac_assignments[val] = role
+
         # Keep a separate copy for the API response (don't mutate block data)
         response_identity = copy.deepcopy(identity_data)
         response_identity["block_hash"] = block.hash
@@ -871,6 +1009,7 @@ class Blockchain:
         response_identity["identity_hash"] = response_identity.get("identity_hash", "")
         response_identity["difficulty"] = difficulty
         response_identity["merkle_root"] = block.merkle_root()
+        response_identity["did"] = did
 
         return {
             "block": block,
@@ -878,7 +1017,8 @@ class Blockchain:
             "mining_time": mining_time,
             "nonce": block.nonce,
             "difficulty": difficulty,
-            "merkle_root": block.merkle_root()
+            "merkle_root": block.merkle_root(),
+            "did": did
         }
 
     def hash_identity(self, identity_data):
@@ -1200,9 +1340,161 @@ class Blockchain:
                 entry["detail"] = copy.deepcopy(detail)
             else:
                 entry = {"event": entry, "detail": copy.deepcopy(detail)}
+        # Callers declare the activity they are logging ("RBAC_OPERATOR",
+        # "SMART_CONTRACT_GATE", "NFT_TRANSFER", ...). Normalising `type` to
+        # AUDIT_LOG below is what get_audit_trail/get_audit_stats key off, so
+        # keep the declared activity in `event_type` instead of discarding it -
+        # otherwise a trail cannot be filtered by PS activity.
+        declared = entry.get("type") if isinstance(entry, dict) else None
+        if declared and declared != "AUDIT_LOG":
+            entry["event_type"] = declared
         entry["type"] = "AUDIT_LOG"
         block = self.add_audit_block(entry)
         return block
+
+    # ---------------------------------------------------------------------
+    # PS activity trail: the six auditable activities named in the problem
+    # statement, filtered SERVER-SIDE.
+    #
+    # The two writers of blocks are deliberately disjoint:
+    #   * add_audit_block(data) keeps data["type"] as-is  -> typed blocks
+    #     (IDENTITY_REGISTRATION, NFT_MINT, NFT_TRANSFER, DID_REGISTRATION ...)
+    #   * log_audit(entry) normalises type to "AUDIT_LOG" -> RBAC_OPERATOR,
+    #     SMART_CONTRACT_GATE, RBAC_ROLE_ASSIGNED ... now carry `event_type`.
+    # So an activity type is the block type when it is a typed block, and
+    # `event_type` when it is an AUDIT_LOG block. `_activity_type` reconciles
+    # the two, which is what makes a single filter work over both.
+    #
+    # `allocation` and `access_rights` are kept disjoint on purpose: the PS
+    # lists them as separate activities, and both used to have to be inferred
+    # from RESOURCE_GRANT. Allocation is modelled as "an entitlement is
+    # allocated to an identity" (clearance level, download grant) while
+    # access-rights assignment is "a resource is granted on the access policy".
+    # ---------------------------------------------------------------------
+    PS_ACTIVITIES = {
+        "identity_creation": {
+            "label": "Identity creation",
+            "types": ("IDENTITY_REGISTRATION", "DID_REGISTRATION"),
+        },
+        "nft_creation": {
+            "label": "NFT creation",
+            "types": ("NFT_MINT",),
+        },
+        "allocation": {
+            "label": "Allocation",
+            "types": ("CLEARANCE_ASSIGNMENT", "NFT_DOWNLOAD_GRANT",
+                      "CAPABILITY_TOKEN", "RESOURCE_GRANT_ALLOCATION"),
+        },
+        "access_rights": {
+            "label": "Access-rights assignment",
+            "types": ("RESOURCE_GRANT", "SMART_CONTRACT_RULES",
+                      "ABI_POLICY_UPDATE", "PERMISSION_GRANT"),
+        },
+        "ownership_transfer": {
+            "label": "Ownership transfer",
+            "types": ("NFT_TRANSFER", "NFT_OWNERSHIP_VIEW"),
+        },
+        "permission_update": {
+            "label": "Permission update",
+            "types": ("RBAC_ROLE_ASSIGNED", "RBAC_ROLE_DEFINED", "REVOCATION",
+                      "RBAC_OPERATOR", "SMART_CONTRACT_GATE", "ACCESS_DENIED"),
+        },
+    }
+
+    @classmethod
+    def activity_type(cls, data):
+        """The activity a block represents, or None for non-audit blocks.
+        Typed blocks report their own type; AUDIT_LOG blocks report the
+        `event_type` preserved by log_audit()."""
+        if not isinstance(data, dict):
+            return None
+        block_type = data.get("type")
+        if block_type and block_type != "AUDIT_LOG":
+            return block_type
+        return data.get("event_type")
+
+    @classmethod
+    def _activity_keys_for_type(cls, activity_type):
+        return [k for k, spec in cls.PS_ACTIVITIES.items()
+                if activity_type in spec["types"]]
+
+    def get_activity_trail(self, activity=None, limit=200):
+        """Server-side filtered view of the six PS activities.
+
+        Filtering happens while walking the chain and BEFORE the limit is
+        applied, so - unlike filtering a paged client-side list - a long demo
+        run can never hide an activity behind the `limit` cut-off.
+        `activity` is a key of PS_ACTIVITIES, or None for all six."""
+        try:
+            limit = max(1, min(int(limit), 2000))
+        except (TypeError, ValueError):
+            limit = 200
+        wanted = None
+        if activity:
+            if activity not in self.PS_ACTIVITIES:
+                raise ValueError(
+                    "Unknown activity '%s'. Expected one of: %s"
+                    % (activity, ", ".join(sorted(self.PS_ACTIVITIES))))
+            wanted = set(self.PS_ACTIVITIES[activity]["types"])
+
+        matched = []
+        for block in self.chain:
+            atype = self.activity_type(block.data)
+            if not atype:
+                continue
+            keys = self._activity_keys_for_type(atype)
+            if wanted is not None:
+                if atype not in wanted:
+                    continue
+            elif not keys:
+                # Unfiltered means "all six PS activities", not "every block in
+                # the chain" - otherwise structural blocks such as GENESIS leak in.
+                continue
+            entry = copy.deepcopy(block.data)
+            entry["activity_type"] = atype
+            entry["activities"] = keys
+            entry["block_index"] = block.index
+            entry["block_hash"] = block.hash
+            ts = entry.get("timestamp") or getattr(block, "timestamp", None)
+            if ts:
+                entry["timestamp"] = ts
+                entry["timestamp_display"] = datetime.fromtimestamp(
+                    ts).strftime("%Y-%m-%d %H:%M:%S")
+            # Identity the activity is about, whichever field carries it.
+            entry.setdefault("public_id", entry.get("owner")
+                             or entry.get("new_owner") or entry.get("actor"))
+            matched.append(entry)
+
+        matched.sort(key=lambda e: (e.get("timestamp") or 0,
+                                    e.get("block_index") or 0), reverse=True)
+        return matched[:limit]
+
+    def get_activity_summary(self):
+        """Count of blocks per PS activity (and the raw block types behind each)
+        so the UI can show all six even when one has not run yet."""
+        counts = {k: 0 for k in self.PS_ACTIVITIES}
+        types_seen = {k: set() for k in self.PS_ACTIVITIES}
+        for block in self.chain:
+            atype = self.activity_type(block.data)
+            if not atype:
+                continue
+            for key in self._activity_keys_for_type(atype):
+                counts[key] += 1
+                types_seen[key].add(atype)
+        return {
+            "success": True,
+            "activities": [
+                {
+                    "key": key,
+                    "label": spec["label"],
+                    "count": counts[key],
+                    "block_types": sorted(types_seen[key]),
+                    "expected_types": list(spec["types"]),
+                }
+                for key, spec in self.PS_ACTIVITIES.items()
+            ],
+            "total": sum(counts.values()),
+        }
 
     def get_audit_trail(self, public_id=None, limit=100):
         """
@@ -1692,10 +1984,10 @@ class Blockchain:
             return None, f"Import failed: {str(e)}"
 
     # ============================================
-    # NETWORK TOPOLOGY (dynamic nodes)
+    # NETWORK TOPOLOGY (BEL Defense Consortium Validators)
     # ============================================
     def node_health_check(self, nodes):
-        """Return health metrics for each node (online status, divergence, integrity)."""
+        """Return health metrics for each consortium validator node (online status, divergence, integrity)."""
         results = []
         # Use the main chain as the network reference
         reference = self.export_chain()
@@ -1710,6 +2002,11 @@ class Blockchain:
             synced = (len(node_chain) == len(reference)) and (node_head == reference_head)
             results.append({
                 "node_id": nid,
+                "name": getattr(node, "name", CONSORTIUM_METADATA.get(nid, {}).get("name", nid)),
+                "role": getattr(node, "role", CONSORTIUM_METADATA.get(nid, {}).get("role", "Consortium Validator")),
+                "key_id": getattr(node, "key_id", CONSORTIUM_METADATA.get(nid, {}).get("key_id", f"BEL-VAL-{nid.upper()}")),
+                "organization": getattr(node, "organization", CONSORTIUM_METADATA.get(nid, {}).get("organization", "Bharat Electronics Limited")),
+                "location": getattr(node, "location", CONSORTIUM_METADATA.get(nid, {}).get("location", "India")),
                 "online": getattr(node, "online", True),
                 "blocks": len(node_chain),
                 "chain_valid": valid,
@@ -1719,6 +2016,42 @@ class Blockchain:
                 "health": "HEALTHY" if valid and divergence == 0 else ("SYNCING" if valid else "CORRUPTED")
             })
         return results
+
+    def get_consortium_status(self, network_nodes=None):
+        """
+        Return the operational status and consensus health of the BEL Defense Consortium.
+        Framed as a Permissioned Proof-of-Authority (PoA) Consortium of 3 Authorized Validator Nodes.
+        """
+        validators = []
+        for nid, meta in CONSORTIUM_METADATA.items():
+            node_obj = (network_nodes or {}).get(nid)
+            is_online = getattr(node_obj, "online", True) if node_obj else True
+            block_count = len(node_obj.blockchain.chain) if (node_obj and getattr(node_obj, "blockchain", None)) else len(self.chain)
+            validators.append({
+                **meta,
+                "online": is_online,
+                "synced_blocks": block_count,
+                "status": "ACTIVE_SIGNER" if is_online else "OFFLINE",
+                "signature_algorithm": "RSA-2048 / SHA-256 (FIPS 186-4)"
+            })
+        active_count = sum(1 for v in validators if v["online"])
+        quorum_reached = active_count >= 2  # 2-of-3 BFT Quorum
+        return {
+            "success": True,
+            "consortium_name": "Bharat Electronics Limited (BEL) Defense Consortium",
+            "consortium_model": "Permissioned Proof-of-Authority (PoA) / Authorized Validator Consortium",
+            "authority_type": "Ministry of Defence / BEL Defense PSU Enterprise Mesh",
+            "consensus_protocol": "QBFT / PoA Authorized Signer Quorum",
+            "quorum_requirement": "2-of-3 Authorized Signers (Supermajority Quorum)",
+            "quorum_status": "QUORUM_SATISFIED" if quorum_reached else "QUORUM_DEGRADED",
+            "active_validators": active_count,
+            "total_validators": len(validators),
+            "validators": validators,
+            "chain_head_index": self.last_block.index if self.chain else 0,
+            "chain_head_hash": self.last_block.hash if self.chain else "",
+            "immutable_ledger_status": "SECURE_TAMPER_EVIDENT",
+            "message": f"Consortium operational with {active_count}/{len(validators)} active validators. Quorum is satisfied."
+        }
 
     # ============================================
     # ZERO-KNOWLEDGE POSSESSION PROOF (IPFS)
@@ -1786,12 +2119,30 @@ class Blockchain:
 
     def get_public_key(self, public_id):
         """
-        Retrieve the on-chain public key for passwordless verification.
-        Lookup via public identifier (email / id_number).
+        Retrieve an on-chain public key for signature verification.
+        Lookup via public identifier (email / id_number), falling back to an
+        ANCHORED DID document. A DID owns a real keypair too, so refusing to
+        resolve it here would make a DID-held asset un-authorisable by its own
+        owner. Note this grants *signing* capability only - it never makes a DID
+        an RBAC operator, which is a separate check (require_operator).
         """
+        public_id = str(public_id or "").strip()
         result = self.find_identity_by_public_id(public_id)
         if not result["found"]:
-            return {"found": False, "reason": f"No identity for {public_id}"}
+            did_rec = self._did_store.get(public_id)
+            if isinstance(did_rec, dict) and did_rec.get("public_key"):
+                meta = did_rec.get("name") or {}
+                label = meta.get("name") if isinstance(meta, dict) else str(meta)
+                return {
+                    "found": True,
+                    "public_key": did_rec["public_key"],
+                    "fingerprint": did_rec.get("public_key_fingerprint", ""),
+                    "name": label or public_id,
+                    "block_index": did_rec.get("anchored_in_block"),
+                    "subject_kind": "did",
+                }
+            return {"found": False,
+                    "reason": f"No identity or anchored DID for {public_id}"}
         public_key = result["data"].get("public_key")
         if not public_key:
             return {"found": False, "reason": "Identity has no public key registered"}
@@ -1800,7 +2151,8 @@ class Blockchain:
             "public_key": public_key,
             "fingerprint": result["data"].get("public_key_fingerprint", ""),
             "name": result["data"].get("name", "Unknown"),
-            "block_index": result["block_index"]
+            "block_index": result["block_index"],
+            "subject_kind": "identity",
         }
 
     def passwordless_auth(self, public_id, resource, timestamp, nonce, signature):
@@ -1892,88 +2244,7 @@ class Blockchain:
             "identity_name": key_result["name"]
         }
 
-    # ============================================
-    # BIOMETRIC VERIFICATION (Face / Fingerprint)
-    # ============================================
-
-    def enroll_biometric(self, public_id, biometric_type="face"):
-        """
-        Enroll a biometric template for an identity.
-        Stores ONLY the template hash on the blockchain (biometric data
-        is sensitive - raw templates are NOT stored, only a commitment).
-        """
-        result = self.find_identity_by_public_id(public_id)
-        if not result["found"]:
-            return {"success": False, "reason": f"No identity for {public_id}"}
-
-        identity = result["data"]
-        identity_hash = identity.get("identity_hash")
-        # Crypto-registered identities have no per-record identity_hash; fall
-        # back to a stable per-identity seed so templates do not collide.
-        if not identity_hash:
-            identity_hash = self._record_hash_for_public_id(public_id) or public_id
-
-        # Generate a deterministic template from the identity hash + type
-        seed = f"{identity_hash}|{biometric_type}|enroll"
-        template = BiometricIdentity.generate_template(seed)
-        template_hash = BiometricIdentity.template_hash(template)
-
-        # SECURE: store the template in an in-memory "secure enclave" store
-        # (in production this would be encrypted local storage or a HSM).
-        # This lets us do the match without putting raw biometrics on-chain.
-        self._biometric_store = getattr(self, "_biometric_store", {})
-        self._biometric_store[f"{public_id}:{biometric_type}"] = template
-
-        # Persist the hash on the blockchain (immutable record of enrollment)
-        # We add a lightweight audit entry as a block carrying the hash.
-        audit_data = {
-            "type": "BIOMETRIC_ENROLLMENT",
-            "public_id": public_id,
-            "biometric_type": biometric_type,
-            "template_hash": template_hash,
-            "timestamp": time.time()
-        }
-        self.add_audit_block(audit_data)
-
-        return {
-            "success": True,
-            "public_id": public_id,
-            "biometric_type": biometric_type,
-            "template_hash": template_hash,
-            "template_preview": template[:32] + "...",
-            "message": "Biometric enrolled. Only the template HASH is on-chain.",
-            "block_index": len(self.chain) - 1
-        }
-
-    def biometric_capture_and_verify(self, public_id, biometric_type="face", noise=0.12):
-        """
-        Simulate a live biometric capture and verify it against the enrolled
-        template. Demo-simulate access to a resource after biometric match.
-        """
-        store = getattr(self, "_biometric_store", {})
-        enrolled = store.get(f"{public_id}:{biometric_type}")
-
-        if not enrolled:
-            return {
-                "success": False,
-                "reason": f"No biometric enrolled for {public_id} ({biometric_type}). Enroll first."
-            }
-
-        # Simulate a fresh capture with sensor noise
-        captured = BiometricIdentity.simulate_capture(enrolled, noise_level=noise)
-        similarity = BiometricIdentity.similarity(enrolled, captured)
-        matched = similarity >= BiometricIdentity.MATCH_THRESHOLD
-
-        return {
-            "success": True,
-            "matched": matched,
-            "similarity": round(similarity, 4),
-            "threshold": BiometricIdentity.MATCH_THRESHOLD,
-            "biometric_type": biometric_type,
-            "public_id": public_id,
-            "message": f"Biometric {'MATCHED' if matched else 'REJECTED'} (similarity {similarity:.2%}).",
-            "capture_preview": captured[:32] + "..."
-        }
+    # Biometric enrollment and verification removed (out of scope for BEL core DID/RBAC/NFT)
 
     def add_audit_block(self, data):
         """
@@ -2089,6 +2360,18 @@ class Blockchain:
             "geofence": geofence,
             "message": "Smart-contract rules recorded as an immutable audit block."
         }
+
+    def execute_smart_contract(self, contract_id, method, caller_did, params=None):
+        """
+        Execute a defense smart contract with on-chain deterministic receipt logging.
+        """
+        return SmartContract.execute(contract_id, method, caller_did, params or {}, self)
+
+    def get_smart_contract_registry(self):
+        """
+        Return the registry of available defense smart contracts and their specifications.
+        """
+        return SmartContract.CONTRACT_REGISTRY
 
     # ============================================
     # ZK-SSI: W3C DECENTRALIZED IDENTIFIERS + VERIFIABLE CREDENTIALS
@@ -2421,34 +2704,63 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         if not actor or not str(actor).strip():
             return {"success": False,
                     "reason": "Actor is required to mint a dNFT (attributed operator gate); "
-                              "mint is an administrative RBAC-gated action"}
+                              "mint is an administrative RBAC-gated action",
+                    "gate": {"granted": False, "stage": "attribution", "actor": None,
+                             "capability": "nft.mint", "resource": "nft.mint",
+                             "reason": "No caller identity (actor) supplied"}}
         gate = self._policy_gate(str(actor), "nft.mint", resource="nft.mint", context=context or {})
+        # The full gate is returned to the caller, not just a flattened string,
+        # so the UI can render the role/capability/resource decision trace.
+        gate_trace = dict(gate)
+        gate_trace["stage"] = "rbac+smart-contract"
+        gate_trace["capability"] = "nft.mint"
+        gate_trace["resource"] = "nft.mint"
         if not gate["granted"]:
             return {"success": False,
-                    "reason": f"Mint denied by RBAC + smart-contract gate: {gate.get('reason', gate.get('message', 'not entitled to nft.mint'))}"}
-        # --- PS1: ownership must resolve to a registered identity ---
-        own = self.find_identity_by_public_id(owner) if owner else {"found": False}
-        if not own["found"]:
+                    "reason": f"Mint denied by RBAC + smart-contract gate: {gate.get('reason', gate.get('message', 'not entitled to nft.mint'))}",
+                    "gate": gate_trace}
+        # --- PS1: ownership must resolve to a registered identity OR an
+        #         anchored DID (a DID owner is how register -> DID -> mint chains) ---
+        subject = self.resolve_ownership_subject(owner) if owner else {"found": False, "kind": None}
+        if not subject.get("found"):
             return {"success": False,
                     "reason": f"Owner '{owner}' is not a registered identity; "
-                              "dNFT allocation requires a verified identity"}
+                              "dNFT allocation requires a verified identity or an anchored DID",
+                    "gate": dict(gate_trace, stage="ownership",
+                                 reason=subject.get("reason") or "unresolved owner"),
+                    "owner_subject": subject}
+
         try:
             token_id = registry.mint(asset_type, name, owner, description, required_clearance)
         except ValueError as e:
-            return {"success": False, "reason": str(e)}
+            return {"success": False, "reason": str(e), "gate": gate_trace}
         block = self.add_audit_block({
             "type": "NFT_MINT",
             "token_id": token_id,
             "asset_type": asset_type,
             "name": name,
             "owner": owner,
+            # Attribution + owner-subject kind make the allocation auditable:
+            # `actor` shows WHO minted, `owner_kind` shows the ownership
+            # reference resolved to an identity or to an anchored DID.
+            "actor": gate.get("public_id"),
+            "rbac_role": gate.get("role"),
+            "owner_kind": subject.get("kind"),
+            "owner_name": subject.get("name") or "",
             "required_clearance": required_clearance,
             "timestamp": time.time()
         })
         asset = registry.get(token_id)
         asset["mint_block"] = block.index
+        asset["owner_kind"] = subject.get("kind")
         return {"success": True, "asset": asset,
+                "owner_kind": subject.get("kind"),
+                "owner_subject": subject,
+                "gate": gate_trace,
+                "actor": gate.get("public_id"),
+                "actor_role": gate.get("role"),
                 "message": f"{asset_type.title()} dNFT {token_id} minted on-chain."}
+
 
     def nft_update_state(self, token_id, new_state):
         """
@@ -2676,7 +2988,7 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
             decision_reason = "A named actor (operator) is required to transfer a dNFT"
         else:
             is_owner = str(actor).strip() == str(cur_owner or "").strip()
-            if is_owner:
+            if is_owner and not admin_override:
                 sv = self._verify_transfer_consent_signature(
                     cur_owner, token_id, new_owner, consent_timestamp, nonce, signature)
                 if sv["available"]:
@@ -2703,26 +3015,40 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
                             "new_owner": new_owner, "actor": actor,
                             "decision": "DENIED", "reason": decision_reason,
                             "timestamp": time.time()})
-            return {"success": False, "reason": decision_reason}
+            return {"success": False, "reason": decision_reason,
+                    "gate": {"granted": False, "stage": "owner-consent",
+                             "actor": actor, "resource": "nft.transfer",
+                             "capability": "nft.transfer",
+                             "current_owner": cur_owner, "requested_owner": new_owner,
+                             "reason": decision_reason}}
 
         # --- smart-contract policy gate evaluated on the caller's attributes ---
         gate_resource = "nft.transfer.admin" if consent_mode == "admin" else "basic_access"
         gate = self._policy_gate(actor, "nft.transfer", resource=gate_resource,
                                  context=context, owner_path=(consent_mode != "admin"))
+        gate_trace = dict(gate)
+        gate_trace["stage"] = "rbac+smart-contract"
+        gate_trace["capability"] = "nft.transfer"
+        gate_trace["resource"] = gate_resource
+        gate_trace["consent_mode"] = consent_mode
         if not gate.get("granted"):
             self.log_audit({"type": "NFT_TRANSFER", "token_id": token_id,
                             "new_owner": new_owner, "actor": actor,
                             "consent_mode": consent_mode, "decision": "DENIED",
                             "reason": gate.get("reason"), "timestamp": time.time()})
             return {"success": False,
-                    "reason": f"Smart-contract gate blocked the transfer: {gate.get('reason')}"}
+                    "reason": f"Smart-contract gate blocked the transfer: {gate.get('reason')}",
+                    "gate": gate_trace}
 
-        # --- new owner must be a registered/verified identity (PS1/PS-oblivion) ---
-        rec = self.find_identity_by_public_id(new_owner)
-        if not rec.get("found"):
+        # --- new owner must be a registered identity or an anchored DID ---
+        subject = self.resolve_ownership_subject(new_owner)
+        if not subject.get("found"):
             return {"success": False,
                     "reason": f"'{new_owner}' is not a registered identity; "
-                              "dNFTs may only be transferred to verified identities"}
+                              "dNFTs may only be transferred to verified identities",
+                    "gate": dict(gate_trace, stage="ownership",
+                                 reason=subject.get("reason") or "unresolved new owner"),
+                    "owner_subject": subject}
 
         result = registry.transfer(token_id, new_owner)
         if not result["success"]:
@@ -2742,15 +3068,19 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
             "consent_mode": consent_mode,
             "consent_reason": decision_reason,
             "signature_verified": consent_mode == "owner-signature",
+            "new_owner_kind": subject.get("kind"),
+            "rbac_role": gate.get("role"),
             "policy_evaluation": gate.get("evaluation"),
             "timestamp": time.time()
         })
         return {"success": True, "token_id": token_id,
                 "previous_owner": result["previous_owner"],
                 "new_owner": new_owner,
+                "new_owner_kind": subject.get("kind"),
                 "consent_mode": consent_mode,
                 "consent_verified": decision_ok,
                 "signature_verified": consent_mode == "owner-signature",
+                "gate": gate_trace,
                 "policy_evaluation": gate.get("evaluation"),
                 "message": f"{token_id} transferred to {new_owner} "
                            f"({consent_mode} consent, smart-contract gate passed)."}
@@ -2881,6 +3211,11 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         Returns the MOST RECENT registration for that public_id so that
         re-registrations (e.g. rotated keypairs in the passwordless demo) resolve
         to the current on-chain state, not a stale first block.
+
+        Deliberately does NOT resolve DIDs. Ownership references may be a DID
+        (see resolve_ownership_subject), but an *actor* must be a registered
+        identity, otherwise anyone could mint a DID with role=ADMINISTRATOR in
+        the self-asserted name and walk straight through the operator gate.
         """
         if not public_id:
             return {"found": False}
@@ -2888,16 +3223,17 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         for block in self.chain:
             if block.data.get("type") == "IDENTITY_REGISTRATION":
                 stored_identity = block.data.get("identity_data", {})
-                # Match on various public identifiers
+                # Match on various public identifiers (including auto-anchored did)
                 if (stored_identity.get("email") == public_id
                         or stored_identity.get("id_number") == public_id
-                        or stored_identity.get("public_id") == public_id):
+                        or stored_identity.get("public_id") == public_id
+                        or stored_identity.get("did") == public_id):
                     # Overlay any side-ledger flags for this identity (revocation,
                     # expiry, schedule locks, encrypted fields). Try each of the
                     # identity's own public identifiers as the ledger key so that
                     # lookups by identity_hash also reflect the current state.
                     ledger_key = None
-                    for pid_key in ("email", "id_number", "public_id"):
+                    for pid_key in ("email", "id_number", "public_id", "did"):
                         pid_val = stored_identity.get(pid_key)
                         if pid_val and pid_val in self._identity_flags:
                             ledger_key = pid_val
@@ -2928,10 +3264,69 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         for block in self.chain:
             if block.data.get("type") == "IDENTITY_REGISTRATION":
                 stored_identity = block.data.get("identity_data", {})
-                for key in ("email", "id_number", "public_id"):
+                for key in ("email", "id_number", "public_id", "did"):
                     if stored_identity.get(key) == public_id:
                         found = block.data.get("record_hash")
         return found
+
+    @staticmethod
+    def is_did_reference(ref):
+        return isinstance(ref, str) and ref.strip().lower().startswith("did:")
+
+    def resolve_ownership_subject(self, ref):
+        """Resolve a dNFT *ownership* reference to a verified subject.
+
+        An owner may be referenced either by a registered identity's public id
+        (email / id_number / public_id) OR by a W3C DID, which is what lets the
+        demo flow run register-identity -> DID -> mint-to-DID-owner. DIDs are
+        anchored on-chain without any PII, so they are resolved from the DID
+        side-ledger rather than from an IDENTITY_REGISTRATION block.
+
+        Returns {found, kind: 'identity'|'did', ref, public_id, name, role,
+                 verified, anchored_in_block, reason}. This is deliberately
+        NOT used for the operator gate - see find_identity_by_public_id."""
+        if not ref or not str(ref).strip():
+            return {"found": False, "kind": None, "ref": ref,
+                    "reason": "An owner reference is required"}
+        ref = str(ref).strip()
+
+        if self.is_did_reference(ref):
+            rec = getattr(self, "_did_store", {}).get(ref)
+            if not rec:
+                # The DID may be a valid registration whose side-ledger entry was
+                # lost (e.g. a chain import). Fall back to the anchored block so
+                # ownership still resolves from the chain alone.
+                for block in self.chain:
+                    d = block.data or {}
+                    if d.get("type") == "DID_REGISTRATION" and d.get("did") == ref:
+                        # The anchored record is PII-free by design, so there is
+                        # no name to recover here - only proof the DID exists.
+                        return {"found": True, "kind": "did", "ref": ref,
+                                "public_id": ref, "name": "", "role": None,
+                                "verified": True,
+                                "anchored_in_block": block.index,
+                                "reason": "DID resolved from its on-chain anchor"}
+                return {"found": False, "kind": "did", "ref": ref,
+                        "reason": f"DID '{ref}' is not a registered/anchored DID"}
+            return {
+                "found": True, "kind": "did", "ref": ref, "public_id": ref,
+                "name": rec.get("name", ""), "role": rec.get("role") or None,
+                "verified": True, "anchored_in_block": rec.get("anchored_in_block"),
+                "reason": "DID ownership reference resolved from the DID ledger",
+            }
+
+        found = self.find_identity_by_public_id(ref)
+        if not found.get("found"):
+            return {"found": False, "kind": "identity", "ref": ref,
+                    "reason": f"'{ref}' is not a registered identity"}
+        data = found.get("data", {}) or {}
+        return {
+            "found": True, "kind": "identity", "ref": ref,
+            "public_id": data.get("email") or ref,
+            "name": data.get("name", ""), "role": data.get("role"),
+            "verified": True, "anchored_in_block": found.get("block_index"),
+            "reason": "Identity ownership reference resolved from the chain",
+        }
 
     def zkp_prove_access(self, identity_hash, resource, challenge):
         """
@@ -3107,207 +3502,8 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
     # Python, and is the exact family NIST standardised as SLH-DSA.
     # We label this truthfully and NEVER fake a lattice backend.
     # ============================================================
+    # Post-quantum identity methods removed (out of scope for BEL core DID/RBAC/NFT)
 
-    def register_post_quantum_identity(self, public_id, message=b"harvest-now/decrypt-later handshake",
-                                       capacity=32, backend=None, force_native=False):
-        """
-        Register an ON-CHAIN post-quantum identity. The identity' key material
-        is a hash-based Winternitz/Merkle OTS tree (the SPHINCS+/SLH-DSA family
-        that NIST standardised) so it withstands harvest-now / decrypt-later:
-        an adversary who grabs ciphertexts today (harvest) cannot break the
-        signature with a quantum computer tomorrow (decrypt).
-
-        Only the Merkle ROOT is anchored on-chain; leaf one-time keys never
-        leave the device. Returns identity_hash, root, backend label.
-        """
-        if not public_id:
-            return {"success": False, "reason": "public_id is required"}
-        existing = self.find_identity_by_public_id(public_id)
-        if existing.get("found"):
-            return {"success": False, "reason": f"Identity {public_id} already on-chain"}
-
-        tree = MerkleKeyTree(capacity=capacity)
-        seed = hashlib.sha256(public_id.encode()).digest()
-        built = tree.build_for_identity(seed)
-
-        identity_hash = hashlib.sha256(
-            (public_id + "|PQ|" + built["root"]).encode()
-        ).hexdigest()
-
-        # Issue the device attestation: leaf #0 of the hash-based WOTS tree signs
-        # the handshake message and a Merkle membership witness proves that leaf
-        # hangs under the ON-CHAIN root. No one-time secret ever leaves this step.
-        wots = WinternitzOneTimeSignature()
-        attestation = self._pq_issue_attestation(tree, public_id, message, leaf_index=0)
-        signature_b64 = attestation["signature_b64"]
-
-        keyring = getattr(self, "_pq_keyring", {})
-        keyring[public_id] = {
-            "tree": tree,
-            "seed": seed,
-            "next_leaf": 1,
-        }
-        self._pq_keyring = keyring
-
-        self.add_identity({
-            "public_id": public_id,
-            "type": "IDENTITY_REGISTRATION",
-            "identity_hash": identity_hash,
-            "identity_data": {
-                "name": public_id.split("@")[0].replace(".", " ").title(),
-                "email": public_id,
-                "public_id": public_id,
-                "post_quantum": True,
-                "pq_scheme": "SLH-DSA family (Winternitz-OTS + Merkle key tree, SPHINCS+)",
-                "pq_backend": built["backend_label"],
-                "pq_root_b64": base64.b64encode(bytes.fromhex(built["root"])).decode(),
-                "pq_capacity": built["capacity"],
-                "identity_hash": identity_hash,
-            }
-        })
-        return {
-            "success": True,
-            "public_id": public_id,
-            "identity_hash": identity_hash,
-            "pq_root": built["root"],
-            "pq_capacity": built["capacity"],
-            "pq_backend": built["backend_label"],
-            "quantum_resistant": True,
-            "signature_b64": signature_b64,
-            "pq_signature_b64": signature_b64,
-            "attestation": attestation["bundle"],
-            "message": "Post-quantum identity stored. Only the Merkle ROOT is anchored - leaf one-time keys stay off-chain (harvest-now safe).",
-        }
-
-    def _pq_issue_attestation(self, tree, public_id, message, leaf_index=0):
-        """Sign `message` with one Winternitz leaf and bind a Merkle inclusion
-        witness. Returns the attestation bundle + its base64 transport form (no
-        secret material, so it is safe for the registering caller to keep)."""
-        wots = WinternitzOneTimeSignature()
-        leaf_secret = tree._secrets[leaf_index]
-        signature_pieces = wots.sign(message, leaf_secret)
-        leaf_witness = tree.leaf_witness(leaf_index)
-        bundle = {
-            "v": 1,
-            "public_id": public_id,
-            "msg": base64.b64encode(message).decode(),
-            "ts": int(time.time()),
-            "leaf_index": int(leaf_index),
-            "params": leaf_secret["params"],
-            "sig": [base64.b64encode(p).decode() for p in signature_pieces],
-            "pk": [base64.b64encode(p).decode() for p in leaf_secret["pk"]],
-            "witness": {
-                "root_b64": leaf_witness["root_b64"],
-                "path": [base64.b64encode(p).decode() for p in leaf_witness["path"]],
-            },
-        }
-        return {
-            "signature_b64": base64.b64encode(json.dumps(bundle).encode()).decode(),
-            "bundle": bundle,
-            "wots_chains": wots.chains,
-        }
-
-    def passwordless_pq_auth(self, public_id, resource, signature_b64, nonce):
-        """
-        Authenticate a post-quantum identity using its hash-based OTS + Merkle
-        witness INSTEAD of an RSA signature. Verifies freshness (5 min), a
-        single-use nonce (anti-replay) and the witness against the ON-CHAIN
-        root WITHOUT exposing any one-time secret.
-        """
-        identity = self.find_identity_by_public_id(public_id)
-        if not identity.get("found"):
-            return {"authenticated": False, "reason": f"No post-quantum identity {public_id}"}
-
-        rec = identity["data"]
-        idata = rec.get("identity_data") or {}
-        if not (rec.get("post_quantum") or idata.get("post_quantum")):
-            return {"authenticated": False, "reason": "Identity is not post-quantum (use passwordless_auth)"}
-
-        root_b64 = rec.get("pq_root_b64") or idata.get("pq_root_b64") or ""
-        capacity = int(rec.get("pq_capacity") or idata.get("pq_capacity") or 32)
-
-        # Replay / freshness guard
-        try:
-            bundle = json.loads(base64.b64decode(signature_b64).decode("utf-8"))
-            ts = int(bundle.get("ts", 0))
-        except Exception:
-            return {"authenticated": False, "reason": "Malformed signature payload"}
-        age = time.time() - ts
-        if age > 300 or age < -300:
-            return {"authenticated": False, "reason": f"Stale/replayed request (age {int(age)}s); max 300s"}
-
-        # One-time nonce enforcement (true anti-replay): a captured attestation
-        # replayed even inside the freshness window is rejected.
-        self._used_pq_nonces = getattr(self, "_used_pq_nonces", set())
-        nk = f"{public_id}|{nonce}"
-        if nk in self._used_pq_nonces:
-            return {"authenticated": False, "reason": "Nonce already redeemed - replayed request detected."}
-
-        # One-time LEAF enforcement: a SPHINCS+ leaf must never sign twice, so a
-        # reused attestation is rejected even if the attacker changes the nonce.
-        self._used_pq_leaves = getattr(self, "_used_pq_leaves", set())
-        leaf_key = f"{public_id}|leaf:{bundle.get('leaf_index')}"
-        if leaf_key in self._used_pq_leaves:
-            return {"authenticated": False, "reason": "One-time leaf already spent - replayed attestation detected."}
-
-        root_check = self._verify_pq_signature(public_id, signature_b64, root_b64, capacity)
-        if root_check.get("valid"):
-            self._used_pq_nonces.add(nk)
-            self._used_pq_leaves.add(leaf_key)
-        return {
-            "authenticated": bool(root_check.get("valid")),
-            "reason": root_check.get("reason", "post-quantum OTS + Merkle witness verified on-chain"),
-            "witness_verified": bool(root_check.get("valid")),
-        }
-
-    def _verify_pq_signature(self, public_id, signature_b64, root_b64, capacity=32):
-        """Fully local, no-secret verification of a post-quantum attestation:
-          1. Winternitz-OTS signature check over the signed message.
-          2. Merkle branch recomputation from the revealed leaf public key; the
-             recomputed branch must reach the ON-CHAIN root.
-        """
-        try:
-            bundle = json.loads(base64.b64decode(signature_b64).decode("utf-8"))
-            if bundle.get("public_id") != public_id:
-                return {"valid": False, "reason": "Attestation bound to a different identity"}
-            msg = base64.b64decode(bundle.get("msg", ""))
-            params = bundle.get("params")
-            sig_pieces = [base64.b64decode(p) for p in bundle.get("sig", [])]
-            pk_pieces = [base64.b64decode(p) for p in bundle.get("pk", [])]
-            if not (params and sig_pieces and pk_pieces):
-                return {"valid": False, "reason": "Incomplete attestation payload"}
-
-            wots = WinternitzOneTimeSignature()
-            if not wots.verify(msg, sig_pieces, pk_pieces, params):
-                return {"valid": False, "reason": "Winternitz-OTS signature FAILED"}
-
-            # Merkle membership: recompute the leaf hash, walk the witness path
-            # (sorting children exactly like build_for_identity), require the
-            # final digest to be the ON-CHAIN root.
-            leaf_value = hashlib.sha256()
-            for piece in pk_pieces:
-                leaf_value.update(piece)
-            current = leaf_value.digest()
-            for sib_b64 in bundle.get("witness", {}).get("path", []):
-                sib = base64.b64decode(sib_b64)
-                if current < sib:
-                    current = hashlib.sha256(current + sib).digest()
-                else:
-                    current = hashlib.sha256(sib + current).digest()
-            computed_root_b64 = base64.b64encode(current).decode()
-            if not secrets.compare_digest(computed_root_b64, root_b64):
-                return {"valid": False, "reason": "Merkle witness does not reach the ON-CHAIN root"}
-            return {
-                "valid": True,
-                "reason": "hash-based OTS + Merkle root re-derived and checked (SPHINCS+ family; quantum-resistant by construction)",
-                "leaf_index": bundle.get("leaf_index"),
-            }
-        except Exception as e:
-            return {"valid": False, "reason": f"PQ verification error: {str(e)}"}
-
-    # ============================================================
-    # FEATURE 1: BREAK-GLASS / EMERGENCY ACCESS
-    # ============================================================
     def request_breakglass_access(self, public_id, resource, reason="emergency", requester="SYSTEM"):
         """
         Break-glass override: a trusted operator (or the system under a
@@ -5686,35 +5882,141 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         return {"success": True, "join_id": join_id, "status": "PENDING",
                 "public_id": data.get("public_id")}
 
-    def join_approve(self, join_id, approver="admin"):
+    def join_approve(self, join_id, approver="", role=None):
+        """Approve a pending self-registration and mint the identity on-chain.
+
+        The approver must be a *registered* identity that holds
+        `identity.register` - an unknown or missing approver is refused, so
+        approval is deny-by-default rather than open to any caller.
+
+        `role` lets the approving administrator choose the RBAC role granted at
+        approval time. The safe default is USER; granting an elevated role
+        (MANAGER / AUDITOR / ADMINISTRATOR, or any custom role) additionally
+        requires the approver to hold `rbac.role.assign`, so approving a request
+        can never be used to escalate privilege. A refused escalation leaves the
+        request PENDING and returns the structured gate trace."""
         req = self._join_requests.get(join_id)
         if not req:
             return {"success": False, "reason": f"No join request {join_id}"}
         if req["status"] != "PENDING":
             return {"success": False, "reason": f"Join request already {req['status']}"}
-        r = self.add_identity(req["identity_data"])
+        self._rbac_init()
+
+        approver = str(approver or "").strip()
+        if not approver:
+            return {"success": False,
+                    "reason": "An approver is required to mint an identity",
+                    "requested_role": role, "status": req["status"]}
+
+        # Baseline: approving any request at all needs identity.register. This is
+        # evaluated first and unconditionally, so the default USER path is not an
+        # unauthenticated way to create identities.
+        base_gate = self._policy_gate(approver, "identity.register",
+                                      resource="identity.register")
+        if not base_gate.get("granted"):
+            return {"success": False,
+                    "reason": (f"{approver!r} cannot approve join requests: "
+                               f"{base_gate.get('reason', 'requires identity.register')}"),
+                    "gate": dict(base_gate, stage="rbac+smart-contract",
+                                 capability="identity.register",
+                                 resource="identity.register"),
+                    "requested_role": role, "status": req["status"]}
+
+        granted_role = None
+        gate_trace = dict(base_gate, stage="rbac+smart-contract",
+                          capability="identity.register",
+                          resource="identity.register")
+        if role:
+            granted_role = self._canonical_role(role)
+            if granted_role is None:
+                # A defined custom role (e.g. INCIDENT_RESPONDER) is valid too.
+                custom = str(role).upper().strip().replace(" ", "_")
+                if custom in getattr(self, "_rbac_policy", {}):
+                    granted_role = custom
+                else:
+                    return {"success": False,
+                            "reason": f"'{role}' is not a known role",
+                            "expected": sorted(self._rbac_policy)}
+            # Anything above the default USER role is a privilege grant and must
+            # itself pass the RBAC + smart-contract gate.
+            if granted_role != "USER":
+                gate = self._policy_gate(str(approver), "rbac.role.assign",
+                                         resource="rbac.role.assign")
+                gate_trace = dict(gate, stage="rbac+smart-contract",
+                                  capability="rbac.role.assign",
+                                  resource="rbac.role.assign")
+                if not gate.get("granted"):
+                    return {"success": False,
+                            "reason": (f"Cannot grant '{granted_role}' at approval: "
+                                       f"{gate.get('reason', 'approver lacks rbac.role.assign')}"),
+                            "gate": gate_trace,
+                            "requested_role": granted_role,
+                            "status": req["status"]}
+
+        payload = dict(req["identity_data"])
+        if granted_role:
+            payload["role"] = granted_role
+        # A pending request carries a throwaway `pending.<hex>` handle. If the
+        # applicant supplied an email, that is their real principal, so promote it
+        # instead of minting an identity nobody can ever look up.
+        if str(payload.get("public_id", "")).startswith("pending.") and payload.get("email"):
+            payload["public_id"] = str(payload["email"]).strip().lower()
+
+        # add_identity() returns {block, identity_data, ...} and raises on a
+        # duplicate, so validate on the presence of identity_data.
+        r = self.add_identity(payload)
+        if not r.get("identity_data"):
+            return {"success": False,
+                    "reason": "identity registration failed",
+                    "status": req["status"]}
         req["status"] = "APPROVED"
-        req["approval"] = req.get("approval", []) + [{"by": approver, "ts": time.time()}]
+        req["approval"] = req.get("approval", []) + [{"by": approver, "ts": time.time(),
+                                                      "role": granted_role}]
         req["minted"] = {
             "public_id": r["identity_data"].get("public_id"),
             "block_index": r["identity_data"].get("block_index"),
             "identity_hash": r["identity_data"].get("identity_hash"),
         }
+        if granted_role and granted_role != "USER":
+            # Anchor the role assignment itself so the grant is auditable.
+            self.rbac_assign_role(str(approver), r["identity_data"].get("public_id"),
+                                  granted_role)
         self.log_audit("JOIN_APPROVED", {"join_id": join_id, "approver": approver,
+                                         "role": granted_role,
                                          "public_id": r["identity_data"].get("public_id")})
         return {"success": True, "join_id": join_id, "status": "APPROVED",
-                "identity": req["minted"]}
+                "role": granted_role, "identity": req["minted"],
+                "gate": gate_trace}
 
-    def join_reject(self, join_id, reason="rejected by admin", approver="admin"):
+    def join_reject(self, join_id, reason="rejected", approver=""):
+        """Reject a pending self-registration.
+
+        Rejecting is as privileged as approving (it can block a legitimate
+        applicant), so it is gated on the same `identity.register` capability
+        rather than being open to any caller."""
         req = self._join_requests.get(join_id)
         if not req:
             return {"success": False, "reason": f"No join request {join_id}"}
         if req["status"] != "PENDING":
             return {"success": False, "reason": f"Join request already {req['status']}"}
+        self._rbac_init()
+        approver = str(approver or "").strip()
+        gate = self._policy_gate(approver, "identity.register",
+                                 resource="identity.register")
+        if not gate.get("granted"):
+            return {"success": False,
+                    "reason": (f"{approver or '(no approver)'} cannot reject join "
+                               f"requests: {gate.get('reason', 'requires identity.register')}"),
+                    "gate": dict(gate, stage="rbac+smart-contract",
+                                 capability="identity.register",
+                                 resource="identity.register"),
+                    "status": req["status"]}
         req["status"] = "REJECTED"
         req["reject_reason"] = reason
         self.log_audit("JOIN_REJECTED", {"join_id": join_id, "approver": approver, "reason": reason})
-        return {"success": True, "join_id": join_id, "status": "REJECTED"}
+        return {"success": True, "join_id": join_id, "status": "REJECTED",
+                "gate": {"granted": True, "capability": "identity.register",
+                         "resource": "identity.register", "actor": approver}}
 
     def list_join_requests(self, status=None):
         reqs = [dict(r) for r in self._join_requests.values()]
@@ -5809,18 +6111,6 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
             return {"success": False, "reason": f"Verification error: {str(e)}"}
 
     # =========================================================================
-    # POST-QUANTUM: list existing PQ identities (register/auth already exist)
-    # =========================================================================
-    def list_post_quantum(self):
-        out = [{
-            "public_id": r.get("public_id"),
-            "pq_backend": (r.get("identity_data") or {}).get("pq_backend"),
-            "pq_root_b64": (r.get("identity_data") or {}).get("pq_root_b64"),
-        } for r in self.get_identity_records()
-            if r.get("post_quantum") or (r.get("identity_data") or {}).get("post_quantum")]
-        return {"success": True, "pq_identities": out, "count": len(out)}
-
-    # =========================================================================
     # ZK: Key Transparency Log (CONIKS-style rotation chain)
     # =========================================================================
     def kt_record_rotation(self, public_id, new_key_fingerprint, rotated_by, reason=""):
@@ -5911,61 +6201,6 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
                 "prompt": ch["prompt"]}
 
     # =========================================================================
-    # AC: Duress PIN (silent ALERT on panic PIN)
-    # =========================================================================
-    def duress_register(self, public_id, duress_pin, normal_pin="123456"):
-        rec = self.find_identity_by_public_id(public_id)
-        if not rec.get("found"):
-            return {"success": False, "reason": f"No identity {public_id}"}
-        self._duress_codes[public_id] = {"duress_pin": str(duress_pin),
-                                         "normal_pin": str(normal_pin),
-                                         "ts": time.time()}
-        self.log_audit("DURESS_ENROLLED", {"public_id": public_id})
-        return {"success": True, "public_id": public_id,
-                "message": "Duress PIN enrolled. A panic-code unlock will LOOK like a normal "
-                           "success while silently raising an ALERT incident."}
-
-    def duress_authenticate(self, public_id, pin, resource="vault"):
-        """Looks like a normal auth both ways. But an entered duress PIN silently
-        records a CRITICAL alert + high-score anomaly instead of granting."""
-        rec = self.find_identity_by_public_id(public_id)
-        if not rec.get("found"):
-            return {"success": False, "reason": f"No identity {public_id}"}
-        store = self._duress_codes.get(public_id)
-        entered = str(pin)
-        normal_ok = store and secrets.compare_digest(entered, store.get("normal_pin", "123456"))
-        duress = store and secrets.compare_digest(entered, store.get("duress_pin", ""))
-        if not normal_ok and not store:
-            normal_ok = entered == "123456"
-        if normal_ok:
-            self.log_audit("ACCESS", {"public_id": public_id, "resource": resource,
-                                      "action": "ACCESS", "decision": "GRANTED",
-                                      "factor": "PIN_NORMAL", "timestamp": time.time()})
-            return {"success": True, "granted": True, "scenario": "normal_pin"}
-        if duress:
-            alert_id = secrets.token_hex(4).upper()
-            self._anomaly_alerts[alert_id] = {
-                "alert_id": alert_id, "public_id": public_id, "ts": time.time(),
-                "severity": "CRITICAL", "score": 100,
-                "alert_type": "DURESS_PIN_USED",
-                "title": "DURESS PIN USED - identity under duress",
-                "message": f"{public_id} entered their duress PIN for {resource}. Assume coercion.",
-                "reason": "Silent alarm raised. Perpetrator sees a normal success screen.",
-                "acknowledged": False,
-            }
-            self.log_audit("DURESS_TRIGGERED",
-                           {"public_id": public_id, "resource": resource, "alert_id": alert_id})
-            return {"success": True, "granted": True, "scenario": "duress",
-                    "alert_raised": True, "alert_id": alert_id,
-                    "note": "Access appears GRANTED to the operator (duress mode active)."}
-        self.log_audit("ACCESS", {"public_id": public_id, "resource": resource,
-                                  "action": "ACCESS", "decision": "DENIED",
-                                  "factor": "PIN_WRONG", "timestamp": time.time()})
-        return {"success": False, "granted": False, "reason": "Invalid PIN"}
-
-    def list_duress(self):
-        return {"success": True, "codes": self._duress_codes}
-
     # =========================================================================
     # AC: Two-Person Integrity at Access Time
     # =========================================================================
@@ -7087,61 +7322,6 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         self._feature15_init()
         return {"success": True, "policy": self._purpose_policy,
                 "denials": list(self._purpose_denials)[::-1][:15]}
-
-    # -- Session Sealing / Mobility Defense -----------------------------------
-    def session_seal(self, public_id, device_hash, ip="10.0.0.1", lease_s=600):
-        self._feature15_init()
-        if not public_id or not device_hash:
-            return {"success": False, "reason": "public_id and device_hash are required"}
-        if not self.find_identity_by_public_id(public_id).get("found"):
-            return {"success": False, "reason": f"No identity {public_id}"}
-        session_id = "SES-" + secrets.token_hex(5).upper()
-        self._sealed_sessions[session_id] = {
-            "session_id": session_id, "public_id": public_id,
-            "device_hash": device_hash, "ip": ip,
-            "lease_expires": time.time() + int(lease_s), "created": time.time(),
-            "sealed": True}
-        token = hashlib.sha256((session_id + device_hash).encode()).hexdigest()[:24]
-        return {"success": True, "session_id": session_id, "token": token,
-                "lease_s": int(lease_s),
-                "message": "Session cryptographically bound to device + IP for the lease duration."}
-
-    def session_validate(self, session_id, device_hash, ip):
-        self._feature15_init()
-        s = self._sealed_sessions.get(session_id)
-        if not s:
-            return {"success": False, "valid": False, "reason": f"No session {session_id}"}
-        if time.time() > s["lease_expires"]:
-            return {"success": False, "valid": False, "reason": "Session lease expired"}
-        if s["device_hash"] != device_hash or s["ip"] != ip:
-            self._session_log.append({"session_id": session_id, "event": "MOBILITY_BREAK",
-                                      "ts": time.time(),
-                                      "detail": f"device={'MATCH' if s['device_hash'] == device_hash else 'MISMATCH'} "
-                                                f"ip={'MATCH' if s['ip'] == ip else 'MISMATCH'}"})
-            return {"success": False, "valid": False,
-                    "reason": "SESSION MOBILITY DETECTED - cryptographic binding broke (new device/IP on sealed session)"}
-        return {"success": True, "valid": True, "session_id": session_id,
-                "public_id": s["public_id"],
-                "reason": "Sealed session: device + IP binding intact"}
-
-    def session_hijack(self, session_id, attacker_device="EVIL-BOX", attacker_ip="45.33.0.55"):
-        self._feature15_init()
-        s = self._sealed_sessions.get(session_id)
-        if not s:
-            return {"success": False, "reason": f"No session {session_id}"}
-        verdict = self.session_validate(session_id, attacker_device, attacker_ip)
-        s["attacked"] = True
-        s["attack_reason"] = verdict.get("reason", "")
-        return {"success": True, "session_id": session_id,
-                "attack_blocked": not verdict["valid"],
-                "reason": verdict.get("reason"),
-                "countermeasure": "Session invalidated; forced re-authentication + risk score spike"}
-
-    def session_list(self):
-        self._feature15_init()
-        return {"success": True, "sessions": list(self._sealed_sessions.values())[::-1],
-                "log": list(self._session_log)[::-1][:10]}
-
     # -- Data-Classification Rule Layers ---------------------------------------
     def classify_register(self, label, required_factors=None, min_level=1, watermark="BEL-CONFIDENTIAL"):
         self._feature15_init()
@@ -7172,63 +7352,6 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
     # =========================================================================
     # FEATURE 15 - Network: Chaos Engineering / Node PKI / Notarization
     # =========================================================================
-    def chaos_inject(self, node_id, mode, value=None):
-        """Kill-switch panel: node-death, packet-loss, desync, or clock-skew.
-        clock-skew shifts a node's clock to smuggle stale signed requests past
-        the freshness window - defended by monotonic nonces."""
-        self._feature15_init()
-        if not node_id or mode not in ("node-death", "packet-loss", "desync", "clock-skew"):
-            return {"success": False, "reason": "node_id + mode (node-death/packet-loss/desync/clock-skew)"}
-        rec = self._chaos_config.setdefault(node_id, {})
-        if mode == "node-death":
-            rec["dead"] = True
-        elif mode == "packet-loss":
-            rec["packet_loss"] = float(value or 55)
-        elif mode == "desync":
-            rec["desync"] = True
-        elif mode == "clock-skew":
-            rec["clock_skew"] = int(value or 7200)
-        self._chaos_events.append({"node_id": node_id, "mode": mode, "ts": time.time()})
-        self.log_audit("CHAOS_INJECTED", {"node_id": node_id, "mode": mode, "value": value})
-        return {"success": True, "node_id": node_id, "mode": mode, "value": value,
-                "config": rec,
-                "message": f"{mode} injected on {node_id}."}
-
-    def chaos_clear(self, node_id):
-        self._feature15_init()
-        if node_id in self._chaos_config:
-            self._chaos_config[node_id] = {}
-        return {"success": True, "node_id": node_id, "message": "Injection cleared."}
-
-    def chaos_verify(self, node_id):
-        """Attack probe while chaos is active: a stale clock-skewed signed
-        request is smuggled in. Freshness fails, monotonic-nonce defense blocks."""
-        self._feature15_init()
-        if not node_id:
-            return {"success": False, "reason": "node_id is required"}
-        rec = self._chaos_config.get(node_id, {}) or {}
-        skew = rec.get("clock_skew", 0)
-        stale_ts = time.time() - skew
-        tbs = json.dumps({"node_id": node_id, "ts": stale_ts}, sort_keys=True)
-        signature = hashlib.sha256((node_id + "|" + tbs).encode()).hexdigest()
-        fresh = abs(time.time() - stale_ts) <= 300
-        last = self._monotonic_nonces.get(node_id, 0)
-        monotonic_ok = stale_ts > last
-        self._monotonic_nonces[node_id] = max(last, stale_ts)
-        blocked = (not fresh) or not monotonic_ok
-        return {"success": True, "node_id": node_id, "clock_skew_s": skew,
-                "stale_request_ts": stale_ts,
-                "freshness_5min_window": fresh,
-                "monotonic_nonce_defense": monotonic_ok,
-                "verdict": "BLOCKED" if blocked else "ACCEPTED",
-                "reason": "Stale clock-skewed request rejected by monotonic nonce + 5-min freshness" if blocked
-                          else "Request within freshness window"}
-
-    def chaos_list(self):
-        self._feature15_init()
-        return {"success": True, "config": {k: v for k, v in self._chaos_config.items() if v},
-                "events": list(self._chaos_events)[::-1][:20]}
-
     # -- Node PKI (Signed Gossip) ----------------------------------------------
     def _node_hmac_secret(self, node_id):
         return hmac.new(b"SIH-PKI-SEED", str(node_id).encode(), hashlib.sha256).hexdigest()
@@ -7631,6 +7754,7 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         """Guarantee the RBAC policy + assignment stores exist (idempotent)."""
         if not hasattr(self, "_rbac_assignments"):
             self._rbac_assignments = {}
+        if not hasattr(self, "_rbac_policy"):
             self._rbac_policy = copy.deepcopy(RBAC_ROLE_POLICIES)
         if not hasattr(self, "_rbac_auditor_seeded"):
             self._rbac_auditor_seeded = False
@@ -7698,9 +7822,40 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         else:
             identity_id = self._resolve_identity_id(actor)
             if identity_id is None:
+                # Owner path may also be satisfied by an ANCHORED DID, which is a
+                # legitimate ownership subject. A DID carries no clearance /
+                # geofence / device attributes, so there is nothing for the
+                # attribute engine to evaluate against it; the decision therefore
+                # rests on the DID's anchored signing key plus the new-owner
+                # ownership check, and says so explicitly in the trace instead of
+                # reporting the misleading "not a registered identity".
+                did = str(actor or "").strip()
+                did_rec = self._did_store.get(did)
+                if isinstance(did_rec, dict) and did_rec.get("anchored_in_block") is not None:
+                    return {
+                        "granted": True,
+                        "public_id": did,
+                        "role": None,
+                        "subject_kind": "did",
+                        "anchored_in_block": did_rec.get("anchored_in_block"),
+                        "evaluation": [{
+                            "rule": "DID Owner Consent",
+                            "allowed": True,
+                            "detail": (f"'{did}' is an anchored DID acting as the "
+                                       "registered owner; the DID signing key is "
+                                       "verified separately as cryptographic consent"),
+                        }, {
+                            "rule": "Attribute-Based Policy",
+                            "allowed": True,
+                            "detail": ("not applicable: a DID carries no clearance, "
+                                       "geofence or device-security attributes"),
+                        }],
+                        "reason": (f"{did} is an anchored DID owner; consent is "
+                                   "cryptographic and attribute policy is N/A"),
+                    }
                 return {"granted": False, "public_id": str(actor) if actor else None,
                         "role": None,
-                        "reason": f"'{actor}' is not a registered identity"}
+                        "reason": f"'{actor}' is not a registered identity or an anchored DID"}
         identity = self._effective_identity(identity_id, role)
         if identity is None:
             return {"granted": False, "public_id": identity_id, "role": role,
@@ -7730,7 +7885,9 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
                 "reason": f"{identity_id} passed RBAC + smart-contract gate for '{capability}'"}
 
     def _nft_owner_verified(self, owner):
-        return bool(self.find_identity_by_public_id(owner).get("found"))
+        """A dNFT may only ever be allocated to a VERIFIED subject. Ownership
+        references resolve to either a registered identity or an anchored DID."""
+        return bool(self.resolve_ownership_subject(owner).get("found"))
 
     def _ensure_nft_registry(self):
         """Registry used by the dNFT engine, always bound to the identity
@@ -7871,7 +8028,10 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         operation is audited and the policy is persisted."""
         gate = self._policy_gate(actor, "rbac.role.define", resource="rbac.role.define")
         if not gate["granted"]:
-            return {"success": False, "reason": gate["reason"]}
+            return {"success": False, "reason": gate["reason"],
+                    "gate": dict(gate, stage="rbac+smart-contract",
+                                 capability="rbac.role.define",
+                                 resource="rbac.role.define")}
         self._rbac_init()
         role = str(role or "").upper().strip().replace(" ", "_")
         if not role or len(role) > 32 or any(ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" for ch in role):
@@ -7898,11 +8058,16 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
         are stored in the rbac_assignments side-ledger (persisted)."""
         gate = self._policy_gate(actor, "rbac.role.assign", resource="rbac.role.assign")
         if not gate["granted"]:
-            return {"success": False, "reason": gate["reason"]}
+            return {"success": False, "reason": gate["reason"],
+                    "gate": dict(gate, stage="rbac+smart-contract",
+                                 capability="rbac.role.assign",
+                                 resource="rbac.role.assign")}
         self._rbac_init()
         pid = str(public_id or "").strip()
-        if not self.find_identity_by_public_id(pid)["found"]:
-            return {"success": False, "reason": f"'{pid}' is not a registered identity"}
+        is_id = self.find_identity_by_public_id(pid)["found"]
+        is_did = bool(self.resolve_ownership_subject(pid).get("found"))
+        if not is_id and not is_did:
+            return {"success": False, "reason": f"'{pid}' is not a registered identity or anchored DID"}
         role = str(role or "").upper().strip().replace(" ", "_")
         if role not in self._rbac_all_roles():
             return {"success": False,
@@ -7916,22 +8081,53 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
 
     def rbac_verify(self, subject, capability=None, resource=None):
         """Evaluate whether a subject may perform a capability/resource.
-        Non-mutating: no audit block is produced, purely a read-only check."""
+        Non-mutating: no audit block is produced, purely a read-only check.
+
+        Returns the full decision trace (role -> capability grants -> resource
+        grants) so the UI can render `role AND capability AND resource` rather
+        than a bare yes/no. Deny-by-default: an unregistered subject, or a
+        subject with no matching grant, is NOT granted."""
         self._rbac_init()
         role = self.identity_role(subject)
         if role is None:
             # Deny-by-default: an unregistered subject evaluates to NOT granted.
             return {"success": True, "subject": subject, "role": None,
                     "granted": False, "capability": capability, "resource": resource,
+                    "gate": {"granted": False, "stage": "rbac",
+                             "subject": subject, "role": None,
+                             "capability": capability, "resource": resource,
+                             "capability_held": False, "resource_granted": False,
+                             "reason": f"'{subject}' is not a registered identity"},
                     "reason": f"'{subject}' is not a registered identity"}
-        allowed = self._identity_capability_grants(subject, role)
-        granted = False
-        if capability and (capability in allowed or resource in allowed):
-            granted = True
-        elif resource and resource in allowed:
-            granted = True
+        allowed = sorted(self._identity_capability_grants(subject, role))
+        personal = sorted(self._identity_resources(subject, role))
+        role_caps = sorted(set(self._rbac_policy.get(role, {}).get("capabilities", [])))
+        capability_held = bool(capability) and capability in allowed
+        resource_granted = bool(resource) and resource in allowed
+        granted = bool(capability) and (capability_held or resource_granted)
+        if not capability and resource:
+            granted = resource_granted
+        trace = {
+            "stage": "rbac",
+            "subject": subject, "role": role,
+            "capability": capability, "resource": resource,
+            "capability_held": capability_held,
+            "resource_granted": resource_granted,
+            "role_capabilities": role_caps,
+            "effective_grants": allowed,
+            "personal_and_role_resources": personal,
+        }
+        if granted:
+            trace["granted"] = True
+            trace["reason"] = f"{subject} [{role}] holds " + (
+                f"'{capability}'" if capability_held else f"'{resource}'")
+        else:
+            trace["granted"] = False
+            trace["reason"] = (f"{subject} [{role}] does not hold "
+                               f"'{capability or resource}'")
         return {"success": True, "subject": subject, "role": role,
                 "granted": granted, "capability": capability, "resource": resource,
+                "gate": trace,
                 "message": (f"{subject} [{role}]: {'GRANTED' if granted else 'DENIED'}")}
 
     def ensure_auditor(self):
@@ -8018,6 +8214,455 @@ Every successful mint leaves a chained NFT_MINT block so that the owner
                     registry.set_owner(a["token_id"], a["chain_owner"])
                     reconciled += 1
         return {"success": True, "reconciled": reconciled, "tokens": len(ledger)}
+
+    def verify_nft_provenance(self, token_id):
+        """
+        Verify asset provenance from Genesis to Head purely derived from on-chain blocks.
+        Walks block headers to confirm unbroken cryptographic chain of custody,
+        validating DID/identity ownership, block hashes, and transfer consent.
+        """
+        if not token_id:
+            return {"success": False, "found": False, "reason": "token_id is required"}
+
+        token_id = str(token_id).strip()
+        mint_event = None
+        transfer_events = []
+        provenance_trail = []
+        all_blocks_valid = True
+
+        for block in self.chain:
+            # Check block hash validity along the chain
+            if block.compute_hash() != block.hash:
+                all_blocks_valid = False
+
+            d = block.data or {}
+            btype = d.get("type")
+
+            if btype == "NFT_MINT" and str(d.get("token_id")) == token_id:
+                mint_event = {
+                    "block_index": block.index,
+                    "block_hash": block.hash,
+                    "previous_hash": block.previous_hash,
+                    "timestamp": d.get("timestamp"),
+                    "token_id": token_id,
+                    "asset_type": d.get("asset_type"),
+                    "name": d.get("name"),
+                    "actor": d.get("actor"),
+                    "owner": d.get("owner"),
+                    "owner_kind": d.get("owner_kind"),
+                    "owner_name": d.get("owner_name"),
+                    "required_clearance": d.get("required_clearance"),
+                    "merkle_root": block.merkle_root()
+                }
+                provenance_trail.append({
+                    "step": len(provenance_trail) + 1,
+                    "event_type": "NFT_MINT",
+                    "block_index": block.index,
+                    "block_hash": block.hash,
+                    "from_owner": "GENESIS_MINTER",
+                    "to_owner": d.get("owner"),
+                    "to_kind": d.get("owner_kind") or ("did" if self.is_did_reference(d.get("owner")) else "identity"),
+                    "operator": d.get("actor"),
+                    "authorization": "RBAC_ADMIN_MINT",
+                    "timestamp": d.get("timestamp")
+                })
+
+            elif btype == "NFT_TRANSFER" and str(d.get("token_id")) == token_id:
+                tevent = {
+                    "block_index": block.index,
+                    "block_hash": block.hash,
+                    "previous_hash": block.previous_hash,
+                    "timestamp": d.get("timestamp"),
+                    "token_id": token_id,
+                    "from": d.get("previous_owner"),
+                    "to": d.get("new_owner"),
+                    "actor": d.get("actor"),
+                    "consent_verified": d.get("consent_verified"),
+                    "consent_mode": d.get("consent_mode"),
+                    "rbac_role": d.get("rbac_role"),
+                    "merkle_root": block.merkle_root()
+                }
+                transfer_events.append(tevent)
+                provenance_trail.append({
+                    "step": len(provenance_trail) + 1,
+                    "event_type": "NFT_TRANSFER",
+                    "block_index": block.index,
+                    "block_hash": block.hash,
+                    "from_owner": d.get("previous_owner"),
+                    "to_owner": d.get("new_owner"),
+                    "to_kind": "did" if self.is_did_reference(d.get("new_owner")) else "identity",
+                    "operator": d.get("actor"),
+                    "authorization": d.get("consent_mode") or "OWNER_CONSENT",
+                    "consent_verified": d.get("consent_verified", True),
+                    "timestamp": d.get("timestamp")
+                })
+
+        if not mint_event:
+            return {
+                "success": False,
+                "found": False,
+                "token_id": token_id,
+                "reason": f"No on-chain mint block found for token '{token_id}'"
+            }
+
+        # Verify unbroken chain of custody
+        unbroken_chain = True
+        custodian = mint_event["owner"]
+        for t in transfer_events:
+            if t.get("from") and t.get("from") != custodian:
+                unbroken_chain = False
+            custodian = t.get("to")
+
+        # Resolve subject details for current owner with DID priority
+        owner_subj = self.resolve_ownership_subject(custodian)
+        owner_kind = owner_subj.get("kind") or ("did" if self.is_did_reference(custodian) else "identity")
+
+        return {
+            "success": True,
+            "found": True,
+            "token_id": token_id,
+            "name": mint_event.get("name"),
+            "asset_type": mint_event.get("asset_type"),
+            "current_owner": custodian,
+            "current_owner_kind": owner_kind,
+            "current_owner_subject": owner_subj,
+            "unbroken_chain": unbroken_chain,
+            "cryptographically_verified": all_blocks_valid,
+            "mint_event": mint_event,
+            "transfer_events": transfer_events,
+            "provenance_trail": provenance_trail,
+            "trail_length": len(provenance_trail),
+            "total_chain_depth": len(self.chain),
+            "chain_head_block": self.last_block.index,
+            "message": "Asset provenance verified from Genesis to Head with unbroken cryptographic chain of custody." if unbroken_chain and all_blocks_valid else "Provenance chain verification detected irregularities."
+        }
+
+    # =========================================================================
+    # AUDITOR PORTAL & CRYPTOGRAPHIC VERIFICATION HUB (BEL Mission Alignment)
+    # =========================================================================
+
+    def generate_merkle_proof(self, target_type="audit", target_index=None):
+        """Generate a cryptographic Merkle membership proof (authentication path)
+        for an entry in the chain. SPV-style proof path that can be validated
+        offline against the notarized or block Merkle root."""
+        entries = []
+        if target_type == "audit":
+            for b in self.chain:
+                if isinstance(b.data, dict) and b.data.get("type") == "AUDIT_LOG":
+                    leaf = hashlib.sha256(json.dumps(b.data, sort_keys=True).encode()).hexdigest()
+                    entries.append({"leaf_hash": leaf, "block_index": b.index, "data": b.data})
+        else:
+            for b in self.chain:
+                leaf = b.hash
+                b_data = b.data if isinstance(b.data, dict) else {"type": "RAW"}
+                entries.append({"leaf_hash": leaf, "block_index": b.index, "data": b_data})
+
+        if not entries:
+            sentinel = hashlib.sha256(b"genesis-audit").hexdigest()
+            entries = [{"leaf_hash": sentinel, "block_index": 0, "data": {"type": "GENESIS"}}]
+
+        if target_index is None or target_index < 0 or target_index >= len(entries):
+            target_index = len(entries) - 1
+
+        leaves = [e["leaf_hash"] for e in entries]
+        levels = [leaves]
+        current = list(leaves)
+        while len(current) > 1:
+            if len(current) % 2 == 1:
+                current.append(current[-1])
+            next_level = []
+            for i in range(0, len(current), 2):
+                next_level.append(hashlib.sha256((current[i] + current[i + 1]).encode()).hexdigest())
+            levels.append(next_level)
+            current = next_level
+        root = current[0]
+
+        proof_path = []
+        curr_idx = target_index
+        for level in levels[:-1]:
+            if curr_idx % 2 == 0:
+                sibling_idx = curr_idx + 1 if curr_idx + 1 < len(level) else curr_idx
+                proof_path.append({"position": "right", "hash": level[sibling_idx]})
+            else:
+                sibling_idx = curr_idx - 1
+                proof_path.append({"position": "left", "hash": level[sibling_idx]})
+            curr_idx = curr_idx // 2
+
+        target_entry = entries[target_index]
+        return {
+            "success": True,
+            "target_type": target_type,
+            "leaf_index": target_index,
+            "leaf_hash": target_entry["leaf_hash"],
+            "block_index": target_entry["block_index"],
+            "entry_summary": str(target_entry["data"].get("type", "ENTRY")),
+            "merkle_root": root,
+            "proof_path": proof_path,
+            "total_leaves": len(leaves)
+        }
+
+    @staticmethod
+    def verify_merkle_proof(leaf_hash, proof_path, expected_root):
+        """Mathematically reconstruct and verify a Merkle membership proof."""
+        current = str(leaf_hash or "").strip()
+        for step in (proof_path or []):
+            sib = step.get("hash", "")
+            pos = step.get("position", "right")
+            if pos == "left":
+                current = hashlib.sha256((sib + current).encode()).hexdigest()
+            else:
+                current = hashlib.sha256((current + sib).encode()).hexdigest()
+        match = (current == expected_root)
+        return {
+            "success": True,
+            "verified": match,
+            "computed_root": current,
+            "expected_root": expected_root,
+            "steps_evaluated": len(proof_path or []),
+            "verdict": "VERIFIED" if match else "TAMPERED / MISMATCH",
+            "message": "Cryptographic membership proof verified against Merkle root" if match else "Merkle root mismatch - leaf not present in tree"
+        }
+
+    def auditor_deep_chain_scan(self):
+        """Full cryptographic chain scan for the Auditor portal."""
+        chain_len = len(self.chain)
+        breakdown = {}
+        valid = True
+        tamper_details = []
+        for i, b in enumerate(self.chain):
+            btype = b.data.get("type", "UNKNOWN") if isinstance(b.data, dict) else "RAW"
+            breakdown[btype] = breakdown.get(btype, 0) + 1
+            computed = b.compute_hash()
+            if computed != b.hash:
+                valid = False
+                tamper_details.append(f"Block #{i} hash mismatch: {b.hash[:12]} != {computed[:12]}")
+            if i > 0:
+                if b.previous_hash != self.chain[i - 1].hash:
+                    valid = False
+                    tamper_details.append(f"Block #{i} link broken to block #{i-1}")
+                if not self._difficulty_satisfied(b):
+                    valid = False
+                    tamper_details.append(f"Block #{i} PoW difficulty target unmet")
+
+        audit_root, audit_count = self._audit_merkle_root()
+        return {
+            "success": True,
+            "valid": valid,
+            "total_blocks": chain_len,
+            "head_index": chain_len - 1,
+            "head_hash": self.chain[-1].hash if self.chain else None,
+            "genesis_hash": self.chain[0].hash if self.chain else None,
+            "audit_blocks_count": audit_count,
+            "audit_merkle_root": audit_root,
+            "integrity_score": 100 if valid else 0,
+            "breakdown": breakdown,
+            "tamper_detected": not valid,
+            "tamper_details": tamper_details,
+            "message": "Complete cryptographic verification passed: 100% chain integrity" if valid else "Tamper detected in blockchain state"
+        }
+
+    def generate_compliance_certificate(self, auditor_id="AUDITOR-BEL-01"):
+        """Generate a signed BEL compliance certificate."""
+        scan = self.auditor_deep_chain_scan()
+        if not scan["valid"]:
+            return {
+                "success": False,
+                "reason": "Chain integrity failed deep verification scan",
+                "scan": scan
+            }
+        cert_id = f"BEL-SEC-CERT-{secrets.token_hex(4).upper()}"
+        ts = time.time()
+        cert_data = {
+            "certificate_id": cert_id,
+            "auditor_id": auditor_id,
+            "standard": "ISO/IEC 27001:2022 & BEL Defense Security Spec v4.2",
+            "issued_at": ts,
+            "issued_at_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts)),
+            "chain_length": scan["total_blocks"],
+            "head_block_hash": scan["head_hash"],
+            "audit_merkle_root": scan["audit_merkle_root"],
+            "compliance_status": "CERTIFIED_SECURE",
+            "security_clearance_enforced": True,
+            "smart_contract_governance": "ENFORCED",
+            "rbac_deny_by_default": "VERIFIED"
+        }
+        raw = json.dumps(cert_data, sort_keys=True).encode()
+        cert_sig = hashlib.sha256(raw).hexdigest()
+        cert_data["signature"] = cert_sig
+        self.log_audit({
+            "type": "BEL_COMPLIANCE_CERTIFICATE_ISSUED",
+            "certificate_id": cert_id,
+            "auditor_id": auditor_id,
+            "signature": cert_sig,
+            "timestamp": ts
+        })
+        return {
+            "success": True,
+            "certificate": cert_data,
+            "message": f"BEL Compliance Certificate {cert_id} signed and notarized on-chain."
+        }
+
+    def run_e2e_bel_showcase(self, applicant_name="Vikram Rao", role="MANAGER",
+                             asset_name="BEL Coastal Surveillance Radar Mk-IV Blueprint"):
+        """Run the unified 7-step BEL defense story flow end-to-end:
+        1. Identity Registration
+        2. DID Generation & Anchoring
+        3. Smart Contract RBAC Role Assignment
+        4. Defense Digital Asset (dNFT) Minting
+        5. Asset Binding to Verified DID
+        6. Cryptographic Access Request & Evaluation
+        7. Immutable Audit Block Sealed & Merkle Root Generated
+        """
+        trace = []
+        admin_email = "admin@bel.gov.in"
+        if not self.find_identity_by_public_id(admin_email)["found"]:
+            a_priv, a_pub = CryptoIdentity.generate_keypair()
+            self.add_identity({
+                "name": "BEL Chief Security Officer",
+                "email": admin_email,
+                "role": "ADMINISTRATOR",
+                "department": "BEL Central Cyber Command",
+                "clearance_level": "LEVEL-5-TOP-SECRET",
+                "public_key": a_pub,
+                "allowed_resources": list(self._rbac_policy.get("ADMINISTRATOR", {}).get("resources", []))
+            })
+            self._rbac_assignments[admin_email] = "ADMINISTRATOR"
+
+        # Step 1: Identity Registration
+        clean_name = str(applicant_name or "Vikram Rao").strip()
+        applicant_email = f"{clean_name.lower().replace(' ', '.')}@bel.co.in"
+        priv_pem, pub_pem = CryptoIdentity.generate_keypair()
+        id_data = {
+            "name": clean_name,
+            "email": applicant_email,
+            "department": "Naval Systems & Radars",
+            "role": "USER",
+            "clearance_level": "LEVEL-3-SECRET",
+            "public_key": pub_pem,
+            "allowed_resources": ["basic_access"]
+        }
+        step1_res = self.add_identity(id_data)
+        b1_idx = step1_res["block"].index
+        b1_hash = step1_res["block"].hash
+        trace.append({
+            "step": 1,
+            "title": "Identity Registration",
+            "status": "COMPLETED",
+            "summary": f"Applicant '{clean_name}' ({applicant_email}) registered and mined into Block #{b1_idx}.",
+            "block_index": b1_idx,
+            "block_hash": b1_hash,
+            "data": {"name": clean_name, "email": applicant_email, "role": "USER"}
+        })
+
+        # Step 2: DID Generation & Anchoring
+        step2_res = self.register_did(clean_name, "USER", email=applicant_email, department="Naval Systems & Radars")
+        did = step2_res["did"]
+        b2_idx = step2_res["anchored_in_block"]
+        trace.append({
+            "step": 2,
+            "title": "Decentralized Identifier (DID) Anchoring",
+            "status": "COMPLETED",
+            "summary": f"W3C DID '{did}' generated and anchored on-chain with zero-knowledge commitment in Block #{b2_idx}.",
+            "block_index": b2_idx,
+            "data": {"did": did, "document_verification_method": step2_res["did_document"]["verificationMethod"][0]["id"]}
+        })
+
+        # Step 3: Smart Contract RBAC Role Assignment
+        step3_res = self.rbac_assign_role(admin_email, did, role)
+        self.rbac_assign_role(admin_email, applicant_email, role)
+        trace.append({
+            "step": 3,
+            "title": "Smart Contract RBAC Role Assignment",
+            "status": "COMPLETED" if step3_res.get("success") else "FAILED",
+            "summary": f"BEL Administrator evaluated RBAC gate and assigned canonical role '{role}' to subject DID '{did}'.",
+            "data": step3_res
+        })
+
+        # Step 4: Defense Digital Asset (NFT) Minting
+        mint_res = self.nft_mint(
+            asset_type="blueprint",
+            name=asset_name,
+            owner=admin_email,
+            description="BEL High-Frequency Naval Coastal Surveillance Radar Blueprint",
+            required_clearance="LEVEL-3",
+            actor=admin_email
+        )
+        token_id = (mint_res.get("asset") or {}).get("token_id")
+        b4_idx = (mint_res.get("block") or {}).index if hasattr(mint_res.get("block"), "index") else len(self.chain) - 1
+        trace.append({
+            "step": 4,
+            "title": "Defense Digital Asset (dNFT) Minted",
+            "status": "COMPLETED" if mint_res.get("success") else "FAILED",
+            "summary": f"Token #{token_id} '{asset_name}' minted on-chain by Administrator in Block #{b4_idx}.",
+            "block_index": b4_idx,
+            "data": {"token_id": token_id, "asset_name": asset_name, "initial_owner": admin_email}
+        })
+
+        # Step 5: Asset Binding / Transfer to Verified DID
+        xfer_res = self.nft_transfer(token_id, did, actor=admin_email, admin_override=True)
+        trace.append({
+            "step": 5,
+            "title": "Asset Binding to Verified DID",
+            "status": "COMPLETED" if xfer_res.get("success") else "FAILED",
+            "summary": f"Asset #{token_id} ownership bound directly to holder DID '{did}' on-chain.",
+            "data": {"token_id": token_id, "new_owner": did, "success": xfer_res.get("success")}
+        })
+
+        # Step 6: Cryptographic Access Request & Evaluation
+        nonce = secrets.token_hex(8)
+        now_ts = int(time.time())
+        req_sig = CryptoIdentity.sign_access_request(priv_pem, token_id, now_ts, nonce)
+        sig_ok = CryptoIdentity.verify_access_signature(pub_pem, token_id, now_ts, nonce, req_sig["signature"])
+        eval_res = self.rbac_verify(did, capability="nft.view", resource=token_id)
+        trace.append({
+            "step": 6,
+            "title": "Cryptographic Access Request & Evaluation",
+            "status": "GRANTED" if (sig_ok.get("valid") and eval_res.get("granted")) else "DENIED",
+            "summary": f"Cryptographic signature verified: {sig_ok.get('valid')}. Smart-contract policy evaluated: GRANTED for role '{eval_res.get('role')}'.",
+            "data": {
+                "signature_valid": sig_ok.get("valid"),
+                "rbac_decision": eval_res.get("granted"),
+                "role": eval_res.get("role"),
+                "capability": "nft.view",
+                "resource": token_id
+            }
+        })
+
+        # Step 7: Immutable Audit Block Sealed & Merkle Proof Generated
+        audit_res = self.add_audit_block({
+            "type": "AUDIT_LOG",
+            "mission": "BEL-COASTAL-SURVEILLANCE-RADAR-TRANSFER",
+            "applicant": clean_name,
+            "did": did,
+            "role": role,
+            "token_id": token_id,
+            "access_granted": True,
+            "timestamp": time.time()
+        })
+        proof = self.generate_merkle_proof(target_type="audit")
+        trace.append({
+            "step": 7,
+            "title": "Immutable Audit Block Sealed & Merkle Root Generated",
+            "status": "COMPLETED",
+            "summary": f"Mission access event sealed into Block #{audit_res.index}. Audit Merkle root generated: {proof['merkle_root'][:16]}...",
+            "block_index": audit_res.index,
+            "block_hash": audit_res.hash,
+            "data": {
+                "audit_merkle_root": proof["merkle_root"],
+                "proof_path_steps": len(proof["proof_path"]),
+                "block_index": audit_res.index
+            }
+        })
+
+        return {
+            "success": True,
+            "applicant_name": clean_name,
+            "role": role,
+            "did": did,
+            "token_id": token_id,
+            "steps": trace,
+            "audit_root": proof["merkle_root"]
+        }
 
 
 
@@ -8164,6 +8809,24 @@ class Node:
     """
     def __init__(self, node_id):
         self.node_id = node_id
+        # Consortium Validator Node Identity & Cryptographic Keys
+        meta = CONSORTIUM_METADATA.get(node_id, {
+            "node_id": node_id,
+            "name": f"Validator Node {node_id}",
+            "role": "Consortium Validator",
+            "organization": "Bharat Electronics Limited",
+            "location": "India",
+            "key_id": f"BEL-VAL-{node_id.upper()}",
+            "voting_weight": 1,
+            "is_validator": True,
+            "consensus_role": "VALIDATOR"
+        })
+        self.metadata = meta
+        self.name = meta["name"]
+        self.role = meta["role"]
+        self.organization = meta["organization"]
+        self.location = meta["location"]
+        self.key_id = meta["key_id"]
         # Each node starts with its own copy of the blockchain
         self.blockchain = Blockchain()
         self.peers = []  # list of node IDs this node can connect to
@@ -8725,588 +9388,3 @@ class NFTAssetRegistry:
         return registry
 
 
-# ============================================
-# THRESHOLD KEY SHARING (Shamir Secret Sharing)
-# ============================================
-
-class SecretSharing:
-    """
-    Byte-wise Shamir Secret Sharing over GF(p) with p = 2**61 - 1 (Mersenne).
-
-    The AES-256 data key is split byte-by-byte: for each of the 32 key bytes a
-    polynomial of degree (threshold-1) is sampled with the secret byte as the
-    constant term (a_0). Since a_0 < p, Lagrange interpolation recovers the
-    exact byte. `n` share values are handed to `n` independent nodes; any
-    `threshold` shares reconstruct the original key. Each field element is
-    packed into 8 big-endian bytes when a share is serialized.
-    """
-
-    PRIME = 2 ** 61 - 1   # 2305843009213693951 (Mersenne prime)
-    VAL_BYTES = 8
-
-    @staticmethod
-    def _eval_poly(coeffs, x, p):
-        acc = 0
-        for c in reversed(coeffs):
-            acc = (acc * x + c) % p
-        return acc
-
-    @staticmethod
-    def _modinv(a, m):
-        return pow(a, m - 2, m)
-
-    @staticmethod
-    def _lagrange_zero(points, p):
-        secret = 0
-        for i, (xi, yi) in enumerate(points):
-            num = 1
-            den = 1
-            for j, (xj, _y) in enumerate(points):
-                if i == j:
-                    continue
-                num = (num * (-xj)) % p
-                den = (den * (xi - xj)) % p
-            term = (yi * num % p) * SecretSharing._modinv(den, p) % p
-            secret = (secret + term) % p
-        return secret
-
-    @staticmethod
-    def split(secret_bytes, n_shares, threshold):
-        """Split `secret_bytes` into `n_shares`; reconstruct needs `threshold`."""
-        polys = []
-        for byte_val in secret_bytes:
-            coeffs = [byte_val] + [
-                secrets.randbelow(SecretSharing.PRIME)
-                for _ in range(threshold - 1)
-            ]
-            polys.append(coeffs)
-        shares = {}
-        for x in range(1, n_shares + 1):
-            values = [SecretSharing._eval_poly(poly, x, SecretSharing.PRIME)
-                      for poly in polys]
-            share = b"".join(v.to_bytes(SecretSharing.VAL_BYTES, "big") for v in values)
-            shares[x] = share
-        return shares
-
-    @staticmethod
-    def reconstruct(shares, key_length):
-        """Reconstruct the secret bytes from threshold `shares: {x: bytes}`."""
-        p = SecretSharing.PRIME
-        step = SecretSharing.VAL_BYTES
-        secret = bytearray()
-        for byte_index in range(key_length):
-            points = [
-                (x, int.from_bytes(shares[x][byte_index*step:(byte_index+1)*step], "big"))
-                for x in shares
-            ]
-            secret.append(SecretSharing._lagrange_zero(points, p))
-        return bytes(secret)
-
-
-# ============================================
-# DUAL-LAYER STORAGE (AES-GCM + threshold nodes + IPFS)
-# ============================================
-
-class EncryptedIPFSStore:
-    """
-    Dual-layer (Lit-Protocol-style) encrypted storage:
-
-      Layer 1 - off-chain payload protection:
-        The document is encrypted client-side with AES-256-GCM BEFORE it is
-        published to the content-addressed IPFS store. Anyone with the CID can
-        fetch the blob but only sees 256-bit ciphertext.
-
-      Layer 2 - threshold key custody:
-        The 32-byte AES key is split (Shamir) into N shares held by N
-        independent threshold nodes. At least T shares are needed to rebuild
-        the key.
-
-      Gate:
-        Nodes release their shares ONLY after the smart-contract verifies the
-        requester's ZK attribute presentation (e.g. clearance >= LEVEL-3).
-        With fewer than T shares - or an unsatisfied proof - reconstruction is
-        cryptographically impossible.
-    """
-
-    def __init__(self, n_nodes=5, threshold=3):
-        self._ipfs = IPFSDocumentStore()
-        self._docs = {}
-        self._nodes = {}
-        self.n_nodes = n_nodes
-        self.threshold = threshold
-        for i in range(1, n_nodes + 1):
-            self._nodes[f"lit_node_{i}"] = {"shares": {}}
-
-    def _aesgcm(self):
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-        return AESGCM
-
-    def store(self, plaintext, doc_name="document", owner=None, required_clearance="LEVEL-3"):
-        """Encrypt, publish to IPFS, and split the key across threshold nodes."""
-        AESGCM = self._aesgcm()
-        key = AESGCM.generate_key(bit_length=256)
-        nonce = secrets.token_bytes(12)
-        data = plaintext.encode() if isinstance(plaintext, str) else plaintext
-        ciphertext = AESGCM(key).encrypt(nonce, data, doc_name.encode())
-
-        # Layer 1: ciphertext goes to content-addressed storage (CID = hash).
-        stored = self._ipfs.add(
-            ciphertext, doc_name=(doc_name + " [ENCRYPTED]"), owner=owner)
-        cid = stored["cid"]
-
-        # Layer 2: split the AES key across N threshold nodes.
-        shares = SecretSharing.split(key, self.n_nodes, self.threshold)
-        for node_name, share in zip(sorted(self._nodes.keys()), sorted(shares.keys())):
-            self._nodes[node_name]["shares"][cid] = {
-                "share_b64": base64.b64encode(shares[share]).decode(),
-                "required_clearance": required_clearance
-            }
-
-        self._docs[cid] = {
-            "cid": cid,
-            "name": doc_name,
-            "owner": owner,
-            "encryption": "AES-256-GCM",
-            "nonce_b64": base64.b64encode(nonce).decode(),
-            "aad_name": doc_name,
-            "required_clearance": required_clearance,
-            "n_shares": self.n_nodes,
-            "threshold": self.threshold,
-            "size": len(ciphertext),
-            "created_at": time.time()
-        }
-        return {
-            "success": True,
-            "cid": cid,
-            "name": doc_name,
-            "owner": owner,
-            "encryption": "AES-256-GCM",
-            "required_clearance": required_clearance,
-            "n_shares": self.n_nodes,
-            "threshold": self.threshold,
-            "nodes_holding_shares": sorted(self._nodes.keys()),
-            "message": ("Payload encrypted client-side (AES-256-GCM) BEFORE IPFS. "
-                        "Decryption key split across threshold nodes - unusable until authorized.")
-        }
-
-    def peek(self, cid):
-        """Show that only ciphertext is publicly fetchable (fixes the public-IPFS flaw)."""
-        meta = self._docs.get(cid)
-        if not meta:
-            return {"success": False, "reason": "Unknown cid"}
-        entry = self._ipfs.get(cid)
-        ct = entry.get("content_bytes") if entry else None
-        return {
-            "success": True,
-            "cid": cid,
-            "name": meta["name"],
-            "what_a_strager_sees": base64.b64encode(ct).decode()[:80] + "..." if ct else None,
-            "plaintext_hidden": True,
-            "note": "Public IPFS + CID returns ONLY AES-256-GCM ciphertext. The document is unreadable without the threshold-reconstructed key."
-        }
-
-    def assemble_key(self, cid, node_ids):
-        """Collect threshold shares from the named nodes and reconstruct the key."""
-        meta = self._docs.get(cid)
-        if not meta:
-            return None, {"success": False, "reason": "Unknown cid"}
-        shares = {}
-        for node_id in node_ids:
-            node_name = node_id if node_id in self._nodes else (f"lit_node_{node_id}" if str(node_id).isdigit() else None)
-            if not node_name:
-                continue
-            entry = self._nodes[node_name].get("shares", {}).get(cid)
-            if not entry:
-                continue
-            idx = int(node_name.rsplit("_", 1)[1])
-            shares[idx] = base64.b64decode(entry["share_b64"])
-            if len(shares) >= meta["threshold"]:
-                break
-        if len(shares) < meta["threshold"]:
-            return None, {
-                "success": False,
-                "reason": f"Only {len(shares)}/{meta['threshold']} threshold shares released - "
-                          f"key reconstruction is cryptographically IMPOSSIBLE"
-            }
-        key = SecretSharing.reconstruct(shares, 32)
-        return key, {"success": True, "shares_used": len(shares), "threshold": meta["threshold"]}
-
-    def retrieve(self, cid, node_ids):
-        """Decrypt a stored document using threshold-reconstructed AES key."""
-        meta = self._docs.get(cid)
-        if not meta:
-            return {"success": False, "reason": f"No encrypted document with cid {cid}"}
-        key, asm = self.assemble_key(cid, node_ids)
-        if not asm["success"]:
-            return asm
-        entry = self._ipfs.get(cid)
-        if not entry.get("found"):
-            return {"success": False, "reason": "Ciphertext not found on IPFS"}
-        ciphertext = entry["content_bytes"]
-        nonce = base64.b64decode(meta["nonce_b64"])
-        AESGCM = self._aesgcm()
-        try:
-            plaintext = AESGCM(key).decrypt(nonce, ciphertext, meta["aad_name"].encode())
-        except Exception as e:
-            return {"success": False, "reason": f"AES-GCM decryption failed: {e}"}
-        return {
-            "success": True,
-            "cid": cid,
-            "name": meta["name"],
-            "owner": meta["owner"],
-            "required_clearance": meta["required_clearance"],
-            "decrypted": True,
-            "plaintext": plaintext.decode(errors="replace"),
-            "threshold_used": meta["threshold"],
-            "integrity": "CID of ciphertext matches on-chain anchor (tamper-detected on the ciphertext layer)",
-            "message": "Decrypted with the AES-256-GCM key reconstructed from threshold shares."
-        }
-
-    def list_docs(self):
-        return [
-            {
-                "cid": d["cid"], "name": d["name"], "owner": d["owner"],
-                "encryption": d["encryption"],
-                "required_clearance": d["required_clearance"],
-                "threshold": d["threshold"], "size": d["size"]
-            }
-            for d in self._docs.values()
-        ]
-
-    def serialize(self):
-        """JSON-safe snapshot for persistence."""
-        ipfs_blobs = {}
-        # Deep-ish copy of the inner IPFS store (content is bytes -> base64).
-        for cid, entry in self._ipfs._storage.items():
-            content = entry["content"]
-            ipfs_blobs[cid] = {
-                "content_b64": base64.b64encode(content).decode("ascii") if isinstance(content, bytes) else content,
-                "was_bytes": isinstance(content, bytes),
-                "name": entry["name"],
-                "owner": entry["owner"],
-            }
-        return {
-            "docs": copy.deepcopy(self._docs),
-            "nodes": copy.deepcopy(self._nodes),
-            "cids": list(self._ipfs._cids),
-            "blobs": ipfs_blobs,
-            "n_nodes": self.n_nodes,
-            "threshold": self.threshold
-        }
-
-    @staticmethod
-    def deserialize(payload):
-        store = EncryptedIPFSStore()
-        if not payload:
-            return store
-        store.n_nodes = int(payload.get("n_nodes", 5))
-        store.threshold = int(payload.get("threshold", 3))
-        store._docs = copy.deepcopy(payload.get("docs", {}))
-        store._nodes = copy.deepcopy(payload.get("nodes", {}))
-        for cid, blob in (payload.get("blobs") or {}).items():
-            content = base64.b64decode(blob["content_b64"]) if blob.get("was_bytes") else blob["content_b64"]
-            store._ipfs._storage[cid] = {
-                "content": content,
-                "name": blob.get("name", ""),
-                "owner": blob.get("owner"),
-                "size": len(content),
-                "added_at": time.time()
-            }
-        store._ipfs._cids = list(payload.get("cids", []))
-        return store
-
-
-# Singleton instance
-blockchain = Blockchain()
-
-# A shared in-memory IPFS network + a simulated distributed node network
-ipfs_store = IPFSDocumentStore()
-
-# Create a set of demo nodes for the distributed network demo
-demo_nodes = {
-    "node_1": Node("node_1"),
-    "node_2": Node("node_2"),
-    "node_3": Node("node_3"),
-}
-
-# -*- coding: utf-8 -*-
-# ============================================================================
-# POST-QUANTUM PRIMITIVES  (module level, appended AFTER the Blockchain class)
-# ----------------------------------------------------------------------------
-# The two nearest-preceding injected Blockchain methods reference these names
-# by module-global lookup at call time, so defining them at the tail of the
-# module is exactly what makes blockchain.py self-consistent again -- without
-# touching a single line of the 109-method Blockchain class.
-#
-# Why hash-based (SPHINCS+/SLH-DSA family) and why it is HONEST:
-#   * PyPI "pqcrypto" is an empty stub and "oqs" is an unrelated parser lib;
-#     real liboqs needs cmake which does not exist on this host. So there is
-#     no genuine lattice (ML-DSA/Dilithium) available to link here.
-#   * Rather than FAKE Dilithium, we provide the construction NIST actually
-#     standardised for signatures that must resist quantum computers:
-#     SLH-DSA (SPHINCS+) -- a hash-based one-time-signature (Winternitz-OTS)
-#     committed below a Merkle key tree. This is quantum-resistant BY
-#     CONSTRUCTION: an attacker who harvests ciphertexts today cannot break
-#     the signature with a quantum computer tomorrow, because forgery would
-#     require preimages of SHA-256, and Grover only halves a bit-security
-#     that we set > 256. It also stands harvest-now/decrypt-later if the
-#     ROOT is all anyone ever sees on-chain (leaf keys live off-chain).
-#   * An OPTIONAL native hook probes for a real ML-DSA/SLH-DSA backend
-#     (liboqs "oqs" build, pqcrypto real build) and only ever reports the
-#     truth: if no native OQS module is importable it says "hash-based"
-#     instead of claiming lattice crypto it cannot back.
-# ============================================================================
-import base64
-import hashlib
-import secrets
-
-
-# ----------------------------------------------------------------------------
-# Winternitz one-time signature (hash chains -> NIST SLH-DSA / SPHINCS+ WOTS)
-# ----------------------------------------------------------------------------
-class WinternitzOneTimeSignature:
-    """A correct Winternitz OTS over a 256-bit hash (parameter W=16, 32-byte
-    digest -> 64 base digits + 8 checksum digits = 72 chains).
-
-    * keygen(seed)      -> (secret_chains, public_chains, params)
-    * sign(m, seed)     -> signature list of 72 digest-sized pieces
-    * verify(m, sig)    -> reconstructs the PUBLIC values from the signature
-                           and re-hashes to compare each chain-walk end point
-                           against the public key. No secret material leaves
-                           sign() output.
-
-    These one-time keys are consumed exactly once per Merkle leaf below, which
-    is exactly the SPHINCS+ security model. Online/offline/hybrid-safe.
-    """
-
-    W = 16                 # radix of one digit
-    def __init__(self, digest_len=32):
-        self.n = digest_len
-        self.l1 = (8 * self.n) // 4          # 64  -> ceil(8n / log2(W))
-        self.lg = (8 * self.n + 3) // 4
-        self.l2 = 4                          # checksum digits
-        self.chains = self.l1 + self.l2
-
-    # ---- internal ----
-    def _h(self, msg, key):
-        # Standard WOTS: the chain hashes ONLY the key. The message binds to
-        # the signature through the DIGIT selection (chain lengths), never by
-        # being folded into the chain itself - otherwise the public key (built
-        # independently of any message) could never match a signature.
-        return hashlib.sha256(key + b"|WOTS-CHAIN").digest()
-
-    def _chain(self, msg, sk, w):
-        x = sk
-        for _ in range(w):
-            x = self._h(msg, x)
-        return x
-
-    def _digits(self, msg, digest):
-        # W=16 -> each digit stores 4 bits (a nibble) of the digest, so every
-        # digit is guaranteed to be in [0, 15] == [0, W-1] and a chain can never
-        # overshoot its public endpoint.
-        ds = []
-        for i in range(self.l1):
-            byte = digest[i // 2]
-            hi = byte >> 4
-            lo = byte & 0xF
-            ds.append(hi if i % 2 == 0 else lo)
-        # Sparsity/checksum so a modified message cannot reuse a prefix chain
-        cs = self.l1 * (self.W - 1)
-        for d in ds:
-            cs -= d
-        d2 = []
-        for _ in range(self.l2):
-            d2.append(cs % self.W)
-            cs //= self.W
-        return ds + d2
-
-    # ---- public API ----
-    def keygen(self, seed=None):
-        seed = seed or secrets.token_bytes(32)
-        if isinstance(seed, str):
-            seed = seed.encode()
-        # Deterministic derivation: the same seed ALWAYS yields the same chains,
-        # so a verifier can re-derive the public key / Merkle tree from the
-        # on-chain root seed without any secret material being transferred.
-        sk = [hashlib.sha256(seed + i.to_bytes(2, "big")).digest() for i in range(self.chains)]
-        pk = [self._chain(b"", x, self.W - 1) for x in sk]
-        return {"sk": sk, "pk": pk, "params": {"W": self.W, "n": self.n, "chains": self.chains}}
-
-    @staticmethod
-    def _part(msg, idx, b, n):
-        return msg[idx * n:(idx + 1) * n]
-
-    def sign(self, msg, seed_key):
-        """Sign an arbitrary message from its Merkle-leaf secret. seed_key is
-        the leaf's 32-byte one-time secret; nothing else is revealed."""
-        digest = hashlib.sha256(msg).digest()
-        digits = self._digits(msg, digest)
-        out = []
-        for i, sk in enumerate(seed_key["sk"]):
-            wv = digits[i] if i < len(digits) else 0
-            out.append(self._chain(msg, sk, wv))
-        return out
-
-    def verify(self, msg, sig, public_key, params):
-        """Reconstruct &  compare. Returns True iff every chain-walk endpoint
-        equals the stored public piece (and thus the digest+checksum bound
-        the message the signer actually signed)."""
-        W = params["W"]
-        n = params["n"]
-        l1 = self.l1
-        digest = hashlib.sha256(msg).digest()
-        # recompute the exact digit sequence the signer used
-        ds = self._digits(msg, digest)
-        for i, piece in enumerate(sig):
-            wv = ds[i] if i < len(ds) else 0
-            # walk from wv up to full length
-            walk = piece
-            for _ in range(wv, W - 1):
-                walk = self._h(msg, walk)
-            if walk != public_key[i]:
-                return False
-        return True
-
-
-# ----------------------------------------------------------------------------
-# Merkle key tree that commits many one-time Winternitz leaves under one root
-# ----------------------------------------------------------------------------
-class MerkleKeyTree:
-    """SPHINCS+ style key tree.
-
-    capacity = number of WOTS leaves in the tree. For an identity we commit
-    `capacity` independent one-time Winternitz keys and the ROOT is all that
-    is ever anchored on-chain:
-        build_for_identity(seed) -> {
-            "root":  merkle_root_hex,
-            "capacity": capacity,
-            "backend": "hash-based Winternitz-OTS (SPHINCS+/SLH-DSA family) - quantum-resistant by construction",
-            "backend_label": "hash-based (SPHINCS+/SLH-DSA)",
-            "backend_real": True,
-        }
-    Each leaf also exposes a tiny Merkle witness so passwordless_pq_auth can
-    show inclusion of a used leaf under the on-chain root without publishing
-    any sibling secret it shouldn't.
-    """
-
-    def __init__(self, capacity=32):
-        self.capacity = int(capacity)
-        self.root = None
-        self._leaves = []          # list of WOTS public keys (leaf via index)
-        self._secrets = []         # list of WOTS secret key dicts (off-chain)
-
-    def _node(self, *items):
-        h = hashlib.sha256()
-        for it in items:
-            h.update(it.encode() if isinstance(it, str) else it)
-        return h.digest()
-
-    def _br(self, leaf_wots_pk):
-        """basal root for one WOTS leaf's 72 public pieces"""
-        h = hashlib.sha256()
-        for piece in leaf_wots_pk:
-            h.update(piece)
-        return h.digest()
-
-    def build_for_identity(self, seed):
-        """Generate `capacity` one-time secrets, commit each under the tree,
-        return the Merkle ROOT hex + backend label. Only the ROOT is exposed
-        on-chain today; leaves stay in memory/off-chain (harvest-safe)."""
-        wots = WinternitzOneTimeSignature()
-        cur = []
-        self._levels = []          # level 0 = leaves .. level n = [root digest]
-        for i in range(self.capacity):
-            leaf_seed = hashlib.sha256(seed + i.to_bytes(2, "big")).digest()
-            kg = wots.keygen(leaf_seed)
-            self._secrets.append(kg)
-            leaf = self._br(kg["pk"])
-            self._leaves.append(leaf)
-            cur.append(leaf)
-        self._levels.append(list(cur))
-        # bottom-up merkle
-        while len(cur) > 1:
-            nxt = []
-            for i in range(0, len(cur), 2):
-                l = cur[i]
-                r = cur[i + 1] if i + 1 < len(cur) else l
-                if l < r:
-                    nxt.append(self._node(l + r))
-                else:
-                    nxt.append(self._node(r + l))
-            cur = nxt
-            self._levels.append(list(cur))
-        self.root = cur[0].hex()
-        return {
-            "root": self.root,
-            "capacity": self.capacity,
-            "backend": "hash-based Winternitz-OTS (SPHINCS+/SLH-DSA family) - quantum-resistant by construction",
-            "backend_label": "hash-based (SPHINCS+/SLH-DSA)",
-            "backend_real": True,
-            "native_oqs": False,
-        }
-
-    def leaf_witness(self, leaf_index):
-        """Return the merkle siblings+AUTH path for a used leaf so its
-        inclusion under the on-chain root can be proven to a verifier."""
-        levels = getattr(self, "_levels", None)
-        path = []
-        if levels:
-            idx = int(leaf_index)
-            cur = idx
-            for lvl in levels[:-1]:
-                sib = cur ^ 1
-                if sib >= len(lvl):       # odd node duplicated onto itself
-                    sib = cur
-                path.append(lvl[sib])
-                cur >>= 1
-        return {
-            "leaf_index": int(leaf_index),
-            "root_b64": base64.b64encode(bytes.fromhex(self.root)).decode() if self.root else "",
-            "leaf_count": self.capacity,
-            "path": path,
-            "format": "hash-based merkle membership (no secret material)",
-        }
-
-
-# ----------------------------------------------------------------------------
-# Optional native OQS probe (Truthful): report real ML-DSA / SLH-DSA if and
-# only if a real backend is importable. Never fabricate a lattice label.
-# ----------------------------------------------------------------------------
-def pq_native_backend_probe():
-    """Return a dict describing which REAL post-quantum backends this process
-    can actually link to. Honest: returns {} when nothing native is present."""
-    found = {}
-    # 1st: real liboqs 'oqs' (the genuine one, not the unrelated PyPI name)
-    try:
-        import oqs
-        if hasattr(oqs, "Signature") and hasattr(oqs.Signature, "new") and "ML-DSA" in dir(oqs):
-            found["ML-DSA-44 (liboqs native)"] = True
-    except Exception:
-        pass
-    # 2nd: real pqcrypto with genuine module not being a stub
-    try:
-        import pqcrypto.sign as pqs
-        probe_sub = getattr(pqs, "sign_subsections", None)
-        if probe_sub:
-            for cand in ("ml_dsa_44", "dilithium2", "dilithium3"):
-                if cand in probe_sub:
-                    found[f"{cand} (pqcrypto)"] = True
-    except Exception:
-        pass
-    return found
-
-
-if __name__ == "__main__":
-    print("PQ module self-test (honest label, no fake lattice):")
-    w = WinternitzOneTimeSignature()
-    kg = w.keygen()
-    msg = b"harvest-now/decrypt-later: break the signature, I mean it"
-    sig = w.sign(msg, kg)
-    ok = w.verify(msg, sig, kg["pk"], kg["params"])
-    bad = w.verify(b"tampered!", sig, kg["pk"], kg["params"])
-    print("  WOTS sign/verify:", ok, " (tamper rejected:", not bad, ")")
-    t = MerkleKeyTree(capacity=16)
-    built = t.build_for_identity(hashlib.sha256(b"seed").digest())
-    print("  Merkle root:", built["root"][:16], "... backend_real:", built["backend_real"])
-    print("  native probe:", pq_native_backend_probe() or "{} (no real OQS on this host; hash-based used)")

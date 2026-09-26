@@ -6,7 +6,8 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from blockchain import (Blockchain, generate_identity_hash, Block, CryptoIdentity, Node,
                         IPFSDocumentStore, DecentralizedIdentifier, ABACPolicy,
-                        NFTAssetRegistry, NFTOracleTelemetry, SecretSharing, EncryptedIPFSStore)
+                        NFTAssetRegistry, NFTOracleTelemetry,
+                        RBAC_ROLES, RBAC_ROLE_POLICIES)
 import json
 import time
 import copy
@@ -32,8 +33,7 @@ def _build_initial_nodes():
 
 ipfs = IPFSDocumentStore()
 
-# Dual-layer encrypted storage (AES-256-GCM + threshold-nodes + IPFS)
-encrypted_ipfs = EncryptedIPFSStore(n_nodes=5, threshold=3)
+# Dual-layer encrypted storage removed
 
 app = Flask(__name__)
 CORS(app)
@@ -157,7 +157,7 @@ def save_state():
             "multisig_proposals": getattr(blockchain, "_multisig_proposals", {}),
             "oracle_keypair": list(getattr(blockchain, "_oracle_keypair", []))
                                 if getattr(blockchain, "_oracle_keypair", None) else None,
-            "encipfs": encrypted_ipfs.serialize(),
+            
             "feature13": {
                 "disposable_tokens": getattr(blockchain, "_disposable_tokens", {}),
                 "delegations": getattr(blockchain, "_delegations", {}),
@@ -188,7 +188,7 @@ def save_state():
                 "pq_identities": getattr(blockchain, "_pq_identities", {}),
                 "key_transparency": getattr(blockchain, "_key_transparency", {}),
                 "liveness_challenges": getattr(blockchain, "_liveness_challenges", {}),
-                "duress_codes": getattr(blockchain, "_duress_codes", {}),
+                
                 "two_person_windows": getattr(blockchain, "_two_person_windows", {}),
                 "airgap_packs": getattr(blockchain, "_airgap_packs", {}),
                 "partition_drills": getattr(blockchain, "_partition_drills", {}),
@@ -212,11 +212,11 @@ def save_state():
                 "lifecycle_events": getattr(blockchain, "_lifecycle_events", []),
                 "purpose_policy": getattr(blockchain, "_purpose_policy", {}),
                 "purpose_denials": getattr(blockchain, "_purpose_denials", []),
-                "sealed_sessions": getattr(blockchain, "_sealed_sessions", {}),
-                "session_log": getattr(blockchain, "_session_log", []),
+                
+                
                 "classification_policy": getattr(blockchain, "_classification_policy", {}),
-                "chaos_config": getattr(blockchain, "_chaos_config", {}),
-                "chaos_events": getattr(blockchain, "_chaos_events", []),
+                
+                
                 "node_pki": getattr(blockchain, "_node_pki", {}),
                 "rogue_attempts": getattr(blockchain, "_rogue_attempts", []),
                 "notarization_anchors": getattr(blockchain, "_notarization_anchors", []),
@@ -265,7 +265,18 @@ def load_state():
                 payload["nft_registry"], owner_validator=blockchain._nft_owner_verified)
         rbac = payload.get("rbac") or {}
         if isinstance(rbac.get("policy"), dict):
-            blockchain._rbac_policy = rbac["policy"]
+            # Merge rather than replace. Canonical roles must come from the
+            # current code default so that a capability added to
+            # RBAC_ROLE_POLICIES actually reaches an already-persisted chain -
+            # replacing wholesale pinned the chain to whatever policy happened to
+            # be in force when it was first saved. Admin-defined *custom* roles
+            # are not in the code default, so they are carried over verbatim.
+            merged = copy.deepcopy(RBAC_ROLE_POLICIES)
+            for role, pol in rbac["policy"].items():
+                if role in RBAC_ROLES:
+                    continue          # canonical role -> code default wins
+                merged[role] = copy.deepcopy(pol)
+            blockchain._rbac_policy = merged
         if isinstance(rbac.get("assignments"), dict):
             blockchain._rbac_assignments = rbac["assignments"]
         if rbac.get("transfer_nonces") is not None:
@@ -278,9 +289,6 @@ def load_state():
             blockchain._multisig_proposals = payload["multisig_proposals"]
         if isinstance(payload.get("oracle_keypair"), (list, tuple)) and len(payload["oracle_keypair"]) == 2:
             blockchain._oracle_keypair = tuple(payload["oracle_keypair"])
-        if payload.get("encipfs"):
-            global encrypted_ipfs
-            encrypted_ipfs = EncryptedIPFSStore.deserialize(payload["encipfs"])
         f13 = payload.get("feature13") or {}
         for attr, key in (
             ("_disposable_tokens", "disposable_tokens"), ("_delegations", "delegations"),
@@ -308,7 +316,7 @@ def load_state():
             ("_forensic_diffs", "forensic_diffs"), ("_dup_flags", "dup_flags"),
             ("_bulk_batches", "bulk_batches"), ("_join_requests", "join_requests"),
             ("_pq_identities", "pq_identities"), ("_key_transparency", "key_transparency"),
-            ("_liveness_challenges", "liveness_challenges"), ("_duress_codes", "duress_codes"),
+            ("_liveness_challenges", "liveness_challenges"), 
             ("_two_person_windows", "two_person_windows"), ("_airgap_packs", "airgap_packs"),
             ("_partition_drills", "partition_drills"), ("_pin_reputation", "pin_reputation"),
             ("_firmware_gate", "firmware_gate"), ("_provenance", "provenance"),
@@ -326,9 +334,9 @@ def load_state():
             ("_containment_actions", "containment_actions"),
             ("_selective_credentials", "selective_credentials"),
             ("_witness_requests", "witness_requests"),
-            ("_purpose_policy", "purpose_policy"), ("_sealed_sessions", "sealed_sessions"),
+            ("_purpose_policy", "purpose_policy"), 
             ("_classification_policy", "classification_policy"),
-            ("_chaos_config", "chaos_config"), ("_node_pki", "node_pki"),
+             ("_node_pki", "node_pki"),
             ("_monotonic_nonces", "monotonic_nonces"),
             ("_asset_geofences", "asset_geofences"),
             ("_maintenance_orders", "maintenance_orders"),
@@ -340,8 +348,8 @@ def load_state():
         for attr, key in (
             ("_scenario_runs", "scenario_runs"), ("_sdisclosures", "sdisclosures"),
             ("_lifecycle_events", "lifecycle_events"),
-            ("_purpose_denials", "purpose_denials"), ("_session_log", "session_log"),
-            ("_chaos_events", "chaos_events"), ("_rogue_attempts", "rogue_attempts"),
+            ("_purpose_denials", "purpose_denials"), 
+             ("_rogue_attempts", "rogue_attempts"),
             ("_notarization_anchors", "notarization_anchors"), ("_geo_alerts", "geo_alerts"),
         ):
             if isinstance(f15.get(key), list):
@@ -389,6 +397,7 @@ def list_identities():
 
 
 @app.route('/api/identities/add', methods=['POST'])
+@app.route('/api/identity/register', methods=['POST'])
 def add_identity():
     """Register a new identity"""
     try:
@@ -422,6 +431,7 @@ def add_identity():
             "success": True,
             "message": f"Identity '{data['name']}' registered successfully",
             "identity_hash": registered["identity_hash"],
+            "did": registered.get("did", result.get("did", "")),
             "block_index": registered["block_index"],
             "block_hash": registered["block_hash"],
             "nonce": result["nonce"],
@@ -764,95 +774,6 @@ def secrets_hex(nbytes):
 
 
 # ============================================
-# BIOMETRIC VERIFICATION ENDPOINTS
-# ============================================
-
-@app.route('/api/biometric/enroll', methods=['POST'])
-def biometric_enroll():
-    """
-    Enroll a biometric template for an identity.
-    Stores only the template HASH on-chain; raw template in secure enclave.
-    """
-    try:
-        data = _post_json() or {}
-        public_id = data.get("public_id")
-        biometric_type = data.get("biometric_type", "face")
-
-        if not public_id:
-            return jsonify({"success": False, "error": "public_id required"}), 400
-
-        result = blockchain.enroll_biometric(public_id, biometric_type)
-        return jsonify(result if "success" in result else {"success": False, "reason": result.get("reason")})
-
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/biometric/verify', methods=['POST'])
-def biometric_verify():
-    """
-    Simulate a live biometric capture and verify against enrolled template.
-    """
-    try:
-        data = _post_json() or {}
-        public_id = data.get("public_id")
-        biometric_type = data.get("biometric_type", "face")
-        raw_noise = data.get("noise", 0.12)
-        try:
-            noise = float(raw_noise)
-        except (ValueError, TypeError):
-            return jsonify({"success": False, "error": "noise must be a number"}), 400
-
-        if not public_id:
-            return jsonify({"success": False, "error": "public_id required"}), 400
-
-        result = blockchain.biometric_capture_and_verify(public_id, biometric_type, noise)
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/biometric/demo', methods=['POST'])
-def biometric_demo():
-    """
-    Full biometric verification demo: enroll + capture + verify + access gate.
-    """
-    try:
-        data = _post_json() or {}
-        public_id = data.get("public_id") or "aarav.sharma@bel.gov.in"
-        biometric_type = data.get("biometric_type", "face")
-        resource = data.get("resource", "admin_dashboard")
-
-        # 1. Enroll
-        enroll = blockchain.enroll_biometric(public_id, biometric_type)
-        if not enroll.get("success"):
-            return jsonify({**enroll, "step": "enroll"})
-
-        # 2. Simulate capture (with a tiny bit of sensor noise)
-        capture = blockchain.biometric_capture_and_verify(public_id, biometric_type, noise=0.10)
-
-        return jsonify({
-            "success": True,
-            "steps": {
-                "enroll": {
-                    "template_hash": enroll["template_hash"],
-                    "template_preview": enroll["template_preview"],
-                    "block_index": enroll["block_index"]
-                },
-                "capture": capture
-            },
-            "biometric_type": biometric_type,
-            "public_id": public_id,
-            "final_access": capture.get("matched", False),
-            "message": capture.get("message", "")
-        })
-
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-# ============================================
 # SMART CONTRACT ACCESS RULES ENDPOINTS
 # ============================================
 
@@ -893,6 +814,47 @@ def smartcontract_evaluate():
         result = blockchain.evaluate_smart_contract(public_id, resource, context)
         return jsonify({"success": True, "data": result})
 
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/smartcontract/registry')
+def smartcontract_registry():
+    """Get the catalog of canonical BEL defense smart contracts and supported methods"""
+    return jsonify({
+        "success": True,
+        "contracts": blockchain.get_smart_contract_registry()
+    })
+
+
+@app.route('/api/smartcontract/execute', methods=['POST'])
+def smartcontract_execute():
+    """
+    Execute a defense smart contract with on-chain cryptographic receipt generation.
+    Expected payload:
+      {
+        "contract_id": "BEL-SC-IAM-01" | "BEL-SC-ASSET-01" | "BEL-SC-ACCESS-01",
+        "method": "<method_name>",
+        "caller_did": "<did_or_email>",
+        "params": {...}
+      }
+    """
+    try:
+        data = _post_json() or {}
+        contract_id = data.get("contract_id")
+        method = data.get("method")
+        caller_did = data.get("caller_did")
+        params = data.get("params", {})
+
+        if not contract_id or not method or not caller_did:
+            return jsonify({
+                "success": False,
+                "error": "contract_id, method, and caller_did are required"
+            }), 400
+
+        receipt = blockchain.execute_smart_contract(contract_id, method, caller_did, params)
+        save_state()
+        return jsonify(receipt), 200 if receipt.get("success") else 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -1215,12 +1177,30 @@ def network_status():
         valid, msg = node.validate_local_chain()
         result.append({
             "node_id": node_id,
+            "name": getattr(node, "name", node_id),
+            "role": getattr(node, "role", "Consortium Validator"),
+            "key_id": getattr(node, "key_id", f"BEL-VAL-{node_id.upper()}"),
+            "organization": getattr(node, "organization", "Bharat Electronics Limited"),
+            "location": getattr(node, "location", "India"),
             "blocks": len(node.blockchain.chain),
             "chain_valid": valid,
             "peers": node.peers,
             "last_block_hash": node.blockchain.last_block.hash[:16] + "..."
         })
-    return jsonify({"success": True, "nodes": result})
+    return jsonify({
+        "success": True,
+        "nodes": result,
+        "consortium": blockchain.get_consortium_status(network_nodes)
+    })
+
+
+@app.route('/api/consortium/status')
+def consortium_status():
+    """Get operational status and BFT quorum health of the BEL Defense Consortium"""
+    try:
+        return jsonify(blockchain.get_consortium_status(network_nodes))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/api/network/node/<node_id>/chain')
@@ -1731,6 +1711,39 @@ def audit_trail():
         entries = blockchain.get_audit_trail(public_id=public_id, limit=limit)
         stats = blockchain.get_audit_stats()
         return jsonify({"success": True, "entries": entries, "stats": stats})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/audit/activities')
+def audit_activities():
+    """The six auditable activities named in the problem statement, filtered
+    SERVER-SIDE. Returns the per-activity block counts (so all six are visible
+    even when one has not run yet) plus, when ?activity=<key> is supplied, the
+    matching blocks. Filtering before the limit is applied means a long demo
+    session can never hide an activity behind a page cut-off."""
+    try:
+        activity = request.args.get("activity") or None
+        raw_limit = request.args.get("limit", 100)
+        try:
+            limit = int(raw_limit)
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "limit must be an integer"}), 400
+
+        summary = blockchain.get_activity_summary()
+        if activity and activity not in blockchain.PS_ACTIVITIES:
+            return jsonify({
+                "success": False,
+                "error": "Unknown activity '%s'" % activity,
+                "expected": sorted(blockchain.PS_ACTIVITIES),
+            }), 400
+        entries = blockchain.get_activity_trail(activity=activity, limit=limit)
+        return jsonify({"success": True, "activity": activity,
+                        "activities": summary["activities"],
+                        "total_blocks": summary["total"],
+                        "entries": entries, "count": len(entries)})
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2311,7 +2324,7 @@ def nft_mint():
                                      actor=str(actor), context=data.get("context") or {})
         if result["success"]:
             save_state()
-        return jsonify(result if result.get("success") else {"success": False, "reason": result.get("reason")})
+        return jsonify(result), (200 if result["success"] else 403)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2447,7 +2460,7 @@ def nft_transfer():
                                          context=data.get("context") or {})
         if result["success"]:
             save_state()
-        return jsonify(result if result.get("success") else {"success": False, "reason": result.get("reason")})
+        return jsonify(result), (200 if result["success"] else 403)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2549,23 +2562,33 @@ def nft_transfer_demo():
             "token_id": tid,
             "scenarios": {
                 "no_actor_request": {
+                    "name": "Unauthenticated request (no actor)",
                     "success": anon.get("success"), "reason": anon.get("reason"),
-                    "blocked": not anon.get("success")},
+                    "blocked": not anon.get("success"), "gate": anon.get("gate")},
                 "non_owner_non_admin": {
+                    "name": "Stranger / non-owner transfer",
                     "success": stranger.get("success"), "reason": stranger.get("reason"),
-                    "blocked": not stranger.get("success")},
+                    "blocked": not stranger.get("success"), "gate": stranger.get("gate")},
                 "forged_owner_signature": {
+                    "name": "Forged owner consent signature",
                     "success": forged.get("success"), "reason": forged.get("reason"),
-                    "blocked": not forged.get("success")},
+                    "blocked": not forged.get("success"), "gate": forged.get("gate")},
                 "signed_owner_consent": {
-                    "success": signed.get("success"), "consent_mode": signed.get("consent_mode"),
-                    "signature_verified": signed.get("signature_verified")},
+                    "name": "Genuine signed owner consent",
+                    "success": signed.get("success"), "reason": signed.get("reason"),
+                    "consent_mode": signed.get("consent_mode"),
+                    "signature_verified": signed.get("signature_verified"),
+                    "gate": signed.get("gate")},
                 "replayed_nonce": {
+                    "name": "Replayed signature + nonce",
                     "success": replay.get("success"), "reason": replay.get("reason"),
-                    "blocked": not replay.get("success")},
+                    "blocked": not replay.get("success"), "gate": replay.get("gate")},
                 "admin_override": {
+                    "name": "Administrator override (full gate)",
                     "success": admin_tx.get("success"),
-                    "consent_mode": admin_tx.get("consent_mode")},
+                    "reason": admin_tx.get("reason"),
+                    "consent_mode": admin_tx.get("consent_mode"),
+                    "gate": admin_tx.get("gate")},
             },
             "ownership_now": blockchain.nft_chain_ledger(),
             "conclusion": ("A dNFT can be transferred only by (a) the verified current "
@@ -2623,7 +2646,7 @@ def rbac_define_role():
                                              resources=data.get("resources"))
         if result.get("success"):
             save_state()
-        return jsonify(result if result.get("success") else {"success": False, "reason": result.get("reason")})
+        return jsonify(result), (200 if result.get("success") else 403)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2641,7 +2664,7 @@ def rbac_assign_role():
         result = blockchain.rbac_assign_role(actor, public_id, role)
         if result.get("success"):
             save_state()
-        return jsonify(result if result.get("success") else {"success": False, "reason": result.get("reason")})
+        return jsonify(result), (200 if result.get("success") else 403)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2660,6 +2683,61 @@ def rbac_verify():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/rbac/matrix', methods=['GET'])
+def rbac_matrix():
+    """Canonical RBAC Permissions Matrix for BEL Defense Platform."""
+    operations = [
+        {"id": "identity.register", "name": "Register Identity", "category": "Identity"},
+        {"id": "rbac.role.assign", "name": "Assign RBAC Role", "category": "Governance"},
+        {"id": "nft.mint", "name": "Mint Defense Asset", "category": "Assets"},
+        {"id": "nft.transfer", "name": "Transfer Asset", "category": "Assets"},
+        {"id": "nft.view", "name": "Read Blueprint / Telemetry", "category": "Assets"},
+        {"id": "audit.view", "name": "Verify Audit Trail", "category": "Compliance"},
+    ]
+    roles = ["ADMINISTRATOR", "MANAGER", "AUDITOR", "USER"]
+    matrix = {}
+    for role in roles:
+        pol = blockchain._rbac_policy.get(role, {})
+        caps = set(pol.get("capabilities", [])) | set(pol.get("resources", []))
+        role_map = {}
+        for op in operations:
+            op_id = op["id"]
+            granted = (op_id in caps) or ("*" in caps)
+            role_map[op_id] = {
+                "granted": granted,
+                "scope": "All Resources" if role == "ADMINISTRATOR" else ("Departmental" if granted else "None")
+            }
+        matrix[role] = role_map
+    return jsonify({
+        "success": True,
+        "roles": roles,
+        "operations": operations,
+        "matrix": matrix
+    })
+
+
+@app.route('/api/rbac/matrix/simulate', methods=['POST'])
+def rbac_matrix_simulate():
+    try:
+        data = _post_json() or {}
+        role = str(data.get("role") or "USER").upper()
+        capability = data.get("capability") or "nft.view"
+        resource = data.get("resource") or "BEL-RADAR-MK4-SCHEMATIC"
+        pol = blockchain._rbac_policy.get(role, {})
+        allowed = set(pol.get("capabilities", [])) | set(pol.get("resources", []))
+        granted = (capability in allowed) or (resource and resource in allowed) or ("*" in allowed)
+        return jsonify({
+            "success": True,
+            "role": role,
+            "capability": capability,
+            "resource": resource,
+            "decision": "GRANTED" if granted else "DENIED",
+            "reason": f"Role '{role}' {'holds' if granted else 'lacks'} grant for capability '{capability}'"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ----------------------------------------------------------------------------
 # On-chain NFT ownership - ownership is derived from chain blocks only
 # ----------------------------------------------------------------------------
@@ -2674,6 +2752,34 @@ def nft_ownership():
         if not token_id:
             return jsonify({"success": False, "reason": "token_id (or all=true) required"}), 400
         return jsonify(blockchain.nft_ownership(token_id, actor=actor))
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/nft/provenance/<token_id>')
+def nft_provenance_get(token_id):
+    """
+    Verify complete Genesis-to-Head provenance trail and cryptographic chain of custody for a dNFT.
+    """
+    try:
+        result = blockchain.verify_nft_provenance(token_id)
+        return jsonify(result), 200 if result.get("success") else 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/nft/provenance', methods=['POST'])
+def nft_provenance_post():
+    """
+    Verify complete Genesis-to-Head provenance trail for a token_id passed in JSON body.
+    """
+    try:
+        data = _post_json() or {}
+        token_id = data.get("token_id")
+        if not token_id:
+            return jsonify({"success": False, "error": "token_id is required"}), 400
+        result = blockchain.verify_nft_provenance(token_id)
+        return jsonify(result), 200 if result.get("success") else 404
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2749,181 +2855,6 @@ def nft_demo():
             "conclusion": ("Dynamic NFTs track Manufactured -> Deployed -> Under Maintenance -> "
                            "Decommissioned via signed IoT telemetry; access to the blueprint is "
                            "automatically revoked outside the BEL perimeter even for an Admin.")
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-# ============================================
-# DUAL-LAYER STORAGE (AES-GCM + threshold nodes + IPFS)
-# ============================================
-
-@app.route('/api/encipfs/add', methods=['POST'])
-def encipfs_add():
-    """
-    Encrypt a payload client-side (AES-256-GCM) BEFORE IPFS and split the key
-    across threshold nodes. Only ciphertext is ever stored / served publicly.
-    """
-    try:
-        data = _post_json() or {}
-        plaintext = data.get("plaintext")
-        name = data.get("name", "document")
-        owner = data.get("owner", "BEL")
-        required_clearance = data.get("required_clearance", "LEVEL-3")
-        if plaintext is None:
-            return jsonify({"success": False, "error": "plaintext required"}), 400
-        result = encrypted_ipfs.store(plaintext, name, owner, required_clearance)
-        if result["success"]:
-            save_state()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/encipfs/list', methods=['GET'])
-def encipfs_list():
-    return jsonify({"success": True, "documents": encrypted_ipfs.list_docs()})
-
-
-@app.route('/api/encipfs/peek', methods=['POST'])
-def encipfs_peek():
-    """Show that the public IPFS + CID layer returns ONLY AES ciphertext."""
-    try:
-        data = _post_json() or {}
-        cid = data.get("cid")
-        if not cid:
-            return jsonify({"success": False, "error": "cid required"}), 400
-        result = encrypted_ipfs.peek(cid)
-        return jsonify(result if result.get("success") else {"success": False, "reason": result.get("reason")})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/encipfs/retrieve', methods=['POST'])
-def encipfs_retrieve():
-    """
-    Unlock a stored document. The threshold nodes release their shares ONLY if
-    the smart-contract verifies the requester's ZK attribute presentation
-    (clearance >= the document's required_clearance).
-    """
-    try:
-        data = _post_json() or {}
-        cid = data.get("cid")
-        presentation = data.get("presentation")
-        nodes = data.get("nodes") or ["lit_node_1", "lit_node_2", "lit_node_3"]
-        if not cid:
-            return jsonify({"success": False, "error": "cid required"}), 400
-
-        meta_list = [d for d in encrypted_ipfs.list_docs() if d["cid"] == cid]
-        if not meta_list:
-            return jsonify({"success": False, "error": "Unknown cid"}), 404
-        required = meta_list[0]["required_clearance"]
-
-        if not presentation:
-            return jsonify({
-                "success": False,
-                "reason": (f"GATE CLOSED - no ZK attribute presentation provided. "
-                           f"This document requires clearance >= {required}.")
-            })
-
-        # The presentation MUST target the document's effective clearance.
-        expected_predicate = {"attribute": "security_clearance", "op": ">=", "value": required}
-        if presentation.get("predicate") != expected_predicate:
-            return jsonify({
-                "success": False,
-                "reason": "GATE CLOSED - presentation does not target this document's clearance requirement"
-            })
-
-        gate = blockchain.verify_credential_presentation(presentation)
-        if not gate["granted"]:
-            return jsonify({
-                "success": False,
-                "reason": f"GATE CLOSED - ZK attribute proof rejected: {gate.get('reason', '')}"
-            })
-
-        # Gate passed -> nodes release threshold shares -> key + decrypt.
-        result = encrypted_ipfs.retrieve(cid, nodes)
-        if result.get("success"):
-            save_state()
-        return jsonify({"success": result.get("success", False), "gate": "OPEN", **result})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/encipfs/demo', methods=['POST'])
-def encipfs_demo():
-    """
-    Full dual-layer storage demo:
-      1. register DIDs, issue a LEVEL-3 credential, and one LEVEL-1 credential
-      2. publish a radar blueprint - encrypted with AES-256-GCM, key split 5 ways
-         (threshold 3), ONLY ciphertext visible publicly
-      3. LEVEL-3 holder presents a ZK attribute proof -> nodes release shares ->
-         document decrypts in full
-      4. the same document WITHOUT a proof (or with a poor clearance) is DENIED,
-         and with fewer than 3 shares decryption is cryptographically impossible
-    """
-    try:
-        org = blockchain.register_did("BEL - Central Authority", "Issuer", "issuer@bel.gov.in")
-        eng = blockchain.register_did("Aarav Sharma", "Radar Engineer", "aarav.sharma@bel.gov.in")
-        low = blockchain.register_did("Rajesh Kumar", "Field Officer", "rajesh.kumar@bel.gov.in")
-        blockchain.issue_credential(eng["did"], org["did"],
-                                    {"security_clearance": "LEVEL-3"})
-        blockchain.issue_credential(low["did"], org["did"],
-                                    {"security_clearance": "LEVEL-1"})
-
-        blueprint_payload = ("RADAR-BLUEPRINT-X | REV 2 | Antenna array specs: 1.2 GHz, "
-                             "PHASED-ARRAY, 48 sub-modules | Export control: BEL-RESTRICTED")
-        store_result = encrypted_ipfs.store(blueprint_payload,
-                                            "radar_blueprint_X.txt", "BEL", "LEVEL-3")
-        cid = store_result["cid"]
-        peek = encrypted_ipfs.peek(cid)
-
-        # Successful access: LEVEL-3 presentation against a server-issued challenge.
-        challenge = secrets_hex(16)
-        predicate = {"attribute": "security_clearance", "op": ">=", "value": "LEVEL-3"}
-        pres = blockchain.present_credential(eng["did"], eng["private_key"], predicate, challenge)
-        gate_ok = blockchain.verify_credential_presentation(pres["presentation"])
-
-        # The ZK gate is evaluated BEFORE any share is released to the holder.
-        if gate_ok.get("granted"):
-            unlocked = encrypted_ipfs.retrieve(cid, ["lit_node_1", "lit_node_2", "lit_node_3"])
-        else:
-            unlocked = {
-                "success": False,
-                "error": gate_ok.get("reason", "ZK attribute proof rejected"),
-                "gate": "CLOSED"
-            }
-
-        # Blocked attempt: an attacker presents nothing -> the route-level gate
-        # (the /api/encipfs/retrieve side) refuses to release any shares.
-        no_proof = {
-            "success": False,
-            "gate": "CLOSED",
-            "reason": "No ZK attribute presentation - threshold nodes refuse to release shares"
-        }
-
-        # Blocked attempt: only 2 of 3 shares released (cryptographically possible? no).
-        too_few = encrypted_ipfs.retrieve(cid, ["lit_node_1", "lit_node_2"])
-
-        save_state()
-        return jsonify({
-            "success": True,
-            "storage_metadata": {k: store_result[k] for k in
-                                 ("cid", "encryption", "required_clearance", "n_shares", "threshold")},
-            "what_public_peeker_sees": peek,
-            "legitimate_unlock": {
-                "zk_gate": gate_ok,
-                "decrypted": unlocked,
-                "plaintext_recovered": unlocked.get("plaintext") == blueprint_payload
-            },
-            "attack_without_proof": {
-                "result": no_proof,
-                "note": "Threshold nodes refuse to release shares without a verified ZK attribute proof"
-            },
-            "attack_too_few_shares": too_few,
-            "conclusion": ("Payload is encrypted client-side (AES-256-GCM) before IPFS; the key is "
-                           "split 5-ways (threshold 3); it is reconstructed ONLY once the smart "
-                           "contract verifies a ZK attribute proof of the required clearance.")
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -3733,6 +3664,82 @@ def point_in_time():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+# ============================================================================
+# BEL Unified Showcase & Auditor Portal Endpoints
+# ============================================================================
+@app.route('/api/showcase/e2e-run', methods=['POST'])
+def showcase_e2e_run():
+    try:
+        data = _post_json() or {}
+        applicant_name = data.get("applicant_name") or "Vikram Rao"
+        role = data.get("role") or "MANAGER"
+        asset_name = data.get("asset_name") or "BEL Coastal Surveillance Radar Mk-IV Blueprint"
+        result = blockchain.run_e2e_bel_showcase(
+            applicant_name=applicant_name,
+            role=role,
+            asset_name=asset_name
+        )
+        save_state()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/auditor/merkle-proof', methods=['POST'])
+def auditor_merkle_proof():
+    try:
+        data = _post_json() or {}
+        target_type = data.get("target_type") or "audit"
+        target_index = data.get("target_index")
+        if target_index is not None:
+            try:
+                target_index = int(target_index)
+            except (ValueError, TypeError):
+                target_index = None
+        proof = blockchain.generate_merkle_proof(target_type=target_type, target_index=target_index)
+        return jsonify(proof)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/auditor/verify-proof', methods=['POST'])
+def auditor_verify_proof():
+    try:
+        data = _post_json() or {}
+        leaf_hash = data.get("leaf_hash")
+        proof_path = data.get("proof_path") or []
+        expected_root = data.get("expected_root")
+        if not leaf_hash or not expected_root:
+            return jsonify({"success": False, "reason": "leaf_hash and expected_root are required"}), 400
+        res = Blockchain.verify_merkle_proof(leaf_hash, proof_path, expected_root)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/auditor/chain-scan', methods=['GET'])
+def auditor_chain_scan():
+    try:
+        report = blockchain.auditor_deep_chain_scan()
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/auditor/certificate', methods=['POST'])
+def auditor_certificate():
+    try:
+        data = _post_json() or {}
+        auditor_id = data.get("auditor_id") or "AUDITOR-BEL-01"
+        res = blockchain.generate_compliance_certificate(auditor_id=auditor_id)
+        if res.get("success"):
+            save_state()
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+
 # ============================================================
 # ID: Duplicate Detection / Bulk Onboarding / Join Queue
 # ============================================================
@@ -3775,8 +3782,19 @@ def bulk_batches():
 def join_request():
     try:
         d = _post_json() or {}
-        r = blockchain.join_request(d.get("identity_data") or {},
-                                    d.get("proposer", "self-registration"))
+        payload = d.get("identity_data")
+        # The dashboard's textarea yields identity_data as a JSON *string*, while
+        # API clients naturally send an object. Accept both.
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except ValueError:
+                return jsonify({"success": False,
+                                "error": "identity_data is not valid JSON"}), 400
+        if not isinstance(payload, dict):
+            return jsonify({"success": False,
+                            "error": "identity_data must be a JSON object"}), 400
+        r = blockchain.join_request(payload, d.get("proposer", "self-registration"))
         save_state()
         return jsonify({"success": r["success"], "data": r})
     except Exception as e:
@@ -3787,9 +3805,16 @@ def join_request():
 def join_approve():
     try:
         d = _post_json() or {}
-        r = blockchain.join_approve(d.get("join_id"), d.get("approver", "admin"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
+        # No implicit approver: an unspecified approver is an unknown subject and
+        # is refused by the gate, which matches the project's deny-by-default
+        # posture. ("admin" was never a registered identity, so it always failed.)
+        r = blockchain.join_approve(d.get("join_id"), d.get("approver") or "",
+                                    role=d.get("role"))
+        if r.get("success"):
+            save_state()
+        # Pass the whole result through so a refused role escalation can render
+        # its structured gate trace instead of a bare reason.
+        return jsonify({"success": r["success"], "data": r}), (200 if r["success"] else 403)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -3799,9 +3824,11 @@ def join_reject():
     try:
         d = _post_json() or {}
         r = blockchain.join_reject(d.get("join_id"), d.get("reason", "rejected"),
-                                   d.get("approver", "admin"))
+                                   d.get("approver") or "")
         save_state()
-        return jsonify({"success": r["success"], "data": r})
+        if not r.get("success"):
+            return jsonify({"success": False, "data": r}), 403
+        return jsonify({"success": True, "data": r})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -3834,35 +3861,6 @@ def zk_range_verify():
         d = _post_json() or {}
         r = blockchain.zk_range_verify(d.get("proof"))
         return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/pq/list')
-def pq_list():
-    r = blockchain.list_post_quantum()
-    return jsonify({"success": r["success"], "data": r})
-
-
-@app.route('/api/pq/register', methods=['POST'])
-def pq_register():
-    try:
-        d = _post_json() or {}
-        r = blockchain.register_post_quantum_identity(d.get("public_id"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/pq/auth', methods=['POST'])
-def pq_auth():
-    try:
-        d = _post_json() or {}
-        r = blockchain.passwordless_pq_auth(d.get("public_id"), d.get("resource", "access"),
-                                            d.get("signature_b64", ""),
-                                            d.get("nonce") or __import__("time").time())
-        return jsonify({"success": r.get("authenticated", False), "data": r})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -3921,35 +3919,6 @@ def liveness_verify():
 # ============================================================
 # AC: Duress PIN / Two-Person / Risk-Adaptive Step-Up
 # ============================================================
-@app.route('/api/duress/register', methods=['POST'])
-def duress_register():
-    try:
-        d = _post_json() or {}
-        r = blockchain.duress_register(d.get("public_id"), d.get("duress_pin"),
-                                       d.get("normal_pin", "123456"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/duress/authenticate', methods=['POST'])
-def duress_authenticate():
-    try:
-        d = _post_json() or {}
-        r = blockchain.duress_authenticate(d.get("public_id"), d.get("pin"), d.get("resource", "vault"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/duress/list')
-def duress_list():
-    r = blockchain.list_duress()
-    return jsonify({"success": r["success"], "data": r})
-
-
 @app.route('/api/twoperson/initiate', methods=['POST'])
 def tp_initiate():
     try:
@@ -4520,46 +4489,6 @@ def purpose_list():
     return jsonify({"success": r["success"], "data": r})
 
 
-@app.route('/api/session/seal', methods=['POST'])
-def session_seal():
-    try:
-        d = _post_json() or {}
-        r = blockchain.session_seal(d.get("public_id"), d.get("device_hash"),
-                                    d.get("ip") or "10.0.0.1", int(d.get("lease_s") or 600))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/session/validate', methods=['POST'])
-def session_validate():
-    try:
-        d = _post_json() or {}
-        r = blockchain.session_validate(d.get("session_id"), d.get("device_hash"), d.get("ip"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/session/hijack', methods=['POST'])
-def session_hijack():
-    try:
-        d = _post_json() or {}
-        r = blockchain.session_hijack(d.get("session_id"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/session/list')
-def session_list():
-    r = blockchain.session_list()
-    return jsonify({"success": r["success"], "data": r})
-
-
 @app.route('/api/classify/register', methods=['POST'])
 def classify_register():
     try:
@@ -4588,45 +4517,6 @@ def classify_list():
 # ============================================================================
 # FEATURE 15 - Network: Chaos Engineering / Node PKI / Notarization
 # ============================================================================
-@app.route('/api/chaos/inject', methods=['POST'])
-def chaos_inject():
-    try:
-        d = _post_json() or {}
-        r = blockchain.chaos_inject(d.get("node_id"), d.get("mode"), d.get("value"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/chaos/clear', methods=['POST'])
-def chaos_clear():
-    try:
-        d = _post_json() or {}
-        r = blockchain.chaos_clear(d.get("node_id"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/chaos/verify', methods=['POST'])
-def chaos_verify():
-    try:
-        d = _post_json() or {}
-        r = blockchain.chaos_verify(d.get("node_id"))
-        save_state()
-        return jsonify({"success": r["success"], "data": r})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/chaos/list')
-def chaos_list():
-    r = blockchain.chaos_list()
-    return jsonify({"success": r["success"], "data": r})
-
-
 @app.route('/api/pki/join', methods=['POST'])
 def pki_node_join():
     try:

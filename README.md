@@ -9,22 +9,28 @@ Build a blockchain-based system that securely manages digital identities and con
 
 ## Features
 
-### 🖥️ Modern UI / UX (NEW — UI/UX upgrade)
-- **Sidebar navigation** with 7 sectioned workspaces (Dashboard, Identity, Verification & ZK, Access Control, Network & IPFS, Digital Assets, Audit & Security) — every card is one click away instead of a single endless scroll.
+### 🖥️ Modern UI / UX (v6 — organisation layer)
+- **Sidebar navigation** with 8 sectioned workspaces (Dashboard, Identity, Verification & ZK, Access Control, Network & IPFS, Digital Assets, Audit & Security, G-Series) — every card is one click away instead of a single endless scroll.
+- **Tool groups**: the 89 cards are bucketed into 28 named, collapsible clusters (Identity Ledger, Zero-Knowledge & SSI, Role-Based Access Control, Ownership & Transfer Governance, Auditable Activities, …), each with a live tool count, a one-line purpose and a collapse toggle. A workspace-level *Collapse groups* control folds them all at once.
+- **Result Console**: a single dock that watches all 104 result containers, classifies each run as GRANTED / DENIED / BLOCKED / PENDING / INFO, shows a compact verdict chip in the card with the raw output behind a disclosure, and offers outcome filters plus CSV/JSON export of the whole session. An *API Traffic* tab keeps the raw request log.
+- **Command palette** (`Ctrl`/`Cmd` + `K`): fuzzy search over 8 workspaces, 89 tools, 285 button actions and 88 read-only API routes. `Enter` navigates, `Shift`+`Enter` runs the tool's primary action.
+- **Identity context switcher**: set the identity once in the topbar and it propagates to the 25 identity fields across every tool; a second field sets the default resource for 6 access-control tools. The RBAC/dNFT/DID governance cards are deliberately **excluded** from auto-mirroring - each keeps its own actor field, because the point of those demos is to show the *same* request succeeding for an administrator and being refused for a `USER`.
+- **Sticky command bar** (topbar): a single horizontal line that stays one line at every width — live chain status (block count, identity count, chain validity, node health) as pills, the `Ctrl`+`K` search box, the identity/resource context switcher and the console/activity/tour/theme actions. Space pressure is absorbed by shrinking the search label (ellipsis) and then the context inputs, so no label ever wraps and no control can spill past the right edge; the status pills and action buttons never squash.
+- **Hash routing**: every workspace is a real route (`#/ws-access`), so a refresh or the browser back button keeps your place and links are shareable.
 - **Design system**: CSS custom-property tokens, dark mode with `prefers-color-scheme` detection + persisted toggle, colour-coded accent cards for the four SIH flagship features (ZK-SSI purple, ABAC pink, dNFT orange, dual-layer teal).
-- **Sticky command bar** (topbar): live chain status — block count, identity count, chain validity and node health pills update automatically.
 - **Live activity rail**: every API call, alert and navigation is streamed into a slide-in audit log panel (shortcut `L`).
 - **Guided tour**: a 7-step interactive tour overlay walks through every workspace (shortcut `T`).
 - **Visualization upgrades**: rotating Proof-of-Work difficulty sparkline for the block explorer and a shake/red-flash animation + border on any tampered block.
-- **States**: shimmer skeletons, empty states, aria-live alert toasts, focus-visible rings, keyboard shortcuts (`1`–`7` jump between workspaces).
-- **Responsive**: off-canvas mobile drawer, collapsing status pills, single-column cards on small screens.
-- **Engineering hygiene**: CSS/JS extracted from the single `templates/index.html` into `static/css/app.css` and `static/js/{ui,app,main}.js`, plus an inline SVG favicon and cache-busted asset links.
+- **States**: shimmer skeletons, empty states, aria-live alert toasts, `role="status"` on every result container, focus-visible rings, skip link, reduced-motion and forced-colors support, keyboard shortcuts (`1`–`8` jump between workspaces, `C` toggles the console, `I` opens API traffic, `L` activity, `T` tour).
+- **Responsive**: off-canvas mobile drawer, collapsing status pills, single-column groups on small screens.
+- **Engineering hygiene**: CSS/JS extracted from the single `templates/index.html` into `static/css/app.css`, `static/css/v6.css` and `static/js/{ui,app,main,organize,console,palette,endpoints}.js`, plus an inline SVG favicon and cache-busted asset links. `test_frontend.py` asserts 163 structural and integrity invariants (no duplicate ids, every `_gid()` target exists, every card lands in a group, the palette exposes only GET routes, the activity chip labels match the server-side labels, the top bar carries the non-wrapping declarations that keep it on one line, the three dashboard sections keep their cards stacked in a single full-width column, and the retired hero badge, dashboard purpose line and dashboard section dividers are gone).
 
 ### 🔐 Core Blockchain
-- **Custom SHA-256 Blockchain** - Immutable, proof-of-work consensus
+- **Custom SHA-256 Blockchain** - an **immutable, proof-of-work prototype ledger** written for this project, not a general-purpose chain
 - **Genesis Block** - Foundation of the chain
 - **Proof-of-Work Mining** - Each new identity record requires computational work
 - **Tamper Detection** - Automatically detects any modification to blocks
+- **Production path:** this PoW chain is the demonstrable prototype. A production deployment would move permissioned consortium membership and endorsement to **Hyperledger Fabric** (channels, ordering service, endorsement policies, CouchDB state), keeping the same policy/gate semantics and the same on-chain audit shape.
 - **Chain Validation** - Verifies hash integrity at every level
 
 ### 👤 Identity Management
@@ -94,10 +100,27 @@ Build a blockchain-based system that securely manages digital identities and con
 - Forged presentations and attempts to mint a LEVEL-3 proof from a LEVEL-1 credential are rejected
 
 ### 🧩 Attribute-Based Access Control (ABAC) via Smart Contracts (NEW)
-- Replaces rigid RBAC with a dynamic policy: `Access = Role ∧ SecurityClearance ∧ Geofence ∧ DeviceSecurityHash`
+- **Strengthens** RBAC rather than replacing it: RBAC stays the coarse-grained backbone (role → capability → resource), and ABAC layers fine-grained attributes on top
+- Combined policy: `Access = Role ∧ Capability ∧ Resource ∧ SecurityClearance ∧ Geofence ∧ DeviceSecurityHash`
 - **Geofencing**: a defence blueprint is auto-revoked when the request originates outside the BEL-certified perimeter - even for an Administrator
 - **Device security hash**: requests from an untrusted endpoint are denied
 - Full deterministic, auditable rule trace is returned for every decision
+
+### 🛡️ Role-Based Access Control (RBAC), Enforced by Smart Contracts (NEW)
+- Four canonical roles - `ADMINISTRATOR`, `MANAGER`, `AUDITOR`, `USER` - plus any custom role an administrator defines
+- Every privileged action is gated on `role AND capability AND resource`, and **denied** calls return a structured gate trace (which leg failed, and why) instead of a bare error string
+- **Deny-by-default**: an unregistered subject, or a subject with no matching grant, is not granted
+- The panel exposes role → capabilities → members, role definition, role assignment and capability verification
+- **Onboarding role picker**: a join request can be approved with a chosen role. Approval is gated on `identity.register`, so an **unregistered or missing approver is refused outright** - "approve with USER" is not an open door to mint identities. Granting anything above `USER` additionally requires `rbac.role.assign`, so a refused escalation leaves the request `PENDING`. A custom role may hold `identity.register` *without* `rbac.role.assign` (an HR-style approver) to onboard ordinary users while still being unable to hand out elevated roles.
+- An approved applicant is minted under their **real principal** (their email), never the throwaway `pending.<hex>` handle the request carries while unresolved.
+
+### 🔗 dNFT Ownership, DID Holders and Consent-Gated Transfer
+- Minting is an **administrator capability**; a plain `USER` attempt is refused with the gate trace
+- Allocation only succeeds against a **verified identity or an anchored DID** - unresolved owners are rejected
+- A **DID may hold** a dNFT but can never **act** as an RBAC operator, so a self-asserted identifier cannot buy privilege
+- Ownership and full lineage are resolved from the on-chain ledger, not from client state
+- Transfer requires either the current owner's **cryptographic consent signature** or an administrator override that passes the full gate; consent nonces are single-use, so replays are rejected
+- **A DID that owns a token authorises its own transfer** by signing the canonical consent message with the key in its anchored DID document. Because a DID carries no clearance/geofence/device attributes, the gate trace records attribute policy as *not applicable* and rests the decision on the anchored key plus the new-owner check. Forged signatures and replayed nonces are still refused, and this grants signing capability only - never operator rights.
 
 ### 🔄 Dynamic Lifecycle NFTs (ERC-1155-style dNFTs) (NEW)
 - **Hardware lifecycle**: Manufactured → Deployed → Under Maintenance → Decommissioned
@@ -126,6 +149,32 @@ Build a blockchain-based system that securely manages digital identities and con
 - **Multi-signature:** Threshold-based cryptographic approval workflows
 - **Frontend:** HTML5, CSS3, Vanilla JavaScript
 - **API:** RESTful JSON endpoints
+
+## The Six Auditable Activities
+
+Every block the ledger can produce is classified into exactly one of six auditable
+activities, so an auditor can ask "show me only the ownership transfers" and get a
+precise answer instead of scanning a flat log.
+
+| Activity key | Block types it covers |
+| --- | --- |
+| `identity_creation` | `IDENTITY_REGISTRATION`, `DID_REGISTRATION` |
+| `nft_creation` | `NFT_MINT` |
+| `allocation` | `CLEARANCE_ASSIGNMENT`, `NFT_DOWNLOAD_GRANT`, `CAPABILITY_TOKEN`, `RESOURCE_GRANT_ALLOCATION` |
+| `access_rights` | `RESOURCE_GRANT`, `SMART_CONTRACT_RULES`, `ABI_POLICY_UPDATE`, `PERMISSION_GRANT` |
+| `ownership_transfer` | `NFT_TRANSFER`, `NFT_OWNERSHIP_VIEW` |
+| `permission_update` | `RBAC_ROLE_ASSIGNED`, `RBAC_ROLE_DEFINED`, `REVOCATION`, `RBAC_OPERATOR`, `SMART_CONTRACT_GATE`, `ACCESS_DENIED` |
+
+```
+GET /api/audit/activities                  # per-activity block counts
+GET /api/audit/activities?activity=nft_creation
+GET /api/audit/activities?activity=ownership_transfer&limit=50
+```
+
+- Counts are returned for **all six** activities, so one that has not run yet is visible as `0` rather than silently missing.
+- **Filtering is applied before the limit**, so a long demo session can never hide an activity behind a page cut-off.
+- Structural blocks such as `GENESIS` are not activities and never appear in this view.
+- `log_audit` preserves the caller's declared activity type in `event_type` while still writing `type: "AUDIT_LOG"`, so filtering works without breaking existing consumers.
 
 ## Installation & Setup
 
@@ -254,6 +303,7 @@ Each block contains:
 | GET | `/api/chain/export` | Export the chain as portable JSON |
 | POST | `/api/chain/import` | Import & validate a chain JSON |
 | GET | `/api/audit/trail` | Retrieve the on-chain audit trail + stats |
+| GET | `/api/audit/activities` | The six auditable activities: per-activity counts, optional `?activity=<key>` filter |
 | POST | `/api/identity/revoke` | Permanently revoke an identity |
 | POST | `/api/identity/expire` | Set an expiry time on credentials |
 | POST | `/api/identity/restore` | Restore a revoked/expired identity |
@@ -274,13 +324,22 @@ Each block contains:
 | POST | `/api/abac/set-clearance` | Assign a security-clearance attribute |
 | POST | `/api/abac/evaluate` | Evaluate `Role ∧ Clearance ∧ Geofence ∧ DeviceHash` |
 | POST | `/api/abac/demo` | Full ABAC demo (all four attributes) |
-| POST | `/api/nft/mint` | Mint a dynamic NFT (hardware / blueprint) |
+| POST | `/api/nft/mint` | Mint a dynamic NFT (hardware / blueprint) - admin-gated, returns a `gate` trace |
 | POST | `/api/nft/state` | Advance lifecycle state via signed IoT telemetry |
 | POST | `/api/nft/version` | Release a blueprint version (content hash) |
 | POST | `/api/nft/grant-download` | Grant a blueprint download authorization |
 | POST | `/api/nft/revoke-download` | Revoke a blueprint download authorization |
 | POST | `/api/nft/download` | Authorize a download through the ABAC gate |
-| POST | `/api/nft/transfer` | Transfer a dNFT to a new owner |
+| POST | `/api/nft/transfer` | Transfer a dNFT - requires owner consent signature or admin override; returns a `gate` trace |
+| POST | `/api/nft/ownership` | Resolve a token's owner from the chain, plus its full lineage |
+| POST | `/api/nft/transfer-demo` | All six transfer-consent scenarios (anon, stranger, forged sig, signed, replay, admin) |
+| POST | `/api/rbac/list` | Roles, their capabilities/resources, and current members |
+| POST | `/api/rbac/define-role` | Define or update a role (admin-only, returns a `gate` trace on denial) |
+| POST | `/api/rbac/assign-role` | Assign a role to a subject (admin-only, returns a `gate` trace on denial) |
+| POST | `/api/rbac/verify` | Non-mutating capability check returning the role/capability/resource trace |
+| POST | `/api/join/approve` | Approve a join request (gated on `identity.register`; elevated roles also need `rbac.role.assign`) |
+| POST | `/api/join/reject` | Reject a join request - gated on the same `identity.register` capability, deny-by-default, HTTP 403 + `gate` trace on denial |
+| POST | `/api/join/request` | Submit a self-registration; `identity_data` may be an object or a JSON string |
 | GET | `/api/nft/list` | List all minted dNFTs |
 | POST | `/api/nft/get` | Get a single dNFT by token id |
 | POST | `/api/nft/demo` | Full dNFT lifecycle demo |
@@ -387,6 +446,14 @@ Each block contains:
 - **Network & Consensus Metrics card:** integrity score, avg difficulty, nonce work, BFT tolerance (tolerates `(n-1)/2` Byzantine faults)
 - **Block explorer:** each block now shows its Merkle root; click a block for difficulty + full details
 
+### 14. RBAC, dNFT Ownership & Auditable Activities (NEW)
+- **Access Control workspace → "Role-Based Access Control Panel":** *Load Roles & Members* renders all four canonical roles with their capabilities and who holds them. *Verify Capability* evaluates a subject and shows the `role AND capability AND resource` trace. *Deny-by-Default Demo* shows an unregistered subject and a plain `USER` both refused.
+- **Assign a role** as `aarav.sharma@bel.gov.in`, then set *Acting as* to `rajesh.kumar@bel.gov.in` and try **Define Custom Role** - it is refused with the failing leg named (`rbac.role.define`).
+- **Digital Assets workspace → "dNFT Minting & Ownership Governance":** mint as the admin (granted), then set the actor to `rajesh.kumar@bel.gov.in` and mint again - refused, with the trace naming role `USER` and capability `nft.mint`. Set the owner to `ghost.owner@nowhere.in` to see the *ownership* leg fail.
+- **"DID-Based NFT Ownership":** *Register DID* → *Mint dNFT to DID*. The minted token's on-chain owner is the `did:zk:...` string. *Check Ownership* and *Ownership Lineage* read that back from the ledger. The DID can never act as an RBAC operator, but it **can** sign consent for a token it owns.
+- **"Ownership Transfer & Consent":** *Run Transfer Consent Scenarios* executes all six cases - unauthenticated, stranger, forged signature and replayed nonce are **denied**; only the genuine signed owner consent (and a full-gate admin override) is allowed. Expand a row to read that scenario's gate trace.
+- **Audit & Security workspace → "Auditable Activities":** six chips filter the chain by activity, each with a live block count. Filtering runs server-side *before* the limit, and counts appear for all six so a quiet activity reads as `0` rather than disappearing.
+
 ## Project Structure
 ```
 SIH26125-Blockchain-Identity/
@@ -394,15 +461,22 @@ SIH26125-Blockchain-Identity/
 ├── blockchain.py          # Blockchain + CryptoIdentity implementation
 ├── requirements.txt       # Python dependencies
 ├── templates/
-│   └── index.html         # Frontend dashboard (app shell + 7 workspaces; no inline CSS/JS)
+│   └── index.html         # Frontend dashboard (app shell + 8 workspaces; no inline CSS/JS)
 ├── static/
 │   ├── favicon.svg        # Brand favicon
 │   ├── css/
-│   │   └── app.css        # Design system + app shell + dark mode + responsive
+│   │   ├── app.css        # Design system + app shell + dark mode + responsive
+│   │   └── v6.css         # Organisation layer: groups, console, palette, context, flagship
 │   └── js/
 │       ├── ui.js          # Shell: utilities, activity rail, theme, nav, guided tour
 │       ├── app.js         # Feature logic for all demo panels
-│       └── main.js        # Bootstrap (init shell + load blockchain data)
+│       ├── organize.js    # Card grouping, hash routing, identity context, workspace headers
+│       ├── console.js     # Result console: verdict capture, filters, CSV/JSON export
+│       ├── palette.js     # Command palette (Ctrl+K): workspaces, tools, actions, API
+│       ├── endpoints.js   # GENERATED read-only route catalogue for the palette
+│       └── main.js        # Bootstrap: shell → v5 → organize → console → palette → data
+├── tools/
+│   └── gen-endpoints.ps1  # Regenerate static/js/endpoints.js after changing app.py routes
 ├── venv/                  # Virtual environment (self-contained)
 ├── run.bat                # One-click launcher (HTTP)
 ├── run-https.bat          # One-click launcher (HTTPS, self-signed)
@@ -410,10 +484,37 @@ SIH26125-Blockchain-Identity/
 ├── test_new_features.py   # ZK + QR feature tests
 ├── test_crypto.py         # Passwordless auth tests
 ├── test_biometric_smartcontract.py  # Biometric + smart contract tests
-├── test_frontend.py       # Frontend feature presence tests
+├── test_frontend.py       # 163 frontend structural + integrity assertions
 ├── test_network_ipfs.py   # Multi-node network + IPFS storage tests
-└── test_advanced_features.py  # Audit, multisig, replay/escalation, revoke, schedule, encryption, ZK doc, topology, health, metrics, playbook
+├── test_advanced_features.py  # Audit, multisig, replay/escalation, revoke, schedule, encryption, ZK doc, topology, health, metrics, playbook
+├── test_rbac_governance.py    # 147 RBAC / dNFT-ownership / DID-consent / six-activity / join-approval-and-rejection checks
 ```
+
+Run a suite directly (there is no `pytest` in `venv`):
+
+```powershell
+venv\Scripts\python.exe test_app.py
+venv\Scripts\python.exe test_rbac_governance.py
+venv\Scripts\python.exe test_frontend.py
+```
+
+`test_rbac_governance.py` also imports `tests/selftest/test_rbac_ownership15.py` and
+reports its 20 checks as part of its own total, so the targeted self-test can no
+longer drift out of the main suite unnoticed. It also pins the two security
+properties that are easy to regress silently: a DID owner must be able to sign
+consent for a token it owns (while forged signatures and replayed nonces stay
+refused), and **both** join approval and join rejection must be deny-by-default
+on `identity.register`.
+
+### Adding a card or a route (v6)
+
+- **New card**: drop it in the right workspace and add its `<h2>` prefix to the
+  relevant entry in `GROUPS` inside `static/js/organize.js`. If you forget, the
+  card simply stays ungrouped and `test_frontend.py` fails with the offending
+  title, so the drift cannot go unnoticed.
+- **New route**: only GET routes are callable from the palette, because the
+  palette issues them straight from the browser. After adding a route, run
+  `powershell -ExecutionPolicy Bypass -File tools\gen-endpoints.ps1`.
 
 ## Security Model
 
@@ -437,12 +538,27 @@ SIH26125-Blockchain-Identity/
 | **Data-at-Rest Encryption** | AES/Fernet - only ciphertext anchored on-chain |
 | **ZK Document Possession** | Prove CID ownership without revealing contents |
 | **On-Chain Auditability** | Every access/revoke/schedule is an immutable audit block |
+| **RBAC (smart-contract enforced)** | `role AND capability AND resource`; deny-by-default for unregistered subjects |
+| **Attribute-Based Refinement (ABAC)** | Clearance / geofence / device-hash constraints layered on top of RBAC |
+| **dNFT Ownership Integrity** | Minting is admin-gated; ownership resolved from the ledger, never from client state |
+| **Consent-Gated Transfer** | Owner signature with single-use nonce, or an administrator override that passes the same gate |
+| **DID / Identity Separation** | A DID can hold a dNFT but can never resolve as an RBAC operator |
+| **Explainable Denials** | Refused calls return which policy leg failed, not a bare error |
+| **Activity Attribution** | Six auditable activities, filtered server-side before any limit is applied |
 | **Chain Portability** | Export/import only validated chains (tampered JSON rejected) |
+
+> **Scope note on the network rows.** *De-centralization* and *Byzantine-fault
+> tolerance* are **demonstrated in a single-process simulation**: the "nodes" are
+> in-memory replicas that gossip with each other inside one Python process, and
+> the consensus rule (longest valid chain) is real. There is no open p2p port and
+> no byzantine adversary on the network boundary. This is a faithful model of the
+> algorithm, not a deployed network. A production system would use Hyperledger
+> Fabric (see *Production path* above).
 
 ## Future Enhancements
 
 - [ ] Add encryption for stored identity data
-- [x] Implement multi-node consensus (longest-valid-chain, malicious fork rejection)
+- [x] Implement multi-node consensus simulation (longest-valid-chain, malicious fork rejection)
 - [x] Add IPFS off-chain document storage (CID anchoring)
 - [ ] Integration with government digital identity (Aadhaar)
 - [ ] Smart contracts for automated access rules

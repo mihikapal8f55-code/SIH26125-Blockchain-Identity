@@ -124,9 +124,24 @@ function toggleActivity(force) {
 
 /* ---------- Sidebar / workspace navigation ---------- */
 
+// Tracked so hash routing and the command palette can tell which workspace
+// is showing without re-querying the DOM.
+let currentWs = 'ws-dashboard';
+window.currentWs = 'ws-dashboard';
+
 function gotoSection(id, btn) {
+    if (id) { currentWs = id; window.currentWs = id; }
     document.querySelectorAll('.workspace').forEach(s => s.classList.toggle('active', s.id === id));
     document.querySelectorAll('.nav-item[data-ws]').forEach(b => b.classList.toggle('active', b.dataset.ws === id));
+    // The sidebar is navigation, not a tab widget, so the current workspace is
+    // announced with aria-current rather than role="tab"/aria-selected.
+    document.querySelectorAll('.nav-item[data-ws]').forEach(b => {
+        b.setAttribute('aria-current', b.dataset.ws === id ? 'page' : 'false');
+    });
+    // Roving tabindex keeps Tab order to one stop per workspace.
+    document.querySelectorAll('.nav-item[data-ws]').forEach(b => {
+        b.tabIndex = b.dataset.ws === id ? 0 : -1;
+    });
     const target = document.getElementById(id);
     if (target) {
         window.setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
@@ -190,11 +205,11 @@ async function refreshTopbar() {
             const blocks = document.getElementById('topBlocks');
             const ids = document.getElementById('topIdentities');
             const chain = document.getElementById('topChainStatus');
-            if (blocks) blocks.textContent = `#${d.total_blocks} total blocks`;
-            if (ids) ids.textContent = `${d.total_identities} identities`;
+            if (blocks) blocks.innerHTML = `<i class="fas fa-cubes"></i> #${d.total_blocks} blocks`;
+            if (ids) ids.innerHTML = `<i class="fas fa-users"></i> ${d.total_identities} identities`;
             if (chain) {
                 const ok = d.chain_valid !== false;
-                chain.textContent = ok ? 'Chain VALID' : 'Chain TAMPERED';
+                chain.innerHTML = `<i class="fas fa-shield-alt"></i> ${ok ? 'Chain VALID' : 'Chain TAMPERED'}`;
                 chain.className = 'status-pill ' + (ok ? 'chain-ok' : 'chain-bad');
             }
         }
@@ -210,7 +225,7 @@ async function refreshTopbar() {
                 } else { online = total; }
             } catch (e2) { online = total; }
             const nodes = document.getElementById('topNodeCount');
-            if (nodes) nodes.textContent = `${online}/${total} nodes online`;
+            if (nodes) nodes.innerHTML = `<i class="fas fa-server"></i> ${online}/${total} nodes`;
         }
     } catch (e) { /* ignore */ }
 }
@@ -339,13 +354,17 @@ function collapseStepCards() {
     });
 }
 
+function resolveInitialTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem('sih-theme'); } catch (e) { /* private mode */ }
+    if (saved === 'light' || saved === 'dark') return saved;
+    // No explicit choice yet -> honour the operating system preference.
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'light';
+}
+
 function initShell() {
-    let saved = 'light';
-    try { saved = localStorage.getItem('sih-theme') || saved; } catch (e) { /* ignore */ }
-    if (saved !== 'light' && saved !== 'dark') {
-        saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    applyTheme(saved);
+    applyTheme(resolveInitialTheme());
 
     let sidebarState = 'expanded';
     try { sidebarState = localStorage.getItem('sih-sidebar') || sidebarState; } catch (e) { /* ignore */ }
@@ -358,12 +377,20 @@ function initShell() {
     });
 
     document.addEventListener('keydown', e => {
+        // Ctrl/Cmd+K is the only shortcut that works from inside a text field.
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+            e.preventDefault();
+            if (window.PALETTE) PALETTE.show();
+            return;
+        }
         if (e.target && /INPUT|TEXTAREA|SELECT/i.test(e.target.tagName)) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
         const map = { '1': 'ws-dashboard', '2': 'ws-identity', '3': 'ws-verification',
                       '4': 'ws-access', '5': 'ws-network', '6': 'ws-assets', '7': 'ws-audit', '8': 'ws-gseries' };
         if (map[e.key]) gotoSection(map[e.key]);
         if (e.key === 'l' || e.key === 'L') toggleActivity();
-        if (e.key === 'i' || e.key === 'I') INSPECTOR.toggle();
+        if (e.key === 'c' || e.key === 'C') CONSOLE.toggle();
+        if (e.key === 'i' || e.key === 'I') { CONSOLE.open('traffic'); }
         if (e.key === 't' || e.key === 'T') startTour();
         if (e.key === 'Escape' && TOUR.active) endTour();
     });
@@ -377,14 +404,17 @@ function initShell() {
 // keyboard nav, click-to-copy hash handling, mission launcher.
 // ==================================================================
 
-/* ---------- Result Inspector: one shared surface for every operation ---------- */
+/* ---------- API traffic stream (feeds the Result Console -> API Traffic tab) ---------- */
 
 const INSPECTOR = {
-    el: null, body: null, live: true, items: 0,
+    body: null, live: true, items: 0,
     init() {
-        this.el = document.getElementById('inspector');
         this.body = document.getElementById('inspectorBody');
-        try { this.live = !document.getElementById('inspectorLive') || document.getElementById('inspectorLive').checked; } catch (e) { /* ignore */ }
+        const cb = document.getElementById('inspectorLive');
+        if (cb) {
+            this.live = cb.checked;
+            cb.addEventListener('change', () => { this.live = cb.checked; });
+        }
     },
     add(label, detail, level = 'info') {
         if (this.live === false) return;
@@ -398,24 +428,17 @@ const INSPECTOR = {
         entry.innerHTML = `<div class="insp-time">${t}</div>
             <div class="insp-main"><b>${escapeHtml(label)}</b><div class="insp-detail">${escapeHtml(short)}</div></div>`;
         entry.onclick = () => copyToClipboard(String(detail == null ? label : short));
+        const empty = this.body.querySelector('.empty-state');
+        if (empty) empty.remove();
         this.body.prepend(entry);
         this.items++;
         while (this.body.children.length > 40) this.body.lastChild.remove();
     },
-    toggle() {
-        if (!this.el) this.init();
-        if (!this.el) return;
-        const open = this.el.classList.toggle('open');
-        const btn = document.getElementById('inspectorToggle');
-        if (btn) {
-            btn.style.color = open ? 'var(--primary)' : '';
-            btn.style.borderColor = open ? 'var(--primary)' : '';
-            btn.title = open ? 'Close result inspector' : 'Open result inspector';
-        }
-        ACTIVITY.add('Inspector', open ? 'Opened result inspector' : 'Closed result inspector');
-    },
+    // Deprecated entry points kept so nothing else has to change.
+    toggle() { if (window.CONSOLE) CONSOLE.toggle(); },
     clear() {
-        if (this.body) this.body.innerHTML = '<div class="empty-state"><i class="fas fa-wave-square"></i> Results stream here as you run demos.</div>';
+        if (!this.body) this.init();
+        if (this.body) this.body.innerHTML = '<div class="empty-state"><i class="fas fa-plug"></i> Every API call lands here. Click an entry to copy its detail.</div>';
         this.items = 0;
     },
     copyLast() {
@@ -572,6 +595,62 @@ async function loadMissionLauncher() {
     } catch (e) { /* mission launcher is non-critical */ }
 }
 
+/* ---------- Sub-tab ARIA ----------
+   The per-card tab strips (data-tab .. data-tab6 -> panel- .. panel6-) are real
+   tabs: they swap panels and already support arrow keys, but shipped with no
+   ARIA at all. Wire tablist/tab/tabpanel here instead of hand-editing 26
+   buttons across the template. */
+
+function initTabA11y() {
+    document.querySelectorAll('.feature-tabs').forEach((bar, gi) => {
+        const buttons = Array.from(bar.querySelectorAll('.feature-tab'));
+        if (!buttons.length) return;
+
+        const card = bar.closest('.card') || bar.parentElement;
+        const cardTitle = card && card.querySelector('.card-title, h2');
+        bar.setAttribute('role', 'tablist');
+        bar.setAttribute('aria-label', (cardTitle ? cardTitle.textContent : 'Options')
+            .replace(/\s+/g, ' ').trim());
+
+        buttons.forEach((btn, bi) => {
+            // data-tab -> panel-<v>, data-tab2 -> panel2-<v>, and so on.
+            const attr = Array.from(btn.attributes)
+                .map(a => a.name).find(n => /^data-tab\d?$/.test(n)) || 'data-tab';
+            const suffix = attr.replace('data-tab', '');
+            const panel = document.getElementById(`panel${suffix}-${btn.dataset[attr.slice(5)]}`);
+
+            const tid = `ftab-${gi}-${bi}`;
+            btn.setAttribute('role', 'tab');
+            btn.id = tid;
+            if (panel) btn.setAttribute('aria-controls', panel.id);
+
+            if (panel) {
+                panel.setAttribute('role', 'tabpanel');
+                panel.setAttribute('aria-labelledby', tid);
+                panel.tabIndex = 0;
+            }
+        });
+        syncTabA11y(bar);
+    });
+}
+
+// Re-reads the .active classes the switchTab* handlers just set, so the spoken
+// state always matches what is on screen.
+function syncTabA11y(bar) {
+    bar.querySelectorAll('.feature-tab').forEach(btn => {
+        const on = btn.classList.contains('active');
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+        btn.tabIndex = on ? 0 : -1;
+        const panel = btn.getAttribute('aria-controls') && document.getElementById(btn.getAttribute('aria-controls'));
+        if (panel) panel.hidden = !on;
+    });
+}
+
+document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('.feature-tab');
+    if (btn) { const bar = btn.parentElement; if (bar) syncTabA11y(bar); }
+});
+
 /* ---------- v5 init ---------- */
 
 function initV5() {
@@ -580,5 +659,6 @@ function initV5() {
         const liveEl = document.getElementById('inspectorLive');
         if (liveEl) liveEl.addEventListener('change', () => { INSPECTOR.live = liveEl.checked; });
     } catch (e) { /* ignore */ }
+    initTabA11y();
     loadMissionLauncher();
 }

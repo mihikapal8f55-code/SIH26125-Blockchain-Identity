@@ -583,67 +583,9 @@
         }
 
         // ============================================
-        // BIOMETRIC VERIFICATION
+        // BIOMETRIC VERIFICATION (Trimmed bloat)
         // ============================================
-        async function runBiometricDemo() {
-            const publicId = document.getElementById('bioPublicId').value.trim() || 'aarav.sharma@bel.gov.in';
-            const bioType = document.getElementById('bioType').value;
-
-            const btn = document.getElementById('bioButton');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling & capturing biometric...';
-
-            const response = await fetchAPI('/api/biometric/demo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ public_id: publicId, biometric_type: bioType, resource: 'admin_dashboard' })
-            });
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-user-check"></i> Run Biometric Verification Demo';
-
-            const container = document.getElementById('bioResult');
-            if (!response.success) {
-                container.innerHTML = `
-                    <div class="alert alert-error show">
-                        <b>❌ Biometric demo failed</b><br>
-                        ${response.reason || response.error}
-                    </div>
-                `;
-                return;
-            }
-
-            const enroll = response.steps.enroll;
-            const capture = response.steps.capture;
-            const matched = capture.matched;
-
-            container.innerHTML = `
-                <div class="alert ${matched ? 'alert-success' : 'alert-error'} show">
-                    <b>${matched ? '✅ BIOMETRIC MATCHED' : '❌ BIOMETRIC REJECTED'}</b><br>
-                    <span style="font-size:0.85rem;">${capture.message}</span>
-                </div>
-                <div class="zk-steps">
-                    <div class="step">
-                        <div class="step-num">1</div>
-                        <div>
-                            <b>Enrollment (${response.biometric_type})</b><br>
-                            <span style="font-size:0.75rem;">Template hash (on-chain):</span>
-                            <div class="code-display copyable" onclick="copyToClipboard(this.textContent)">${enroll.template_hash}</div>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-num">2</div>
-                        <div>
-                            <b>Live Capture (${bioType})</b><br>
-                            <span style="font-size:0.75rem;">Similarity: <span class="pill ${matched ? 'pill-green' : 'pill-red'}">${(capture.similarity * 100).toFixed(1)}%</span> (threshold ${(capture.threshold * 100).toFixed(0)}%)</span>
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-top:0.5rem;">
-                    <span class="pill pill-blue"><i class="fas fa-shield-alt"></i> Raw biometric NEVER stored - only the hash is on blockchain</span>
-                </div>
-            `;
-        }
+        async function runBiometricDemo() { /* removed */ }
 
         // ============================================
         // SMART CONTRACT: TIME WINDOW
@@ -802,14 +744,33 @@
                 container.innerHTML = `<div class="alert alert-error show">${response.error}</div>`;
                 return;
             }
-            container.innerHTML = response.nodes.map(n => `
+            const c = response.consortium || {};
+            let headerHtml = '';
+            if (c.consortium_name) {
+                headerHtml = `
+                    <div style="margin-bottom:0.75rem; padding:0.6rem; border:1px solid var(--border-color); border-radius:6px; background:var(--surface-color);">
+                        <div style="font-weight:700; color:var(--text-color);"><i class="fas fa-shield-halved"></i> ${c.consortium_name}</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">Model: <b>${c.consortium_model}</b></div>
+                        <div style="display:flex; gap:0.4rem; margin-top:0.4rem; flex-wrap:wrap;">
+                            <span class="pill pill-green"><i class="fas fa-check-double"></i> ${c.quorum_status}</span>
+                            <span class="pill pill-blue">${c.quorum_requirement}</span>
+                            <span class="pill pill-purple">${c.active_validators}/${c.total_validators} Signers Online</span>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = headerHtml + response.nodes.map(n => `
                 <div class="step">
                     <div class="step-num">${n.blocks}</div>
                     <div>
-                        <b>${n.node_id}</b><br>
-                        <span class="pill ${n.chain_valid ? 'pill-green' : 'pill-red'}">${n.chain_valid ? 'VALID' : 'INVALID'}</span>
-                        <span class="pill pill-blue">${n.blocks} blocks</span><br>
-                        <span style="font-size:0.75rem;">Last hash: <span class="code-display">${n.last_block_hash}</span></span>
+                        <b>${n.name || n.node_id}</b> <span class="tag tag-new">${n.key_id || n.node_id}</span><br>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">${n.role || 'Consortium Validator'} &bull; ${n.location || 'India'}</div>
+                        <div style="margin-top:0.3rem;">
+                            <span class="pill ${n.chain_valid ? 'pill-green' : 'pill-red'}">${n.chain_valid ? 'VALID CHAIN' : 'INVALID'}</span>
+                            <span class="pill pill-blue">${n.blocks} blocks</span>
+                            <span class="pill pill-green"><i class="fas fa-key"></i> PoA Signer Active</span>
+                        </div>
+                        <div style="font-size:0.75rem; margin-top:0.25rem;">Head hash: <span class="code-display">${n.last_block_hash}</span></div>
                     </div>
                 </div>
             `).join('');
@@ -1491,70 +1452,10 @@
         }
 
         // ============================================
-        // FEATURE 4: DUAL-LAYER ENCRYPTED STORAGE
+        // FEATURE 4: ENCRYPTED STORAGE (Trimmed bloat)
         // ============================================
-        async function encipfsStore() {
-            const plaintext = document.getElementById('encipfsPlaintext').value;
-            const btn = document.getElementById('encipfsStoreButton');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Encrypting...';
-            const response = await fetchAPI('/api/encipfs/add', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plaintext, name: 'radar_blueprint_X.txt', owner: 'BEL', required_clearance: 'LEVEL-3' })
-            });
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-user-lock"></i> Encrypt &amp; Publish to IPFS';
-            const c = document.getElementById('encipfsResult');
-            if (!response.success) { c.innerHTML = `<div class="alert alert-error show">${response.error || response.reason}</div>`; return; }
-            c.innerHTML = `
-                <div class="alert alert-success show"><b>Encrypted &amp; anchored</b><br>
-                    <span style="font-size:0.78rem;">Only the CID + ciphertext are public. The AES key is split across ${response.n_shares} nodes (threshold ${response.threshold}).</span></div>
-                <div class="zk-steps">
-                    <div class="step"><div class="step-num">1</div><div><b>CID</b>
-                        <div class="code-display copyable" style="font-size:0.65rem;" onclick="copyToClipboard('${response.cid}')">${response.cid}</div></div></div>
-                    <div class="step"><div class="step-num">2</div><div><b>Cipher</b>
-                        <span class="pill pill-purple">${response.encryption}</span>
-                        <span class="pill pill-blue">needs ${response.required_clearance}</span></div></div>
-                    <div class="step"><div class="step-num">3</div><div><b>Share holders</b>
-                        <div style="font-size:0.72rem;">${(response.nodes_holding_shares || []).join(', ')}</div></div></div>
-                </div>
-                <div style="font-size:0.75rem;margin-top:0.3rem;">To decrypt, run the full demo below (it presents a ZK attribute proof to release threshold shares).</div>`;
-        }
-
-        async function runEncipfsDemo() {
-            const btn = document.getElementById('encipfsButton');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running dual-layer demo...';
-            const response = await fetchAPI('/api/encipfs/demo', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
-            });
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-bolt"></i> Run Full Dual-Layer Demo';
-            const c = document.getElementById('encipfsResult');
-            if (!response.success) { c.innerHTML = `<div class="alert alert-error show">${response.error}</div>`; return; }
-            const sm = response.storage_metadata || {};
-            const peek = response.what_public_peeker_sees || {};
-            const unlock = response.legitimate_unlock || {};
-            const noProof = (response.attack_without_proof || {}).result || {};
-            const tooFew = response.attack_too_few_shares || {};
-            const dec = unlock.decrypted || {};
-            c.innerHTML = `
-                <div class="alert alert-info show">
-                    <b>${sm.encryption}</b> • CID <code>${sm.cid}</code><br>
-                    <span style="font-size:0.78rem;">${sm.n_shares} threshold nodes • reconstruction needs ${sm.threshold} • requires ${sm.required_clearance}</span>
-                </div>
-                <div class="zk-steps">
-                    <div class="step"><div class="step-num">1</div><div><b>What a public peeker sees (only ciphertext)</b>
-                        <div class="code-display" style="font-size:0.62rem;max-height:70px;">${peek.what_a_strager_sees || 'ciphertext'}</div></div></div>
-                    <div class="step"><div class="step-num">2</div><div><b>Legitimate unlock via ZK proof ${unlock.zk_gate && unlock.zk_gate.granted ? '<span class="pill pill-green">GATE OPEN</span>' : '<span class="pill pill-red">GATE CLOSED</span>'}</b>
-                        <div class="code-display" style="font-size:0.66rem;">recovered: ${dec.plaintext || unlock.plaintext_recovered ? (dec.plaintext || 'YES') : 'N/A'}</div></div></div>
-                    <div class="step"><div class="step-num">3</div><div><b>Attack - no ZK proof</b> ${noProof.success === false || !noProof.success ? '<span class="pill pill-green">BLOCKED</span>' : '<span class="pill pill-red">LEAKED</span>'}
-                        <div style="font-size:0.72rem;">${noProof.reason || (response.attack_without_proof || {}).note || ''}</div></div></div>
-                    <div class="step"><div class="step-num">4</div><div><b>Attack - only 2 of 3 shares</b> <span class="pill pill-green">IMPOSSIBLE</span>
-                        <div style="font-size:0.72rem;">${tooFew.reason || ''}</div></div></div>
-                </div>
-                <div class="alert alert-success show" style="margin-top:0.5rem;font-size:0.82rem;">${response.conclusion}</div>`;
-        }
+        async function encipfsStore() { /* removed */ }
+        async function runEncipfsDemo() { /* removed */ }
 
         // ============================================================
         // FEATURE SUITE v2 - 13 security/operations capabilities
@@ -2403,18 +2304,36 @@
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
         async function joinApprove() {
-            const r = await postJSON('/api/join/approve', { join_id: _gid('joinId').value.trim(), approver: 'admin' });
+            const role = _gid('joinRoleSel').value;
+            const approver = _gid('joinApprover').value.trim();
+            if (!approver) { showAlert('Enter the approver\'s public ID', 'error'); return; }
+            const r = await postJSON('/api/join/approve', {
+                join_id: _gid('joinId').value.trim(), approver: approver, role: role
+            });
             const el = _gid('joinResult');
-            el.innerHTML = r.success
-                ? `<div class="alert alert-success show"><b>APPROVED ${r.data.join_id}</b> - minted identity ${escapeHtml(r.data.identity.public_id)} (block ${r.data.identity.block_index})</div>`
-                : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
+            if (r.success) {
+                el.innerHTML = `<div class="alert alert-success show"><b>APPROVED ${escapeHtml(r.data.join_id)}</b> - minted identity ${escapeHtml(r.data.identity.public_id)} (block ${r.data.identity.block_index}) with role <b>${escapeHtml(r.data.role || 'USER')}</b></div>` +
+                    psGateHtml(r.data.gate, { reason: 'approver held the required capability' });
+            } else {
+                const d = r.data || {};
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(d.reason || r.error)}</div>` +
+                    (d.requested_role ? `<div class="hint">requested role: <b>${escapeHtml(d.requested_role)}</b> - the request stays ${escapeHtml(d.status || 'PENDING')}.</div>` : '') +
+                    psGateHtml(d.gate, { reason: d.reason });
+            }
         }
         async function joinReject() {
-            const r = await postJSON('/api/join/reject', { join_id: _gid('joinId').value.trim(), reason: 'declined', approver: 'admin' });
+            const approver = _gid('joinApprover').value.trim();
+            if (!approver) { showAlert('Enter the approver\'s public ID', 'error'); return; }
+            const r = await postJSON('/api/join/reject', { join_id: _gid('joinId').value.trim(), reason: 'declined', approver: approver });
             const el = _gid('joinResult');
-            el.innerHTML = r.success
-                ? `<div class="alert alert-warning show">REJECTED ${r.data.join_id}</div>`
-                : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
+            const d = r.data || {};
+            if (r.success) {
+                el.innerHTML = `<div class="alert alert-warning show"><b>REJECTED ${escapeHtml(d.join_id)}</b> - the request is closed and no identity was minted.</div>` +
+                    psGateHtml(d.gate, { reason: 'approver held the required capability' });
+            } else {
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(d.reason || r.error)}</div>` +
+                    psGateHtml(d.gate, { reason: d.reason });
+            }
         }
 
         // ============================================================
@@ -2442,31 +2361,13 @@
             el.innerHTML = `<div class="alert ${r.data.valid ? 'alert-success' : 'alert-danger'} show"><b>VERIFICATION ${r.data.valid ? 'PASSED' : 'FAILED'}</b> - clearance >= ${r.data.bound} without revealing the value.</div>
                 <div class="hint">${escapeHtml(r.data.verification)} &middot; observed high digits: ${r.data.revealed_high_digits}</div>`;
         }
-        async function pqRegister() {
-            const r = await postJSON('/api/pq/register', { public_id: _gid('pqPublicId').value.trim() });
-            const el = _gid('pqResult');
-            if (!r.success) { renderRaw('pqResult', r); return; }
-            lastPqSignatureB64 = r.data.signature_b64 || '';
-            el.innerHTML = `<div class="alert alert-success show"><b>PQ IDENTITY ANCHORED</b> ${escapeHtml(r.data.public_id)}<br>
-                <span style="font-size:0.7rem;">scheme: ${escapeHtml(r.data.pq_backend)} &middot; on-chain root: ${escapeHtml(r.data.pq_root.slice(0, 24))}...</span></div>
-                <div class="hint">${escapeHtml(r.data.message)}</div>`;
-        }
-        async function pqAuth() {
-            const el = _gid('pqResult');
-            if (!lastPqSignatureB64) { el.innerHTML = `<div class="alert alert-warning show">Register a PQ identity first - its attestation is needed for the auth demo.</div>`; return; }
-            const r = await postJSON('/api/pq/auth', { public_id: _gid('pqPublicId').value.trim(), signature_b64: lastPqSignatureB64, nonce: 'nonce-' + Date.now() });
-            if (!r.success || !r.data.authenticated) {
-                el.innerHTML = `<div class="alert alert-danger show"><b>AUTH ${r.data && r.data.authenticated === false ? 'DENIED' : 'FAILED'}</b> - ${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
-                return;
-            }
-            el.innerHTML = `<div class="alert alert-success show"><b>AUTH GRANTED (HASH-BASED)</b> - ${escapeHtml(r.data.reason)}</div>`;
-        }
-        async function pqList() { renderRaw('pqResult', { success: true, data: (await fetchAPI('/api/pq/list')).data }); }
+        async function pqRegister() { /* removed */ }
+        async function pqAuth() { /* removed */ }
+        async function pqList() { /* removed */ }
         async function ktRotate() {
             const r = await postJSON('/api/keytrans/rotate', {
                 public_id: _gid('ktPublicId').value.trim(),
-                new_key_fingerprint: _gid('ktFingerprint').value.trim(),
-                rotated_by: 'identity-holder', reason: 'scheduled rotation'
+                new_key_fingerprint: _gid('ktFingerprint').value.trim()
             });
             const el = _gid('ktResult');
             el.innerHTML = r.success
@@ -2506,50 +2407,25 @@
         // ============================================================
         // FEATURE SUITE v3 - Access: duress / two-person / step-up
         // ============================================================
-        async function dupEnroll() {
-            const r = await postJSON('/api/duress/register', {
-                public_id: _gid('dupPublicId').value.trim(),
-                duress_pin: _gid('dupPanicPin').value.trim(),
-                normal_pin: _gid('dupNormalPin').value.trim()
-            });
-            const el = _gid('dupResult');
-            el.innerHTML = r.success
-                ? `<div class="alert alert-success show"><b>DURESS ENROLLED</b> for ${escapeHtml(r.data.public_id)}<br><span style="font-size:0.7rem;">${escapeHtml(r.data.message)}</span></div>`
-                : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
-        }
-        async function dupAuth() {
-            const r = await postJSON('/api/duress/authenticate', {
-                public_id: _gid('dupPublicId').value.trim(),
-                pin: _gid('dupTestPin').value.trim(),
-                resource: _gid('dupResource').value.trim()
-            });
-            const el = _gid('dupResult');
-            if (!r.success) { renderRaw('dupResult', r); return; }
-            if (r.data.scenario === 'duress') {
-                el.innerHTML = `<div class="alert ${r.data.alert_raised ? 'alert-danger' : 'alert-warning'} show">
-                    <b>LOOKS LIKE NORMAL SUCCESS</b> &middot; duress pin accepted (granted=${escapeHtml(String(r.data.granted))}) but a <b>CRITICAL "${escapeHtml(r.data.alert_id || '')}"</b> alert was raised silently.</div>
-                    <div class="hint">${escapeHtml(r.data.note)}</div>`;
-            } else {
-                el.innerHTML = `<div class="alert alert-success show"><b>NORMAL PIN</b> - plain success, no alert.</div>`;
-            }
-        }
+        async function dupEnroll() { /* removed */ }
+        async function dupAuth() { /* removed */ }
         async function tpOpen() {
             const r = await postJSON('/api/twoperson/initiate', {
                 resource: _gid('tpResource').value.trim(),
                 viewer_a: _gid('tpViewerA').value.trim()
             });
-            const el = _gid('tpResult');
-            if (!r.success) { renderRaw('tpResult', r); return; }
+            const el = _gid('tpwResult');
+            if (!r.success) { renderRaw('tpwResult', r); return; }
             _gid('tpWindowId').value = r.data.window_id;
             el.innerHTML = `<div class="alert alert-warning show"><b>WINDOW ${r.data.window_id}</b> - ${escapeHtml(r.data.view)}</div>`;
         }
-        async function tpWindowList() { renderRaw('tpResult', { success: true, data: (await fetchAPI('/api/twoperson/list')).data }); }
+        async function tpWindowList() { renderRaw('tpwResult', { success: true, data: (await fetchAPI('/api/twoperson/list')).data }); }
         async function tpCoauthorize() {
             const r = await postJSON('/api/twoperson/coauthorize', {
                 window_id: _gid('tpWindowId').value.trim(),
                 viewer_b: _gid('tpViewerB').value.trim()
             });
-            const el = _gid('tpResult');
+            const el = _gid('tpwResult');
             el.innerHTML = r.success
                 ? `<div class="alert alert-success show">${escapeHtml(r.data.view)}</div>`
                 : `<div class="alert alert-danger show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
@@ -2559,7 +2435,7 @@
                 window_id: _gid('tpWindowId').value.trim(),
                 viewer: _gid('tpViewerA').value.trim()
             });
-            const el = _gid('tpResult');
+            const el = _gid('tpwResult');
             el.innerHTML = r.success
                 ? `<div class="alert alert-success show"><b>VIEW GRANTED</b> - ${escapeHtml(r.data.view)}</div>`
                 : `<div class="alert alert-danger show"><b>VIEW DENIED</b> - ${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
@@ -3014,40 +2890,22 @@
                 <div class="hint">role_permitted: ${r.data.role_permitted} &middot; purpose_registered: ${r.data.purpose_registered}</div>`;
         }
         async function f15PurposeList() { renderRaw('f15purposeResult', { success: true, data: (await fetchAPI('/api/purpose/list')).data }); }
-        async function f15SessionSeal() {
-            const r = await postJSON('/api/session/seal', {
-                public_id: _gid('f15ssPid').value.trim(), device_hash: _gid('f15ssDev').value.trim(),
-                ip: _gid('f15ssIp').value.trim(), lease_s: parseInt(_gid('f15ssLease').value) || 600
-            });
-            const el = _gid('f15sessionResult');
-            if (!r.success) { renderRaw('f15sessionResult', r); return; }
-            el.innerHTML = `<div class="alert alert-success show"><b>${escapeHtml(r.data.session_id)}</b> &middot; token ${escapeHtml(r.data.token)} &middot; ${escapeHtml(r.data.message)}</div>`;
-        }
-        async function f15SessionValidate() {
-            const r = await postJSON('/api/session/validate', {
-                session_id: _gid('f15ssSid').value.trim(), device_hash: _gid('f15ssDev').value.trim(),
-                ip: _gid('f15ssIp').value.trim()
-            });
-            const el = _gid('f15sessionResult');
-            if (!r.success) { renderRaw('f15sessionResult', r); return; }
-            el.innerHTML = `<div class="alert ${r.data.valid ? 'alert-success' : 'alert-danger'} show"><b>${r.data.valid ? 'VALID' : 'INVALID'}</b> &middot; ${escapeHtml(r.data.reason)}</div>`;
-        }
-        async function f15SessionHijack() {
-            const r = await postJSON('/api/session/hijack', { session_id: _gid('f15ssSid').value.trim() });
-            const el = _gid('f15sessionResult');
-            if (!r.success) { renderRaw('f15sessionResult', r); return; }
-            el.innerHTML = `<div class="alert ${r.data.attack_blocked ? 'alert-danger' : 'alert-warning'} show"><b>Hijack ${r.data.attack_blocked ? 'BLOCKED' : 'NOT BLOCKED'}</b> &middot; ${escapeHtml(r.data.countermeasure)}</div>
-                <div class="hint">${escapeHtml(r.data.reason)}</div>`;
-        }
-        async function f15SessionList() { renderRaw('f15sessionResult', { success: true, data: (await fetchAPI('/api/session/list')).data }); }
+        async function f15SessionSeal() { /* removed */ }
+        async function f15SessionValidate() { /* removed */ }
+        async function f15SessionHijack() { /* removed */ }
+        async function f15SessionList() { /* removed */ }
         async function f15ClassifyRegister() {
+            const factors = _gid('f15clFactors').value.split(',').map(s => s.trim()).filter(Boolean);
             const r = await postJSON('/api/classify/register', {
-                label: _gid('f15clLabel').value.trim(), required_factors: splitCsv('f15clFactors'),
-                min_level: parseInt(_gid('f15clLevel').value) || 1, watermark: _gid('f15clMark').value.trim()
+                label: _gid('f15clLabel').value.trim(),
+                required_factors: factors,
+                min_level: parseInt(_gid('f15clLevel').value, 10) || 0,
+                watermark: _gid('f15clMark').value.trim()
             });
-            _gid('f15classifyResult').innerHTML = r.success
-                ? `<div class="alert alert-success show">${escapeHtml(r.data.message)}</div>`
-                : `<div class="alert alert-error show">${escapeHtml(r.data.reason || 'failed')}</div>`;
+            const el = _gid('f15classifyResult');
+            el.innerHTML = r.success
+                ? `<div class="alert alert-success show"><b>CLASSIFICATION LAYER CREATED</b> - ${escapeHtml(r.data.label || 'Created')}</div>`
+                : `<div class="alert alert-danger show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
         async function f15ClassifyAssess() {
             const r = await postJSON('/api/classify/assess', {
@@ -3064,29 +2922,15 @@
         // ============================================================
         // FEATURE 15 - Chaos / Node PKI / Audit-Root Notarization
         // ============================================================
-        async function f15ChaosInject() {
-            const r = await postJSON('/api/chaos/inject', {
-                node_id: _gid('f15chNode').value.trim(), mode: _gid('f15chMode').value,
-                value: _gid('f15chValue').value.trim()
-            });
-            const el = _gid('f15chaosResult');
-            if (!r.success) { renderRaw('f15chaosResult', r); return; }
-            el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.data.message)}</div>
-                <div class="hint">config: ${escapeHtml(JSON.stringify(r.data.config))}</div>`;
-        }
-        async function f15ChaosVerify() {
-            const r = await postJSON('/api/chaos/verify', { node_id: _gid('f15chNode').value.trim() });
-            const el = _gid('f15chaosResult');
-            if (!r.success) { renderRaw('f15chaosResult', r); return; }
-            el.innerHTML = `<div class="alert ${r.data.verdict === 'BLOCKED' ? 'alert-danger' : 'alert-success'} show"><b>${r.data.verdict}</b> on ${escapeHtml(r.data.node_id)} &middot; ${escapeHtml(r.data.reason)}</div>
-                <div class="hint">stale_ts ${r.data.stale_request_ts} &middot; clock_skew ${r.data.clock_skew_s}s &middot; freshness_5min_window ${r.data.freshness_5min_window} &middot; monotonic_nonce_defense ${r.data.monotonic_nonce_defense}</div>`;
-        }
-        async function f15ChaosList() { renderRaw('f15chaosResult', { success: true, data: (await fetchAPI('/api/chaos/list')).data }); }
+        async function f15ChaosInject() { /* removed */ }
+        async function f15ChaosVerify() { /* removed */ }
+        async function f15ChaosList() { /* removed */ }
         async function f15PkiJoin() {
             const r = await postJSON('/api/pki/join', { node_id: _gid('f15pkiNode').value.trim() });
-            _gid('f15pkiResult').innerHTML = r.success
-                ? `<div class="alert alert-success show"><b>${escapeHtml(r.data.node_id)}</b> &middot; pubkey ${escapeHtml(r.data.public_key)} &middot; ${escapeHtml(r.data.message)}</div>`
-                : `<div class="alert alert-warning show">${escapeHtml(r.data.reason || 'failed')}</div>`;
+            const el = _gid('f15pkiResult');
+            el.innerHTML = r.success
+                ? `<div class="alert alert-success show"><b>NODE ENROLLED</b> - ${escapeHtml(r.data.message || r.data.node_id)}</div>`
+                : `<div class="alert alert-danger show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
         async function f15PkiGossip() {
             const r = await postJSON('/api/pki/gossip', {
@@ -3224,3 +3068,618 @@
                 <div class="hint">${escapeHtml(r.data.message)}</div>`;
         }
         async function f15ReceiptList() { renderRaw('f15receiptResult', { success: true, data: (await fetchAPI('/api/receipt/list')).data }); }
+
+        // ================================================================
+        // PS GOVERNANCE LAYER
+        //   RBAC control panel, capability-gated dNFT governance, DID-based
+        //   ownership, and the six auditable activities. Every privileged
+        //   call renders the server's `gate` trace (role AND capability AND
+        //   resource) instead of a bare reason string.
+        // ================================================================
+
+        const PS_GATE_HINT = 'RBAC is enforced by smart contracts; the decision below shows role AND capability AND resource, and ABAC attributes are evaluated alongside it.';
+
+        // Render a structured policy-gate trace as a readable AND-chain.
+        function psGateHtml(gate, opts) {
+            if (!gate || typeof gate !== 'object') {
+                return `<div class="hint">no gate trace returned</div>`;
+            }
+            const o = opts || {};
+            const granted = gate.granted === true;
+            const stage = gate.stage ? escapeHtml(gate.stage) : '-';
+            const rows = [];
+            const bit = (ok, label) =>
+                `<span class="pill ${ok ? 'pill-green' : 'pill-red'}">${escapeHtml(label)}: ${ok ? 'PASS' : 'FAIL'}</span>`;
+            rows.push(`<div class="code-display" style="font-size:0.7rem;">
+                stage=<b>${stage}</b>
+                &nbsp;|&nbsp; subject=<b>${escapeHtml(gate.subject || gate.public_id || gate.actor || '-')}</b>
+                &nbsp;|&nbsp; role=<b>${escapeHtml(gate.role || 'none')}</b>
+                &nbsp;|&nbsp; capability=<b>${escapeHtml(gate.capability || '-')}</b>
+                &nbsp;|&nbsp; resource=<b>${escapeHtml(gate.resource || '-')}</b>
+            </div>`);
+            const chain = [];
+            if (gate.role) chain.push(bit(true, 'role ' + gate.role));
+            // Some gates (e.g. the mint gate) report the evaluated capability and a
+            // single granted bit rather than per-leg booleans; derive the legs then.
+            if ('capability_held' in gate) {
+                chain.push(bit(gate.capability_held, 'capability'));
+            } else if (gate.capability) {
+                chain.push(bit(granted, 'capability'));
+            }
+            if ('resource_granted' in gate) {
+                chain.push(bit(gate.resource_granted, 'resource'));
+            } else if (gate.resource && gate.resource !== gate.capability) {
+                chain.push(bit(granted, 'resource'));
+            }
+
+            if (gate.stage === 'ownership' || gate.owner_kind) {
+                chain.push(bit(true, 'ownership=' + escapeHtml(gate.owner_kind || 'verified')));
+            }
+            if (gate.current_owner) {
+                chain.push(`<span class="pill pill-blue">current owner: ${escapeHtml(gate.current_owner)}</span>`);
+            }
+            rows.push(`<div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.35rem;">
+                ${chain.join(' <span class="hint">AND</span> ')}</div>`);
+            if (gate.role_capabilities && gate.role_capabilities.length) {
+                rows.push(`<div class="hint" style="margin-top:0.35rem;">role capabilities: ${escapeHtml(gate.role_capabilities.join(', '))}</div>`);
+            }
+            rows.push(`<div class="alert ${granted ? 'alert-success' : 'alert-error'} show" style="margin-top:0.4rem;font-size:0.8rem;">
+                <b>${granted ? 'GRANTED' : 'DENIED'}</b> &middot; ${escapeHtml(gate.reason || o.reason || '')}</div>`);
+            return rows.join('');
+        }
+
+        // ----------------------------------------------------------------
+        // RBAC control panel
+        // ----------------------------------------------------------------
+        async function rbacLoadPanel() {
+            const el = _gid('rbacPanelResult');
+            const r = await fetchAPI('/api/rbac/list');
+            if (!r.success) { renderRaw('rbacPanelResult', r); return; }
+            window.__psRbac = r;
+            const roles = r.roles || [];
+            const members = r.members || [];
+            const roleRows = roles.map(x => {
+                const caps = (x.capabilities || []).join(', ') || '-';
+                const res = (x.resources || []).length;
+                const n = members.filter(m => m.role === x.role).length;
+                return `<tr>
+                    <td><b>${escapeHtml(x.role)}</b>${(x.custom) ? ' <span class="pill pill-purple">custom</span>' : ''}</td>
+                    <td style="font-size:0.7rem;">${escapeHtml(caps)}</td>
+                    <td>${res} res</td>
+                    <td>${n}</td>
+                </tr>`;
+            }).join('');
+            const memRows = members.map(m => `<tr>
+                <td>${escapeHtml(m.name || m.public_id)}</td>
+                <td style="font-size:0.72rem;">${escapeHtml(m.public_id)}</td>
+                <td><span class="pill pill-blue">${escapeHtml(m.role)}</span></td>
+            </tr>`).join('');
+            el.innerHTML = `
+                <div class="alert alert-info show">
+                    <b>${roles.length}</b> role(s) &middot; <b>${members.length}</b> member(s) &middot; ${escapeHtml(PS_GATE_HINT)}
+                </div>
+                <div class="table-container" style="max-height:260px;overflow:auto;margin-top:0.5rem;">
+                    <table><thead><tr><th>Role</th><th>Capabilities</th><th>Resources</th><th>Members</th></tr></thead>
+                    <tbody>${roleRows || '<tr><td colspan="4">no roles</td></tr>'}</tbody></table>
+                </div>
+                <div class="table-container" style="max-height:200px;overflow:auto;margin-top:0.5rem;">
+                    <table><thead><tr><th>Member</th><th>Public ID</th><th>Role</th></tr></thead>
+                    <tbody>${memRows || '<tr><td colspan="3">no members</td></tr>'}</tbody></table>
+                </div>`;
+            // keep the role <select>s in sync with what the chain actually has
+            ['rbacAssignRoleSel', 'rbacVerifyRoleSel', 'joinRoleSel'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                const cur = sel.value;
+                sel.innerHTML = roles.map(x => `<option value="${escapeHtml(x.role)}">${escapeHtml(x.role)}</option>`).join('');
+                if (cur) sel.value = cur;
+            });
+        }
+
+        async function rbacDefineRole() {
+            const r = await postJSON('/api/rbac/define-role', {
+                actor: _gid('rbacActor').value.trim(),
+                role: _gid('rbacNewRole').value.trim(),
+                capabilities: splitCsv('rbacNewCaps'),
+                resources: splitCsv('rbacNewRes')
+            });
+            const el = _gid('rbacPanelResult');
+            if (r.success) {
+                el.innerHTML = `<div class="alert alert-success show"><b>Role ${escapeHtml(r.role || _gid('rbacNewRole').value)}</b> defined on-chain.</div>`;
+                rbacLoadPanel();
+            } else {
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>${psGateHtml(r.gate, { reason: r.reason })}`;
+            }
+        }
+
+        async function rbacAssignRole() {
+            const r = await postJSON('/api/rbac/assign-role', {
+                actor: _gid('rbacActor').value.trim(),
+                public_id: _gid('rbacSubject').value.trim(),
+                role: _gid('rbacAssignRoleSel').value
+            });
+            const el = _gid('rbacPanelResult');
+            if (r.success) {
+                el.innerHTML = `<div class="alert alert-success show">
+                    <b>${escapeHtml(_gid('rbacSubject').value)}</b> is now <b>${escapeHtml(r.role)}</b> &mdash; assignment anchored on-chain.</div>`;
+                rbacLoadPanel();
+            } else {
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>${psGateHtml(r.gate, { reason: r.reason })}`;
+            }
+        }
+
+        // Capability verification: renders role AND capability AND resource.
+        async function rbacVerifyCapability() {
+            const r = await postJSON('/api/rbac/verify', {
+                subject: _gid('rbacSubject').value.trim(),
+                capability: _gid('rbacCap').value.trim(),
+                resource: _gid('rbacRes').value.trim()
+            });
+            const el = _gid('rbacPanelResult');
+            if (!r.success) { renderRaw('rbacPanelResult', r); return; }
+            el.innerHTML = `<div class="alert ${r.granted ? 'alert-success' : 'alert-error'} show">
+                <b>${r.granted ? 'GRANTED' : 'DENIED'}</b> &middot; ${escapeHtml(r.subject)} [${escapeHtml(r.role || 'no role')}]}
+            </div>${psGateHtml(r.gate, { reason: r.reason })}`;
+        }
+
+        // Deny-by-default: an unregistered subject and a plain USER both fail.
+        async function rbacDenyByDefault() {
+            const el = _gid('rbacPanelResult');
+            const out = [];
+            const cases = [
+                { label: 'Unregistered subject (deny-by-default)', subject: 'ghost.subject@nowhere.in', cap: 'nft.mint' },
+                { label: 'Plain USER attempting an admin capability', subject: _gid('rbacSubject').value.trim(), cap: 'nft.mint' },
+            ];
+            for (const c of cases) {
+                const r = await postJSON('/api/rbac/verify', { subject: c.subject, capability: c.cap, resource: c.cap });
+                out.push(`<div style="margin-bottom:0.6rem;">
+                    <div class="hint"><b>${escapeHtml(c.label)}</b> &mdash; ${escapeHtml(c.subject)}</div>
+                    <span class="pill ${r.granted ? 'pill-green' : 'pill-red'}">${r.granted ? 'GRANTED (unexpected)' : 'DENIED as expected'}</span>
+                    ${psGateHtml(r.gate)}
+                </div>`);
+            }
+            el.innerHTML = `<div class="alert alert-info show">Deny-by-default: an unknown subject and a non-admin are both refused before any capability check.</div>${out.join('')}`;
+        }
+
+        // ----------------------------------------------------------------
+        // dNFT governance: admin-gated mint, ownership, DID owner
+        // ----------------------------------------------------------------
+        async function nftGovernMint() {
+            const btn = document.getElementById('nftGovMintBtn');
+            const el = _gid('nftGovResult');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Evaluating policy gate...';
+            const r = await postJSON('/api/nft/mint', {
+                actor: _gid('nftGovActor').value.trim(),
+                owner: _gid('nftGovOwner').value.trim(),
+                name: _gid('nftGovName').value.trim() || 'Governed dNFT',
+                asset_type: _gid('nftGovType').value,
+                required_clearance: 'LEVEL-3'
+            });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-shield-halved"></i> Mint (gate enforced)';
+            if (r.success) {
+                const a = r.asset || {};
+                const own = r.owner_subject || {};
+                const ownerLabel = own.name ? `${own.name} <${own.ref || own.public_id}>` : (own.ref || own.public_id || '-');
+                el.innerHTML = `<div class="alert alert-success show">
+                    <b>Minted ${escapeHtml(a.token_id)}</b> &middot; ${escapeHtml(a.name)}
+                    &middot; owner <b>${escapeHtml(ownerLabel)}</b>
+                    <span class="pill pill-blue">owner kind: ${escapeHtml(r.owner_kind)}</span>
+                </div>
+                <div class="hint" style="margin-top:0.4rem;">block #${a.mint_block} &middot; actor ${escapeHtml(r.actor)} [${escapeHtml(r.actor_role)}]</div>
+                ${psGateHtml(r.gate)}`;
+                _gid('nftGovToken').value = a.token_id || '';
+            } else {
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>${psGateHtml(r.gate, { reason: r.reason })}`;
+            }
+        }
+
+
+        // nft_ownership() returns the resolved owner plus the full lineage,
+        // so one call covers both "who holds it" and "how did it get here".
+        async function nftGovOwnership(withLineage) {
+            const r = await postJSON('/api/nft/ownership', { token_id: _gid('nftGovToken').value.trim() });
+            const el = _gid('nftGovResult');
+            if (!r.success || r.found === false) {
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error || 'token not found on-chain')}</div>`;
+                return;
+            }
+            const kind = String(r.owner || '').startsWith('did:') ? 'did' : 'identity';
+            let html = `<div class="alert alert-info show">
+                <b>${escapeHtml(r.token_id)}</b> is owned by <b>${escapeHtml(r.owner)}</b>
+                <span class="pill ${kind === 'did' ? 'pill-purple' : 'pill-blue'}">owner kind: ${kind}</span>
+            </div>
+            <div class="hint" style="margin-top:0.4rem;">resolved from the on-chain ledger, not from client state.</div>`;
+            const hops = r.lineage || [];
+            if (withLineage) {
+                html += hops.length
+                    ? '<div class="zk-steps" style="margin-top:0.5rem;">' + hops.map((h, i) => `<div class="step">
+                        <div class="step-num">${i + 1}</div>
+                        <div><span class="pill pill-blue">${escapeHtml(h.event)}</span>
+                        &nbsp;operator <b>${escapeHtml(h.operator || 'genesis')}</b> &rarr; owner <b>${escapeHtml(h.owner || '?')}</b>
+                        <div class="hint">block #${h.block}</div></div></div>`).join('') + '</div>'
+                    : '<div class="hint" style="margin-top:0.5rem;">No lineage recorded yet.</div>';
+            }
+            el.innerHTML = html;
+        }
+        function nftGovLineage() { return nftGovOwnership(true); }
+
+
+        // ----------------------------------------------------------------
+        // DID-based ownership
+        // ----------------------------------------------------------------
+        async function didBindMint() {
+            const el = _gid('didOwnResult');
+            const r = await postJSON('/api/did/register', {
+                name: _gid('didOwnName').value.trim() || 'DID Owner',
+                role: 'USER',
+                email: _gid('didOwnEmail').value.trim() || 'did.owner@bel.gov.in'
+            });
+            if (!r.success) { el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>`; return; }
+            const did = r.did || (r.data && r.data.did);
+            _gid('didOwnDid').value = did || '';
+            el.innerHTML = `<div class="alert alert-success show">
+                <b>DID registered</b><br><div class="code-display copyable" style="font-size:0.68rem;">${escapeHtml(did)}</div>
+            </div>
+            <div class="hint" style="margin-top:0.4rem;">
+                Mint a dNFT to this DID in the next step. A DID may <b>hold</b> a token but can never
+                <b>act</b> as an RBAC operator &mdash; self-asserted identity cannot buy privilege.
+            </div>`;
+        }
+
+        async function didMintToDid() {
+            const el = _gid('didOwnResult');
+            const did = _gid('didOwnDid').value.trim();
+            if (!did) { el.innerHTML = '<div class="alert alert-error show">Register a DID first.</div>'; return; }
+            const r = await postJSON('/api/nft/mint', {
+                actor: _gid('didOwnActor').value.trim(),
+                owner: did,
+                name: 'DID-Bound dNFT',
+                asset_type: 'hardware',
+                required_clearance: 'LEVEL-3'
+            });
+            if (!r.success) { el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>${psGateHtml(r.gate)}`; return; }
+            const a = r.asset || {};
+            _gid('nftGovToken').value = a.token_id || '';
+            el.innerHTML = `<div class="alert alert-success show">
+                Minted <b>${escapeHtml(a.token_id)}</b> directly to a DID owner
+                <span class="pill pill-purple">owner kind: ${escapeHtml(r.owner_kind)}</span>
+            </div>${psGateHtml(r.gate)}
+            <div class="hint" style="margin-top:0.4rem;">on-chain owner is ${escapeHtml(did)}</div>`;
+        }
+
+        // ----------------------------------------------------------------
+        // Ownership transfer & consent scenarios
+        // ----------------------------------------------------------------
+        async function nftTransferScenario() {
+            const btn = document.getElementById('nftTransferBtn');
+            const el = _gid('nftTransferResult');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running consent scenarios...';
+            const r = await postJSON('/api/nft/transfer-demo', {});
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-right-left"></i> Run Transfer Consent Scenarios';
+            if (!r.success) { el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>`; return; }
+            // `scenarios` is an object keyed by scenario id, not an array.
+            const sc = r.scenarios || {};
+            const ids = Object.keys(sc);
+            const rows = ids.map(id => {
+                const s = sc[id] || {};
+                const allowed = s.success === true;
+                return `<tr>
+                    <td>${escapeHtml(s.name || id)}</td>
+                    <td><span class="pill ${allowed ? 'pill-green' : 'pill-red'}">${allowed ? 'ALLOWED' : 'DENIED'}</span></td>
+                    <td style="font-size:0.72rem;">${escapeHtml(s.reason || s.consent_mode || (s.gate && s.gate.reason) || '')}</td>
+                </tr>`;
+            }).join('');
+            const traces = ids.filter(id => sc[id] && sc[id].gate)
+                .map(id => `<details style="margin-top:0.3rem;">
+                    <summary style="cursor:pointer;font-size:0.76rem;">gate trace &middot; ${escapeHtml(sc[id].name || id)}</summary>
+                    ${psGateHtml(sc[id].gate)}
+                </details>`).join('');
+            el.innerHTML = `<div class="alert ${r.success ? 'alert-success' : 'alert-warning'} show">
+                <b>Ownership transfer is consent-gated.</b> Only the current owner (cryptographic signature)
+                or an administrator passing the full gate may move a token. Token <b>${escapeHtml(r.token_id)}</b>.</div>
+            <div class="table-container" style="max-height:280px;overflow:auto;margin-top:0.5rem;">
+                <table><thead><tr><th>Scenario</th><th>Outcome</th><th>Reason</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="3">no scenarios returned</td></tr>'}</tbody></table></div>
+            ${traces}
+            ${r.conclusion ? `<div class="hint" style="margin-top:0.4rem;">${escapeHtml(r.conclusion)}</div>` : ''}`;
+        }
+
+
+        async function nftTransferGoverned() {
+            const el = _gid('nftTransferResult');
+            const r = await postJSON('/api/nft/transfer', {
+                actor: _gid('nftTrActor').value.trim(),
+                token_id: _gid('nftTrToken').value.trim() || _gid('nftGovToken').value.trim(),
+                new_owner: _gid('nftTrNewOwner').value.trim(),
+                admin_override: _gid('nftTrOverride').checked
+            });
+            if (r.success) {
+                el.innerHTML = `<div class="alert alert-success show">
+                    Transferred <b>${escapeHtml(r.token_id)}</b>: ${escapeHtml(r.previous_owner)} &rarr; <b>${escapeHtml(r.new_owner)}</b>
+                    <span class="pill pill-blue">new owner kind: ${escapeHtml(r.new_owner_kind)}</span>
+                </div>${psGateHtml(r.gate, { reason: r.message })}`;
+            } else {
+                el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.reason || r.error)}</div>${psGateHtml(r.gate, { reason: r.reason })}`;
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // The six auditable activities
+        // ----------------------------------------------------------------
+        let __psAct = '';
+        async function psLoadActivity(key) {
+            __psAct = key || '';
+            const q = key ? `?activity=${encodeURIComponent(key)}&limit=100` : '?limit=100';
+            const r = await fetchAPI('/api/audit/activities' + q);
+            const el = _gid('activityResult');
+            const chips = _gid('activityChips');
+            if (!r.success) { el.innerHTML = `<div class="alert alert-error show">${escapeHtml(r.error || r.reason)}</div>`; return; }
+            if (chips) {
+                chips.innerHTML = `<button class="btn ${key ? '' : 'btn-primary'}" onclick="psLoadActivity('')">All</button>` +
+                    (r.activities || []).map(a => `<button class="btn ${a.key === key ? 'btn-primary' : ''}" onclick="psLoadActivity('${escapeHtml(a.key)}')">
+                        ${escapeHtml(a.label)} <span class="pill ${a.count ? 'pill-green' : 'pill-blue'}">${a.count}</span></button>`).join('');
+            }
+            const rows = (r.entries || []).map(e => `<tr>
+                <td>#${e.block_index}</td>
+                <td>${e.timestamp_display || '--'}</td>
+                <td><span class="pill pill-blue">${escapeHtml(e.activity_type)}</span></td>
+                <td>${escapeHtml(e.public_id || e.identity_name || e.actor || e.token_id || '--')}</td>
+                <td style="font-size:0.72rem;">${escapeHtml(e.reason || e.decision || e.action || '')}</td>
+            </tr>`).join('');
+            el.innerHTML = `<div class="alert alert-info show">
+                <b>${r.count}</b> block(s) &middot; ${r.total_blocks} across the six auditable activities.
+                Filtering happens <b>server-side before the limit</b>, so no activity can be hidden by a page cut-off.</div>
+            <div class="table-container" style="max-height:300px;overflow:auto;margin-top:0.5rem;">
+                <table><thead><tr><th>Block</th><th>Time</th><th>Activity</th><th>Subject</th><th>Detail</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="5">no blocks for this activity yet</td></tr>'}</tbody></table></div>`;
+        }
+
+        // ============================================================
+        // 1. BEL UNIFIED MISSION SHOWCASE (E2E 7-STEP STORY FLOW)
+        // ============================================================
+        async function runBelMissionShowcase() {
+            const el = _gid('belMissionResult');
+            const name = _gid('belShowcaseName').value.trim();
+            const role = _gid('belShowcaseRole').value.trim();
+            const asset = _gid('belShowcaseAsset').value.trim();
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Executing unified 7-step defense mission on-chain...</div>`;
+            try {
+                const r = await postJSON('/api/showcase/e2e-run', {
+                    applicant_name: name,
+                    role: role,
+                    asset_name: asset
+                });
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || r.reason || 'Mission execution failed')}</div>`;
+                    return;
+                }
+                const stepsHtml = (r.steps || []).map(s => `
+                    <div style="background:var(--surface-2);border-left:4px solid ${s.status === 'COMPLETED' || s.status === 'GRANTED' ? 'var(--c-accent, #10b981)' : '#ef4444'};border-radius:4px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:600;font-size:0.85rem;">Step ${s.step}: ${escapeHtml(s.title)}</span>
+                            <span class="pill ${s.status === 'COMPLETED' || s.status === 'GRANTED' ? 'pill-green' : 'pill-red'}">${escapeHtml(s.status)}</span>
+                        </div>
+                        <div style="font-size:0.75rem;margin-top:0.3rem;color:var(--text-muted);">${escapeHtml(s.summary)}</div>
+                        ${s.block_index !== undefined ? `<div style="font-size:0.7rem;font-family:monospace;margin-top:0.25rem;">Block: #${s.block_index} ${s.block_hash ? `&middot; Hash: ${escapeHtml(s.block_hash.slice(0, 16))}...` : ''}</div>` : ''}
+                    </div>
+                `).join('');
+                el.innerHTML = `
+                    <div class="alert alert-success show">
+                        <i class="fas fa-shield-halved"></i> <b>BEL DEFENSE MISSION COMPLETE</b><br>
+                        Applicant: <b>${escapeHtml(r.applicant_name)}</b> &middot; Role: <b>${escapeHtml(r.role)}</b><br>
+                        DID: <code style="font-size:0.72rem;">${escapeHtml(r.did)}</code><br>
+                        Token ID: <b>#${escapeHtml(String(r.token_id))}</b> &middot; Audit Merkle Root: <code style="font-size:0.72rem;">${escapeHtml(r.audit_root ? r.audit_root.slice(0, 20) : '')}...</code>
+                    </div>
+                    <div style="margin-top:0.6rem;">${stepsHtml}</div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        // ============================================================
+        // 2. INTERACTIVE RBAC PERMISSIONS MATRIX UI
+        // ============================================================
+        async function loadRbacMatrix() {
+            const el = _gid('rbacMatrixContainer');
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Loading live RBAC policy matrix...</div>`;
+            try {
+                const res = await fetch('/api/rbac/matrix');
+                const r = await res.json();
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || 'Failed to load matrix')}</div>`;
+                    return;
+                }
+                const roles = r.roles || [];
+                const ops = r.operations || [];
+                const matrix = r.matrix || {};
+
+                let thead = `<tr><th>Operation</th>` + roles.map(rl => `<th style="text-align:center;">${escapeHtml(rl)}</th>`).join('') + `</tr>`;
+                let tbody = ops.map(op => {
+                    let cols = roles.map(rl => {
+                        const cell = (matrix[rl] && matrix[rl][op.id]) || { granted: false };
+                        return `<td style="text-align:center;">
+                            <span class="pill ${cell.granted ? 'pill-green' : 'pill-red'}" title="${escapeHtml(cell.scope || '')}">
+                                ${cell.granted ? '<i class="fas fa-check"></i> GRANTED' : '<i class="fas fa-xmark"></i> DENIED'}
+                            </span>
+                        </td>`;
+                    }).join('');
+                    return `<tr><td><b>${escapeHtml(op.name)}</b><br><span style="font-size:0.68rem;color:var(--text-muted);">${escapeHtml(op.id)} &middot; ${escapeHtml(op.category)}</span></td>${cols}</tr>`;
+                }).join('');
+
+                el.innerHTML = `
+                    <div class="table-container" style="max-height:360px;overflow:auto;">
+                        <table style="width:100%;font-size:0.8rem;">
+                            <thead>${thead}</thead>
+                            <tbody>${tbody}</tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function simulateMatrixPermission() {
+            const el = _gid('rbacMatrixSimResult');
+            const role = _gid('matSimRole').value.trim();
+            const cap = _gid('matSimCap').value.trim();
+            const resTarget = _gid('matSimRes').value.trim();
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Simulating policy gate...</div>`;
+            try {
+                const r = await postJSON('/api/rbac/matrix/simulate', {
+                    role: role,
+                    capability: cap,
+                    resource: resTarget
+                });
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || 'Simulation error')}</div>`;
+                    return;
+                }
+                const isGranted = (r.decision === 'GRANTED');
+                el.innerHTML = `
+                    <div class="alert ${isGranted ? 'alert-success' : 'alert-danger'} show">
+                        <b>DECISION: ${escapeHtml(r.decision)}</b> &middot; Role: <b>${escapeHtml(r.role)}</b><br>
+                        Capability: <code>${escapeHtml(r.capability)}</code> &middot; Resource: <code>${escapeHtml(r.resource)}</code><br>
+                        <span style="font-size:0.75rem;">${escapeHtml(r.reason)}</span>
+                    </div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        // ============================================================
+        // 3. AUDITOR PORTAL & CRYPTOGRAPHIC VERIFICATION HUB
+        // ============================================================
+        let _lastAuditorProof = null;
+
+        async function auditorRunDeepScan() {
+            const el = _gid('auditorResult');
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Scanning every block, PoW nonce, and Merkle root across the ledger...</div>`;
+            try {
+                const res = await fetch('/api/auditor/chain-scan');
+                const r = await res.json();
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || 'Scan failed')}</div>`;
+                    return;
+                }
+                const bdown = Object.entries(r.breakdown || {}).map(([k, v]) => `<span class="pill pill-blue">${escapeHtml(k)}: ${v}</span>`).join(' ');
+                el.innerHTML = `
+                    <div class="alert ${r.valid ? 'alert-success' : 'alert-danger'} show">
+                        <i class="fas ${r.valid ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>
+                        <b>DEEP INTEGRITY SCAN: ${r.valid ? '100% VERIFIED' : 'TAMPER DETECTED'}</b><br>
+                        Total Blocks: <b>${r.total_blocks}</b> &middot; Audit Blocks: <b>${r.audit_blocks_count}</b> &middot; Integrity Score: <b>${r.integrity_score}%</b><br>
+                        Head Block Hash: <code style="font-size:0.72rem;">${escapeHtml(r.head_hash || '')}</code><br>
+                        Audit Merkle Root: <code style="font-size:0.72rem;">${escapeHtml(r.audit_merkle_root || '')}</code>
+                    </div>
+                    <div style="margin-top:0.4rem;font-size:0.75rem;"><b>Block Breakdown:</b> ${bdown}</div>
+                    ${r.tamper_details && r.tamper_details.length ? `<div class="alert alert-danger show" style="margin-top:0.4rem;">${escapeHtml(r.tamper_details.join('; '))}</div>` : ''}
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function auditorGenerateProof() {
+            const el = _gid('auditorResult');
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Generating Merkle membership authentication path...</div>`;
+            try {
+                const r = await postJSON('/api/auditor/merkle-proof', { target_type: 'audit' });
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || 'Failed to generate proof')}</div>`;
+                    return;
+                }
+                _lastAuditorProof = r;
+                _gid('auditorProofLeaf').value = r.leaf_hash || '';
+                _gid('auditorProofRoot').value = r.merkle_root || '';
+
+                const steps = (r.proof_path || []).map((s, idx) => `
+                    <div style="font-family:monospace;font-size:0.72rem;background:var(--surface-2);padding:0.3rem 0.5rem;border-radius:4px;margin-bottom:0.25rem;">
+                        Step ${idx + 1}: ${escapeHtml(s.position)} sibling &rarr; ${escapeHtml(s.hash.slice(0, 24))}...
+                    </div>
+                `).join('');
+
+                el.innerHTML = `
+                    <div class="alert alert-info show">
+                        <b>MERKLE AUTHENTICATION PATH GENERATED</b><br>
+                        Target Leaf Index: <b>#${r.leaf_index}</b> in Block <b>#${r.block_index}</b> (Total leaves: ${r.total_leaves})<br>
+                        Leaf SHA-256: <code style="font-size:0.72rem;">${escapeHtml(r.leaf_hash)}</code><br>
+                        Expected Root: <code style="font-size:0.72rem;">${escapeHtml(r.merkle_root)}</code>
+                    </div>
+                    <div style="margin-top:0.5rem;"><b>Proof Path (${r.proof_path ? r.proof_path.length : 0} steps):</b>${steps}</div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function auditorVerifyMerkle() {
+            const el = _gid('auditorResult');
+            const leaf = _gid('auditorProofLeaf').value.trim();
+            const root = _gid('auditorProofRoot').value.trim();
+            if (!leaf || !root) {
+                el.innerHTML = `<div class="alert alert-warning show">Please generate a proof first or provide both Leaf Hash and Expected Merkle Root.</div>`;
+                return;
+            }
+            const path = (_lastAuditorProof && _lastAuditorProof.proof_path) ? _lastAuditorProof.proof_path : [];
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Reconstructing cryptographic hash chain to root...</div>`;
+            try {
+                const r = await postJSON('/api/auditor/verify-proof', {
+                    leaf_hash: leaf,
+                    proof_path: path,
+                    expected_root: root
+                });
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || r.reason || 'Verification failed')}</div>`;
+                    return;
+                }
+                el.innerHTML = `
+                    <div class="alert ${r.verified ? 'alert-success' : 'alert-danger'} show">
+                        <i class="fas ${r.verified ? 'fa-certificate' : 'fa-triangle-exclamation'}"></i>
+                        <b>MERKLE PROOF VERDICT: ${escapeHtml(r.verdict)}</b><br>
+                        Computed Root: <code style="font-size:0.72rem;">${escapeHtml(r.computed_root)}</code><br>
+                        Expected Root: <code style="font-size:0.72rem;">${escapeHtml(r.expected_root)}</code><br>
+                        Steps Reconstructed: <b>${r.steps_evaluated}</b> &middot; ${escapeHtml(r.message)}
+                    </div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function auditorGenerateCertificate() {
+            const el = _gid('auditorResult');
+            const auditorId = _gid('auditorIdInput').value.trim() || 'AUDITOR-BEL-01';
+            el.innerHTML = `<div class="hint"><i class="fas fa-spinner fa-spin"></i> Validating full ledger and signing official compliance certificate...</div>`;
+            try {
+                const r = await postJSON('/api/auditor/certificate', { auditor_id: auditorId });
+                if (!r.success) {
+                    el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(r.error || r.reason || 'Certificate issuance failed')}</div>`;
+                    return;
+                }
+                const c = r.certificate || {};
+                el.innerHTML = `
+                    <div style="border:2px solid var(--c-accent, #10b981);border-radius:8px;padding:1rem;background:var(--surface-2);margin-top:0.4rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.5rem;margin-bottom:0.6rem;">
+                            <span style="font-weight:700;font-size:1rem;color:var(--c-accent, #10b981);"><i class="fas fa-shield-halved"></i> BHARAT ELECTRONICS LIMITED</span>
+                            <span class="pill pill-green">SECURITY CERTIFIED</span>
+                        </div>
+                        <div style="font-size:0.85rem;margin-bottom:0.3rem;"><b>Certificate ID:</b> <code>${escapeHtml(c.certificate_id)}</code></div>
+                        <div style="font-size:0.8rem;margin-bottom:0.3rem;"><b>Lead Auditor:</b> ${escapeHtml(c.auditor_id)} &middot; <b>Issued:</b> ${escapeHtml(c.issued_at_iso)}</div>
+                        <div style="font-size:0.8rem;margin-bottom:0.3rem;"><b>Specification:</b> ${escapeHtml(c.standard)}</div>
+                        <div style="font-size:0.8rem;margin-bottom:0.3rem;"><b>Chain Head:</b> <code style="font-size:0.72rem;">${escapeHtml(c.head_block_hash)}</code> (${c.chain_length} blocks)</div>
+                        <div style="font-size:0.8rem;margin-bottom:0.3rem;"><b>Audit Root:</b> <code style="font-size:0.72rem;">${escapeHtml(c.audit_merkle_root)}</code></div>
+                        <div style="margin-top:0.6rem;padding:0.4rem 0.6rem;background:var(--surface);border-radius:4px;font-family:monospace;font-size:0.7rem;word-break:break-all;">
+                            <b>Cryptographic Seal:</b><br>${escapeHtml(c.signature)}
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert alert-danger show">${escapeHtml(err.message)}</div>`;
+            }
+        }
