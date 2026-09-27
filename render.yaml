@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sih26125-blockchain-identity
+    name: blockchain-identity
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
