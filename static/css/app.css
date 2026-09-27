@@ -757,7 +757,7 @@ body {
 }
 .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
 .menu-btn { display: none; }
-.topbar-pills { display: flex; gap: .5rem; align-items: center; flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+.topbar-pills { display: flex; gap: .5rem; align-items: center; flex-wrap: nowrap; flex-shrink: 0; }
 .status-pill {
     display: inline-flex; align-items: center; gap: .35rem;
     padding: .32rem .7rem;
@@ -765,7 +765,7 @@ body {
     background: var(--surface-2);
     border: 1px solid var(--border);
     font-size: .74rem; font-weight: 600;
-    /* never squash or wrap the text - the group clips instead */
+    /* never squash or wrap the text */
     flex-shrink: 0;
     white-space: nowrap;
 
@@ -775,6 +775,20 @@ body {
 .status-pill.chain-ok i { color: var(--ok-strong); }
 .status-pill.chain-bad { color: var(--err-ink); background: var(--err-fill); border-color: var(--err-line); }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+
+/* ---------- Topbar: keep it one line with nothing cut off ----------
+   The demo-context inputs were a flat 168px each, so the resource box spent
+   168px to show "vault" and squeezed the status pills until they were
+   amputated by the group's overflow:hidden. Size each to what it holds so the
+   pills keep their full text on a single line. */
+#ctxIdentity { width: 148px; flex: 0 1 148px; }
+#ctxResource { width: 84px; flex: 0 1 84px; }
+/* The search trigger's label is the one item designed to give up width: it
+   ellipsizes, so the row stays one line without hiding anything. */
+.topbar > .palette-trigger { min-width: 0; }
+/* Safety valve: if a viewport is too narrow for everything, scroll the bar
+   itself rather than clipping text or pushing the page sideways. */
+.topbar { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .nav-item .key-hint { margin-left: auto; font-size: .62rem; color: #64748b; letter-spacing: .05em; }
 
 .container { max-width: 1400px; margin: 0 auto; padding: 1.4rem 1.2rem 3.5rem; }

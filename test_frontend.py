@@ -77,6 +77,16 @@ checks = {
     'Tour overlay': 'tourOverlay' in html,
     'Hero banner': 'class="hero"' in html,
     'Theme toggle': 'themeToggleBtn' in html,
+    # The guided-tour compass was removed from the top bar (it sat left of the
+    # theme toggle). The tour itself is still reachable from the hero box, and
+    # the T shortcut still works.
+    'No guided-tour button in the top bar': re.search(
+        r'<div class="topbar-actions">(?:(?!</div>).)*?startTour', html, re.S) is None,
+    'Top bar keeps its other three icon buttons': html.split(
+        '<div class="topbar-actions">')[1].split('</div>')[0].count('class="icon-btn"') == 3,
+    'Activity rail + console keep their own icon buttons': html.count('class="icon-btn"') == 8,
+    'Guided tour still offered in the hero box': 'Take the guided tour' in html
+    and html.count('onclick="startTour()"') == 1,
     'External CSS link': '/static/css/app.css' in html,
     'External JS links': '/static/js/ui.js' in html and '/static/js/app.js' in html,
     'Favicon': '/static/favicon.svg' in html,
