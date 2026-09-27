@@ -1494,18 +1494,23 @@
         async function disposeConsume() {
             const last = (document.querySelector('#dspResult .alert-success') || { innerHTML: '' }).innerHTML;
             const token = (last.match(/token minted<\/b>\s*—\s*copy it:<br>\s*<span[^>]*>(.*?)<\/span>/i) || [])[1] || prompt('Disposable token?');
+            resultLoading('dspResult', 'fa-check', 'Consuming disposable token...', 'Validating the token and recording the use.');
             const r = await postJSON('/api/disposable/consume', {
                 token, resource: document.getElementById('dspResource').value.trim(), action: 'enter'
             });
-            renderRaw('dspResult', r);
+            renderApiResult('dspResult', r, { title: 'Disposable token consumed', icon: 'fa-check', recordName: 'result', empty: 'No result returned.' });
         }
         async function disposeRevoke() {
             const token = prompt('Disposable token to revoke?');
             if (!token) return;
-            renderRaw('dspResult', await postJSON('/api/disposable/revoke', { token }));
+            resultLoading('dspResult', 'fa-ban', 'Revoking disposable token...', 'Revoking the token on-chain.');
+            const r = await postJSON('/api/disposable/revoke', { token });
+            renderApiResult('dspResult', r, { title: 'Disposable token revoked', icon: 'fa-ban', recordName: 'result', empty: 'No result returned.' });
         }
         async function disposeList() {
-            renderRaw('dspResult', { success: true, data: (await fetchAPI('/api/disposable/list')).data });
+            resultLoading('dspResult', 'fa-list', 'Loading disposable tokens...', 'Fetching the latest disposable tokens.');
+            const r = await fetchAPI('/api/disposable/list');
+            renderApiResult('dspResult', r, { title: 'Disposable tokens', icon: 'fa-list', recordName: 'token', empty: 'No disposable tokens have been minted yet.' });
         }
 
         // --- F2: Delegation chains ---
@@ -1525,7 +1530,9 @@
         async function delegationRevoke() {
             const id = prompt('Delegation ID to revoke?');
             if (!id) return;
-            renderRaw('dlgResult', await postJSON('/api/delegations/revoke', { delegation_id: id }));
+            resultLoading('dlgResult', 'fa-unlink', 'Revoking delegation...', 'Revoking the delegation on-chain.');
+            const r = await postJSON('/api/delegations/revoke', { delegation_id: id });
+            renderApiResult('dlgResult', r, { title: 'Delegation revoked', icon: 'fa-unlink', recordName: 'result', empty: 'No result returned.' });
         }
         async function delegationEvaluate() {
             const r = await postJSON('/api/delegations/evaluate', {
@@ -1541,7 +1548,9 @@
             }
         }
         async function delegationList() {
-            renderRaw('dlgResult', { success: true, data: (await fetchAPI('/api/delegations/list')).data });
+            resultLoading('dlgResult', 'fa-list', 'Loading delegations...', 'Fetching the latest delegations.');
+            const r = await fetchAPI('/api/delegations/list');
+            renderApiResult('dlgResult', r, { title: 'Delegations', icon: 'fa-list', recordName: 'delegation', empty: 'No delegations yet.' });
         }
 
         // --- F3: Travel-mode context access ---
@@ -1557,9 +1566,11 @@
             } else { renderRaw('trvResult', r); }
         }
         async function travelDisable() {
-            renderRaw('trvResult', await postJSON('/api/travel-mode/disable', {
+            resultLoading('trvResult', 'fa-stop', 'Disabling travel mode...', 'Turning off travel mode.');
+            const r = await postJSON('/api/travel-mode/disable', {
                 public_id: document.getElementById('trvPublicId').value.trim()
-            }));
+            });
+            renderApiResult('trvResult', r, { title: 'Travel mode disabled', icon: 'fa-stop', recordName: 'result', empty: 'No result returned.' });
         }
         async function travelEvaluate() {
             const r = await postJSON('/api/travel-mode/evaluate', {
@@ -1575,7 +1586,9 @@
             }
         }
         async function travelList() {
-            renderRaw('trvResult', { success: true, data: (await fetchAPI('/api/travel-mode/list')).data });
+            resultLoading('trvResult', 'fa-list', 'Loading travel modes...', 'Fetching the active travel modes.');
+            const r = await fetchAPI('/api/travel-mode/list');
+            renderApiResult('trvResult', r, { title: 'Active travel modes', icon: 'fa-list', recordName: 'travel mode', empty: 'No active travel modes.' });
         }
 
         // --- F4: DID rescue kits ---
@@ -1740,7 +1753,9 @@
                 : `<div class="alert alert-warning show">${r.data && r.data.reason || 'Refresh failed — credential missing'}</div>`;
         }
         async function vcLifecycle() {
-            renderRaw('vcResult', { success: true, data: (await fetchAPI('/api/credentials/lifecycle')).data });
+            resultLoading('vcResult', 'fa-list', 'Loading credential lifecycle...', 'Fetching the credential lifecycle records.');
+            const r = await fetchAPI('/api/credentials/lifecycle');
+            renderApiResult('vcResult', r, { title: 'Credential lifecycle', icon: 'fa-list', recordName: 'credential', empty: 'No credential lifecycle records yet.' });
         }
 
         // --- F10: Chain backups ---
@@ -1752,10 +1767,14 @@
             } else { renderRaw('bkResult', r); }
         }
         async function backupList() {
-            renderRaw('bkResult', { success: true, data: (await fetchAPI('/api/backups/list')).data });
+            resultLoading('bkResult', 'fa-list', 'Loading chain backups...', 'Fetching the chain backups.');
+            const r = await fetchAPI('/api/backups/list');
+            renderApiResult('bkResult', r, { title: 'Chain backups', icon: 'fa-list', recordName: 'backup', empty: 'No backups yet.' });
         }
         async function backupVerify() {
-            renderRaw('bkResult', (await postJSON('/api/backups/verify', { backup_id: document.getElementById('bkId').value.trim() })));
+            resultLoading('bkResult', 'fa-shield-alt', 'Verifying backup...', 'Checking the backup integrity.');
+            const r = await postJSON('/api/backups/verify', { backup_id: document.getElementById('bkId').value.trim() });
+            renderApiResult('bkResult', r, { title: 'Backup verification', icon: 'fa-shield-alt', recordName: 'result', empty: 'No result returned.' });
         }
         async function backupRestore() {
             const r = await postJSON('/api/backups/restore', { backup_id: document.getElementById('bkId').value.trim() });
@@ -1786,7 +1805,9 @@
             } else { renderRaw('trustResult', r); }
         }
         async function trustList() {
-            renderRaw('trustResult', { success: true, data: (await fetchAPI('/api/trust/scores')).data });
+            resultLoading('trustResult', 'fa-list', 'Loading trust scores...', 'Fetching the computed trust scores.');
+            const r = await fetchAPI('/api/trust/scores');
+            renderApiResult('trustResult', r, { title: 'Trust scores', icon: 'fa-list', recordName: 'score', empty: 'No trust scores computed yet.' });
         }
 
         // --- F12: Live defense ---
@@ -1840,7 +1861,9 @@
                 : `<div class="alert alert-warning show">${r.data && r.data.reason || 'Verification failed'}</div>`;
         }
         async function checkinList() {
-            renderRaw('ckResult', { success: true, data: (await fetchAPI('/api/checkin/list')).data });
+            resultLoading('ckResult', 'fa-list', 'Loading check-in passes...', 'Fetching the check-in passes.');
+            const r = await fetchAPI('/api/checkin/list');
+            renderApiResult('ckResult', r, { title: 'Check-in passes', icon: 'fa-list', recordName: 'pass', empty: 'No check-in passes yet.' });
         }
 
         // ============================================================
@@ -1893,7 +1916,9 @@
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason) || 'Use failed')}</div>`;
         }
         async function bgList() {
-            renderRaw('bgResult', { success: true, data: (await fetchAPI('/api/breakglass/list')).data });
+            resultLoading('bgResult', 'fa-list', 'Loading break-glass ledger...', 'Fetching the emergency windows.');
+            const r = await fetchAPI('/api/breakglass/list');
+            renderApiResult('bgResult', r, { title: 'Break-glass ledger', icon: 'fa-list', recordName: 'window', empty: 'No emergency windows recorded.' });
         }
 
         // --- G2: Adaptive (JIT) step-up authentication ---
@@ -1937,13 +1962,10 @@
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason) || 'Fulfill failed')}</div>`;
         }
         async function adList() {
-            renderRaw('adResult', {
-                success: true,
-                data: {
-                    stepups: (await fetchAPI('/api/adaptive/stepup/list')).data,
-                    decisions: (await fetchAPI('/api/adaptive/decisions')).data
-                }
-            });
+            resultLoading('adResult', 'fa-list', 'Loading step-up requests and grants...', 'Fetching the step-up requests and grant decisions.');
+            const stepups = (await fetchAPI('/api/adaptive/stepup/list')).data;
+            const decisions = (await fetchAPI('/api/adaptive/decisions')).data;
+            renderApiResult('adResult', { success: true, data: { stepups, decisions } }, { title: 'Step-up requests and grants', icon: 'fa-list', recordName: 'entry', empty: 'No step-up requests or grants yet.' });
         }
 
         // --- G3: TOTP second factor (RFC 6238) ---
@@ -1976,7 +1998,9 @@
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.error) || 'Reset failed')}</div>`;
         }
         async function tpList() {
-            renderRaw('tpResult', { success: true, data: (await fetchAPI('/api/totp/list')).data });
+            resultLoading('tpResult', 'fa-list', 'Loading enrolled TOTP factors...', 'Fetching the enrolled authenticator factors.');
+            const r = await fetchAPI('/api/totp/list');
+            renderApiResult('tpResult', r, { title: 'Enrolled TOTP factors', icon: 'fa-list', recordName: 'factor', empty: 'No authenticator factors enrolled.' });
         }
 
         // --- G6: Physical velocity / teleport detection ---
@@ -2005,14 +2029,17 @@
         async function vlPlausible() {
             const fromGeo = _geo('vlFromGeo'), toGeo = _geo('vlToGeo');
             if (!fromGeo || !toGeo) { _gid('vlResult').innerHTML = '<div class="alert alert-error show">Both geo fields must be "lat,lng".</div>'; return; }
+            resultLoading('vlResult', 'fa-car', 'Evaluating plausible bound...', 'Checking the trip against the speed ceiling.');
             const r = await postJSON('/api/velocity/evaluate', {
                 from_geo: fromGeo, to_geo: toGeo,
                 elapsed_minutes: 45, max_speed_kmh: 900
             });
-            renderRaw('vlResult', r);
+            renderApiResult('vlResult', r, { title: 'Plausible-bound demo', icon: 'fa-car', recordName: 'result', empty: 'No result returned.' });
         }
         async function vlList() {
-            renderRaw('vlResult', { success: true, data: (await fetchAPI('/api/velocity/events')).data });
+            resultLoading('vlResult', 'fa-list', 'Loading velocity events...', 'Fetching the recorded velocity events.');
+            const r = await fetchAPI('/api/velocity/events');
+            renderApiResult('vlResult', r, { title: 'Velocity events', icon: 'fa-list', recordName: 'event', empty: 'No velocity events recorded.' });
         }
 
         // --- G8: PII redaction / right-to-erasure ---
@@ -2041,7 +2068,9 @@
                 : `<div class="alert alert-warning show"><b>NOT REDACTED</b> - ${escapeHtml(d.field)} of ${escapeHtml(d.public_id)} is still in plaintext.</div>`;
         }
         async function rdList() {
-            renderRaw('rdResult', { success: true, data: (await fetchAPI('/api/redact/list')).data });
+            resultLoading('rdResult', 'fa-list', 'Loading redaction register...', 'Fetching the recorded redactions.');
+            const r = await fetchAPI('/api/redact/list');
+            renderApiResult('rdResult', r, { title: 'Redaction register', icon: 'fa-list', recordName: 'redaction', empty: 'No redactions recorded.' });
         }
 
         // --- G4: Global revocation list + ZK status proof ---
@@ -2063,11 +2092,14 @@
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
         async function crlCheck() {
+            resultLoading('crlResult', 'fa-search', 'Checking revocation status...', 'Looking up the identity on the revocation list.');
             const r = await fetchAPI('/api/crl/check?public_id=' + encodeURIComponent(_gid('crlPublicId').value.trim()));
-            renderRaw('crlResult', r);
+            renderApiResult('crlResult', r, { title: 'Revocation check', icon: 'fa-search', recordName: 'result', empty: 'No result returned.' });
         }
         async function crlList() {
-            renderRaw('crlResult', { success: true, data: (await fetchAPI('/api/crl/list')).data });
+            resultLoading('crlResult', 'fa-file-export', 'Loading revocation list...', 'Fetching the publishable revocation list.');
+            const r = await fetchAPI('/api/crl/list');
+            renderApiResult('crlResult', r, { title: 'Publishable revocation list', icon: 'fa-file-export', recordName: 'entry', empty: 'The revocation list is empty.' });
         }
         async function crlZkProveVerify() {
             const pid = _gid('crlPublicId').value.trim() || prompt('Identity for ZK status proof?');
@@ -2083,7 +2115,9 @@
                 `${escapeHtml(verdict.data.message || '')}</div>`;
         }
         async function crlZkDemo() {
-            renderRaw('crlResult', await fetchAPI('/api/crl/zk/demo'));
+            resultLoading('crlResult', 'fa-theater-masks', 'Loading two-identity ZK demo...', 'Running the two-identity ZK demo.');
+            const r = await fetchAPI('/api/crl/zk/demo');
+            renderApiResult('crlResult', r, { title: 'Two-identity ZK demo', icon: 'fa-theater-masks', recordName: 'result', empty: 'No result returned.' });
         }
 
         // --- G5: Honeytoken deception trap ---
@@ -2116,13 +2150,17 @@
                 `<span style="font-size:0.75rem;">status: ${escapeHtml(d.status)} - fed to the anomaly engine and anchored as HONEYTOKEN-TOUCH.</span></div>`;
         }
         async function htList() {
-            renderRaw('htResult', { success: true, data: (await fetchAPI('/api/honeytoken/list')).data });
+            resultLoading('htResult', 'fa-list', 'Loading honeytoken register...', 'Fetching the planted honeytokens.');
+            const r = await fetchAPI('/api/honeytoken/list');
+            renderApiResult('htResult', r, { title: 'Honeytoken register', icon: 'fa-list', recordName: 'honeytoken', empty: 'No honeytokens planted.' });
         }
 
         // --- G7: k-anonymity aggregate reports ---
         async function kaStats() {
             const k = parseInt(_gid('kaK').value) || 3;
-            renderRaw('kaResult', await fetchAPI('/api/stats/k-anonymity?k=' + k));
+            resultLoading('kaResult', 'fa-file-invoice', 'Computing export-safe statistics...', 'Aggregating statistics with k-anonymity.');
+            const r = await fetchAPI('/api/stats/k-anonymity?k=' + k);
+            renderApiResult('kaResult', r, { title: 'Export-safe statistics', icon: 'fa-file-invoice', recordName: 'result', empty: 'No result returned.' });
         }
 
         // --- G9: Measured-boot device attestation ---
@@ -2167,7 +2205,9 @@
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
         async function g9List() {
-            renderRaw('g9Result', { success: true, data: (await fetchAPI('/api/attest/list')).data });
+            resultLoading('g9Result', 'fa-list', 'Loading attested devices...', 'Fetching the attested devices.');
+            const r = await fetchAPI('/api/attest/list');
+            renderApiResult('g9Result', r, { title: 'Attested devices', icon: 'fa-list', recordName: 'device', empty: 'No attested devices yet.' });
         }
 
         // --- G10: Cross-org federation ---
@@ -2186,7 +2226,9 @@
                 `<div class="alert ${d.rogue_presentation.granted ? 'alert-danger' : 'alert-success'} show" style="margin-top:0.4rem;">${escapeHtml(d.conclusion)}</div>`;
         }
         async function fedList() {
-            renderRaw('g10Result', { success: true, data: (await fetchAPI('/api/federation/list')).data });
+            resultLoading('g10Result', 'fa-list', 'Loading federation registry...', 'Fetching the federated organizations.');
+            const r = await fetchAPI('/api/federation/list');
+            renderApiResult('g10Result', r, { title: 'Federation registry', icon: 'fa-list', recordName: 'organization', empty: 'No federated organizations yet.' });
         }
         async function fedRegister() {
             const r = await postJSON('/api/federation/register', {
@@ -2259,6 +2301,266 @@
         // ============================================================
         // FEATURE SUITE v3 - Identity: duplicate / bulk / join
         // ============================================================
+        function resultLoading(elId, icon, title, detail) {
+            const el = _gid(elId);
+            if (!el) return;
+            el.innerHTML = `<div class="empty-state" role="status"><i class="fas ${icon} fa-spin"></i><p><b>${title}</b></p><p class="muted">${detail}</p></div>`;
+        }
+        function resultEmpty(icon, title, detail, action) {
+            return `<div class="empty-state" role="status"><i class="fas ${icon}"></i><p><b>${title}</b></p><p class="muted">${detail}</p>${action || ''}</div>`;
+        }
+        function bindResultButtons(root) {
+            if (!root || !root.querySelectorAll) return;
+            root.querySelectorAll('[data-copy]').forEach(btn => {
+                btn.addEventListener('click', () => copyToClipboard(btn.getAttribute('data-copy') || ''));
+            });
+            root.querySelectorAll('[data-use-target]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const input = _gid('f15vTarget');
+                    if (!input) return;
+                    input.value = btn.getAttribute('data-use-target') || '';
+                    input.focus({ preventScroll: true });
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    showAlert('<i class="fas fa-arrow-down"></i> Target ID added to the attestation form.', 'info', 2200);
+                });
+            });
+        }
+        function apiHumanLabel(key) {
+            const words = String(key === null || key === undefined ? '' : key).replace(/_/g, ' ').split(/\s+/).filter(Boolean).map(w => {
+                const lower = w.toLowerCase();
+                if (lower === 'id' || lower === 'ids') return 'ID';
+                if (lower === 'cid') return 'CID';
+                if (lower === 'url') return 'URL';
+                if (lower === 'ipfs') return 'IPFS';
+                if (lower === 'zk') return 'ZK';
+                if (lower === 'pki') return 'PKI';
+                if (lower === 'crl') return 'CRL';
+                if (lower === 'totp') return 'TOTP';
+                if (lower === 'qr') return 'QR';
+                return w.charAt(0).toUpperCase() + w.slice(1);
+            });
+            return words.join(' ') || 'Value';
+        }
+        function apiStatusNorm(value) { return String(value).toUpperCase().replace(/[^A-Z]/g, ''); }
+        function apiIsStatusKey(key) {
+            const k = String(key).toLowerCase();
+            return k === 'status' || k === 'state' || k === 'decision' || k === 'verdict' ||
+                k === 'outcome' || k === 'flag' || k === 'result' || k === 'action' ||
+                k === 'mode' || /_(status|state|decision|verdict|outcome|result|flag)$/.test(k);
+        }
+        function apiStatusPill(value) {
+            const norm = apiStatusNorm(value);
+            let cls = 'pill-blue';
+            if (['GRANTED', 'ACTIVE', 'TRUSTED', 'COMPLETE', 'COMPLETED', 'EXECUTED', 'VERIFIED', 'VALID', 'SUCCESS', 'VOUCHED', 'OPEN', 'ISSUED', 'ANCHORED', 'ACCEPTED', 'HEALED', 'PINNED', 'RECOVERED', 'PASS', 'PASSED', 'NORMAL', 'PLAUSIBLE', 'TRUE', 'YES', 'ON'].indexOf(norm) >= 0) cls = 'pill-green';
+            else if (['PENDING', 'AWAITINGWITNESS', 'STEPUP', 'REVIEW', 'SUSPICIOUS', 'PARTIAL', 'SPLIT', 'DESYNCED', 'WARNING'].indexOf(norm) >= 0) cls = 'pill-yellow';
+            else if (['DENIED', 'FAILED', 'REVOKED', 'BLOCKED', 'EXPIRED', 'CLOSED', 'REFUSED', 'INVALID', 'TAMPERED', 'BREACH', 'ROGUE', 'ERROR', 'TELEPORT', 'ATTACK', 'FALSE', 'OFF'].indexOf(norm) >= 0) cls = 'pill-red';
+            return `<span class="pill ${cls}">${escapeHtml(String(value))}</span>`;
+        }
+        function apiCopyable(key, value) {
+            if (typeof value !== 'string') return false;
+            const text = value.trim();
+            if (text.length < 4 || text.length > 160 || /\s/.test(text)) return false;
+            return /(^|_)(id|hash|token|commit|cid|fingerprint|challenge|proof|signature|digest|secret|seed|key|code|receipt|anchor|emergency|window|campaign|case|order|batch|backup|delegation|target|device|org|unit|policy|report|run|drill|pack|voucher|identity|public)$/i.test(String(key)) ||
+                /^(id|hash|token|commit|cid|fingerprint|challenge|proof|signature|digest|secret|seed|key|code|receipt|anchor)$/i.test(String(key));
+        }
+        function apiCopyChip(key, value) {
+            const shown = value.length > 30 ? value.slice(0, 27) + '...' : value;
+            return `<button type="button" class="pill pill-blue copyable" style="font:inherit;cursor:pointer;white-space:nowrap;" data-copy="${escapeHtml(value)}" title="Select to copy ${escapeHtml(apiHumanLabel(key).toLowerCase())}"><i class="fas fa-copy"></i> ${escapeHtml(shown)}</button>`;
+        }
+        function apiScalarText(value) {
+            if (value === null || value === undefined || value === '') return '—';
+            if (typeof value === 'boolean') return value ? 'True' : 'False';
+            return String(value);
+        }
+        function apiScalarHtml(key, value) {
+            if (value === null || value === undefined || value === '') return '<span class="muted">—</span>';
+            if (typeof value === 'boolean') return `<span class="pill ${value ? 'pill-green' : ''}">${value ? 'True' : 'False'}</span>`;
+            if (typeof value === 'number' && isFinite(value)) {
+                if (value > 946684800 && value < 4102444800) return `<span style="white-space:nowrap;">${escapeHtml(f15Ts(value))}</span>`;
+                return `<b>${String(value)}</b>`;
+            }
+            if (typeof value !== 'string') return '<span class="muted">—</span>';
+            if (apiCopyable(key, value)) return apiCopyChip(key, value);
+            if (apiIsStatusKey(key) && value.length <= 40) return apiStatusPill(value);
+            if (value.length > 180 && !/(message|reason|detail|announce|conclusion|policy|note|interpretation|error|confirmation|instruction)/i.test(String(key))) {
+                return `<span title="${escapeHtml(value)}">${escapeHtml(value.slice(0, 177))}...</span>`;
+            }
+            return escapeHtml(value).replace(/\n/g, '<br>');
+        }
+        function apiPrimitiveChips(values) {
+            const chips = values.slice(0, 8).map(v => `<span class="pill pill-blue" style="margin:0 0.2rem 0.2rem 0;">${escapeHtml(apiScalarText(v))}</span>`).join('');
+            return `${chips}${values.length > 8 ? `<span class="muted">+${values.length - 8} more</span>` : ''}`;
+        }
+        function apiUnwrap(value) {
+            let out = value, guard = 0;
+            while (out && typeof out === 'object' && !Array.isArray(out) && ('data' in out) && Object.keys(out).length <= 4 && guard < 3) {
+                out = out.data; guard += 1;
+            }
+            return out;
+        }
+        function apiIsRecordMap(value) {
+            const entries = Object.entries(value);
+            if (!entries.length) return false;
+            return entries.every(entry => !/^\d+$/.test(entry[0]) && entry[1] && typeof entry[1] === 'object');
+        }
+        function apiMapRecords(value) {
+            return Object.keys(value).map(name => {
+                const item = value[name];
+                if (Array.isArray(item)) return { name: name, items: item.length, value: item };
+                if (item && typeof item === 'object') {
+                    const row = { name: name };
+                    Object.keys(item).forEach(k => { row[k] = item[k]; });
+                    return row;
+                }
+                return { name: name, value: item };
+            });
+        }
+        function apiDetailValue(key, value) {
+            if (Array.isArray(value)) {
+                if (!value.length) return '<span class="muted">None</span>';
+                if (value.every(v => v === null || v === undefined || typeof v !== 'object')) return apiPrimitiveChips(value);
+                return `<b>${value.length}</b> items`;
+            }
+            if (value && typeof value === 'object') return `<b>${Object.keys(value).length}</b> fields`;
+            return apiScalarHtml(key, value);
+        }
+        function apiObjectDetails(obj) {
+            return Object.keys(obj).slice(0, 20).map(k => `<div style="margin:0.15rem 0;"><b>${escapeHtml(apiHumanLabel(k))}:</b> ${apiDetailValue(k, obj[k])}</div>`).join('') ||
+                '<span class="muted">No fields.</span>';
+        }
+        function apiValueHtml(key, value) {
+            if (Array.isArray(value)) {
+                if (!value.length) return '<span class="muted">None</span>';
+                if (value.every(v => v === null || v === undefined || typeof v !== 'object')) return apiPrimitiveChips(value);
+                const items = value.slice(0, 10).map(item => {
+                    if (item && typeof item === 'object' && !Array.isArray(item)) return `<div class="hint" style="margin:0.2rem 0;">${apiObjectDetails(item)}</div>`;
+                    return `<div>${apiScalarHtml(key, item)}</div>`;
+                }).join('');
+                return `<b>${value.length}</b> items<details style="margin-top:0.25rem;"><summary style="cursor:pointer;font-size:0.68rem;">View items</summary>${items}${value.length > 10 ? `<div class="muted">Showing first 10 of ${value.length}.</div>` : ''}</details>`;
+            }
+            if (value && typeof value === 'object') {
+                const count = Object.keys(value).length;
+                return `<b>${count}</b> field${count === 1 ? '' : 's'}<details style="margin-top:0.25rem;"><summary style="cursor:pointer;font-size:0.68rem;">View fields</summary>${apiObjectDetails(value)}</details>`;
+            }
+            return apiScalarHtml(key, value);
+        }
+        function apiRecordColumns(records, maxCols) {
+            const keys = [];
+            records.slice(0, 50).forEach(rec => {
+                if (!rec || typeof rec !== 'object' || Array.isArray(rec)) return;
+                Object.keys(rec).forEach(k => { if (k !== 'success' && keys.indexOf(k) < 0) keys.push(k); });
+            });
+            const score = key => {
+                const k = String(key).toLowerCase();
+                if (k === 'name' || k === 'title' || k === 'label' || k === 'public_id' || k === 'id' || k === 'target_id' || k === 'order_id' || k === 'case_id' || k === 'batch_id' || k === 'campaign_id' || k === 'emergency_id' || k === 'node_id' || k === 'unit_id' || k === 'device_hash' || k === 'receipt_id' || k === 'vc_id' || k === 'req_id' || k === 'window_id' || k === 'run_id' || k === 'org_id' || k === 'anchor_id' || k === 'backup_id' || k === 'delegation_id' || k === 'token_prefix' || k === 'commit' || k === 'cid') return 0;
+                if (k === 'status' || k === 'state' || k === 'decision' || k === 'verdict' || k === 'outcome' || k === 'flag' || k === 'result' || k === 'count' || k === 'total' || k === 'items' || k === 'records' || k === 'events') return 1;
+                if (k === 'ts' || k === 'created' || k === 'registered' || k === 'opened_at' || k === 'expires_at' || k === 'trusted_at' || k === 'generated' || k === 'touched_at' || k === 'revoked_at' || k === 'time' || k === 'timestamp') return 2;
+                return 3;
+            };
+            return keys.map((k, i) => ({ k: k, i: i, s: score(k) })).sort((a, b) => (a.s - b.s) || (a.i - b.i)).slice(0, maxCols).map(x => x.k);
+        }
+        function apiCollectResult(data) {
+            const root = apiUnwrap(data);
+            if (Array.isArray(root)) return { sections: [{ kind: 'records', key: 'records', label: 'Records', records: root }], notes: [] };
+            if (!root || typeof root !== 'object') {
+                return { sections: (root === null || root === undefined || root === '') ? [] : [{ kind: 'scalar', key: 'value', label: 'Value', value: root }], notes: [] };
+            }
+            const notes = [], sections = [], overview = {};
+            Object.keys(root).forEach(key => {
+                if (key === 'success') return;
+                const value = root[key];
+                if (typeof value === 'string' && /(message|announce|conclusion|policy|privacy|note|interpretation|detail|reason|error|confirmation|instruction)$/i.test(key)) {
+                    if (value) notes.push({ key: key, label: apiHumanLabel(key), text: value });
+                    return;
+                }
+                const unwrapped = apiUnwrap(value);
+                if (Array.isArray(unwrapped)) {
+                    if (!unwrapped.length) { sections.push({ kind: 'records', key: key, label: apiHumanLabel(key), records: [] }); return; }
+                    if (unwrapped.every(item => item && typeof item === 'object' && !Array.isArray(item))) sections.push({ kind: 'records', key: key, label: apiHumanLabel(key), records: unwrapped });
+                    else overview[key] = value;
+                    return;
+                }
+                if (unwrapped && typeof unwrapped === 'object') {
+                    if (apiIsRecordMap(unwrapped)) sections.push({ kind: 'records', key: key, label: apiHumanLabel(key), records: apiMapRecords(unwrapped) });
+                    else overview[key] = value;
+                    return;
+                }
+                overview[key] = value;
+            });
+            if (Object.keys(overview).length) sections.unshift({ kind: 'overview', key: 'overview', label: 'Overview', overview: overview });
+            return { sections: sections, notes: notes };
+        }
+        function apiHeadlineNote(notes) {
+            const order = ['message', 'announce', 'conclusion', 'reason', 'detail', 'note'];
+            for (let i = 0; i < order.length; i++) {
+                const found = notes.filter(n => n.key.toLowerCase() === order[i])[0];
+                if (found) return found;
+            }
+            return notes[0] || null;
+        }
+        function apiCollectStatuses(collected) {
+            const out = [];
+            const visit = (key, value) => {
+                if (out.length >= 200 || value === null || value === undefined) return;
+                if (typeof value === 'string' && apiIsStatusKey(key) && value.length <= 40) { out.push(value); return; }
+                if (Array.isArray(value)) value.forEach(v => { if (v && typeof v === 'object') Object.keys(v).forEach(k => visit(k, v[k])); });
+                else if (typeof value === 'object') Object.keys(value).forEach(k => visit(k, value[k]));
+            };
+            visit('root', collected);
+            return out;
+        }
+        function apiAlertTone(response, statuses, fallback) {
+            if (!response || response.success === false) return 'alert-danger';
+            const norms = statuses.map(apiStatusNorm);
+            if (norms.some(s => ['DENIED', 'FAILED', 'REVOKED', 'BLOCKED', 'EXPIRED', 'CLOSED', 'REFUSED', 'INVALID', 'TAMPERED', 'BREACH', 'ROGUE', 'ERROR', 'TELEPORT', 'ATTACK'].indexOf(s) >= 0)) return 'alert-danger';
+            if (norms.some(s => ['PENDING', 'AWAITINGWITNESS', 'STEPUP', 'REVIEW', 'SUSPICIOUS', 'PARTIAL', 'SPLIT', 'DESYNCED', 'WARNING'].indexOf(s) >= 0)) return 'alert-warning';
+            return fallback || 'alert-success';
+        }
+        function renderApiResult(elId, response, opts) {
+            const el = _gid(elId);
+            if (!el) return;
+            const o = opts || {};
+            const title = o.title || 'Results';
+            const icon = o.icon || 'fa-list';
+            const recordName = o.recordName || 'record';
+            const maxRows = o.maxRows || 100;
+            if (!response || response.success === false) {
+                el.innerHTML = resultEmpty('fa-triangle-exclamation', title + ' unavailable', escapeHtml((response && response.error) || 'The request did not return usable data.'));
+                return;
+            }
+            const collected = apiCollectResult((response || {}).data);
+            const recordSections = collected.sections.filter(s => s.kind === 'records');
+            const totalRecords = recordSections.reduce((n, s) => n + s.records.length, 0);
+            const hasDetail = collected.sections.some(s => s.kind === 'overview' || s.kind === 'scalar') || collected.notes.length > 0;
+            if (!totalRecords && !hasDetail) {
+                el.innerHTML = resultEmpty(o.emptyIcon || 'fa-list', o.emptyTitle || ('No ' + recordName + 's yet'), o.empty || 'There is nothing to show yet. Use the actions above to create the first entry.');
+                return;
+            }
+            const headline = apiHeadlineNote(collected.notes);
+            const statuses = apiCollectStatuses(collected.sections.map(s => s.records || s.overview || s.value));
+            const summary = [];
+            if (totalRecords) summary.push(`<b>${totalRecords}</b> ${recordName}${totalRecords === 1 ? '' : 's'}`);
+            if (headline) summary.push(escapeHtml(headline.text));
+            if (!summary.length) summary.push('Completed');
+            const body = collected.sections.map(section => {
+                if (section.kind === 'overview') {
+                    const rows = Object.keys(section.overview).slice(0, 50).map(k => `<tr><th scope="row" style="width:34%;">${escapeHtml(apiHumanLabel(k))}</th><td style="font-size:0.72rem;">${apiValueHtml(k, section.overview[k])}</td></tr>`).join('');
+                    return `<div class="table-container" style="max-height:300px;overflow:auto;margin-top:0.5rem;"><table><tbody>${rows}</tbody></table></div>`;
+                }
+                if (section.kind === 'scalar') {
+                    return `<div class="table-container" style="margin-top:0.5rem;"><table><tbody><tr><th scope="row" style="width:34%;">${escapeHtml(section.label)}</th><td style="font-size:0.72rem;">${apiValueHtml(section.key, section.value)}</td></tr></tbody></table></div>`;
+                }
+                if (!section.records.length) return `<div class="hint" style="margin-top:0.5rem;"><b>${escapeHtml(section.label)}:</b> none.</div>`;
+                const columns = apiRecordColumns(section.records, o.maxColumns || 6);
+                const rows = section.records.slice(0, maxRows).map(rec => `<tr>${columns.map(col => `<td style="font-size:0.7rem;">${apiValueHtml(col, rec[col])}</td>`).join('')}</tr>`).join('');
+                return `<div class="hint" style="margin:0.6rem 0 0.25rem;"><b>${escapeHtml(section.label)}</b> &middot; ${section.records.length} entr${section.records.length === 1 ? 'y' : 'ies'}</div>` +
+                    `<div class="table-container" style="max-height:300px;overflow:auto;"><table><thead><tr>${columns.map(col => `<th scope="col">${escapeHtml(apiHumanLabel(col))}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>` +
+                    (section.records.length > maxRows ? `<div class="hint">Showing first ${maxRows} of ${section.records.length}.</div>` : '');
+            }).join('');
+            const notes = collected.notes.filter(n => n !== headline).map(n => `<div class="hint" style="margin-top:0.4rem;"><b>${escapeHtml(n.label)}:</b> ${escapeHtml(n.text)}</div>`).join('');
+            el.innerHTML = `<div class="alert ${apiAlertTone(response, statuses, o.tone)} show"><i class="fas ${icon}"></i> <b>${escapeHtml(title)}</b> &middot; ${summary.join(' &middot; ')}</div>${body}${notes}`;
+            bindResultButtons(el);
+        }
         async function dupCheck() {
             const r = await postJSON('/api/identity/duplicate-check', {
                 name: _gid('dupName').value.trim(),
@@ -2277,35 +2579,43 @@
                 ${cands ? `<div class="table-container" style="max-height:200px;overflow:auto;"><table><thead><tr><th>Candidate</th><th>Flags</th><th>Similarity</th><th>Action</th></tr></thead><tbody>${cands}</tbody></table></div>` : '<div class="hint">No near-matches on-chain.</div>'}`;
         }
         async function dupFlags() {
-            const r = await fetchAPI('/api/identity/duplicate-flags');
             const el = _gid('dupResult');
-            if (!r.success) { renderRaw('dupResult', r); return; }
-            const flags = r.data.flags || [];
+            resultLoading('dupResult', 'fa-circle-notch', 'Loading flag history...', 'Reading the latest duplicate and synthetic-identity checks.');
+            const r = await fetchAPI('/api/identity/duplicate-flags');
+            if (!r.success) { el.innerHTML = resultEmpty('fa-triangle-exclamation', 'Flag history unavailable', escapeHtml(r.error || 'The request did not return usable history.')); return; }
+            const flags = (((r.data || {}).flags) || []).slice().reverse();
             const blocked = flags.filter(f => (f.candidates || []).some(c => c.blocked)).length;
+            const review = flags.filter(f => (f.candidates || []).length && !(f.candidates || []).some(c => c.blocked)).length;
+            const clear = flags.length - blocked - review;
             const rows = flags.map(f => {
                 const cands = f.candidates || [];
                 const top = cands[0];
                 const isBlocked = cands.some(c => c.blocked);
-                const verdict = isBlocked ? '<span class="pill pill-red">BLOCKED</span>'
-                    : cands.length ? '<span class="pill pill-orange">REVIEW</span>'
-                    : '<span class="pill pill-green">CLEAR</span>';
+                const verdict = isBlocked ? '<span class="pill pill-red"><i class="fas fa-ban"></i> BLOCKED</span>'
+                    : cands.length ? '<span class="pill pill-orange"><i class="fas fa-eye"></i> REVIEW</span>'
+                    : '<span class="pill pill-green"><i class="fas fa-check"></i> CLEAR</span>';
                 const match = top
-                    ? `<b>${cands.length}</b> near-match${cands.length === 1 ? '' : 'es'}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(top.public_id)} &middot; name ${top.name_similarity} / email ${top.email_similarity}</span>`
-                    : '<span class="hint">none</span>';
-                const idPill = (cands.flatMap(c => c.flags || []).length)
-                    ? `<div style="display:flex;gap:0.2rem;flex-wrap:wrap;margin-top:0.2rem;">${[...new Set(cands.flatMap(c => c.flags || []))].map(x => `<span class="pill pill-orange" style="font-size:0.6rem;">${escapeHtml(x)}</span>`).join('')}</div>`
+                    ? `<b>${cands.length}</b> near-match${cands.length === 1 ? '' : 'es'}<br><span class="muted" style="font-size:0.68rem;">${escapeHtml(top.public_id)} &middot; name ${top.name_similarity} / email ${top.email_similarity}</span>`
+                    : '<span class="muted">No on-chain near-matches.</span>';
+                const flagList = [...new Set(cands.flatMap(c => c.flags || []))];
+                const flagChips = flagList.length
+                    ? `<div style="display:flex;gap:0.25rem;flex-wrap:wrap;margin-top:0.3rem;">${flagList.map(x => `<span class="pill pill-orange" style="font-size:0.62rem;">${escapeHtml(x)}</span>`).join('')}</div>`
+                    : '';
+                const candidateCopy = top
+                    ? `<div style="margin-top:0.35rem;"><button type="button" class="pill pill-blue copyable" style="font:inherit;cursor:pointer;" data-copy="${escapeHtml(top.public_id)}" title="Copy strongest-match identity"><i class="fas fa-copy"></i> Copy match ID</button></div>`
                     : '';
                 return `<tr>
                     <td style="font-size:0.7rem;white-space:nowrap;">${escapeHtml(f15Ts(f.ts))}</td>
-                    <td style="font-size:0.72rem;">${escapeHtml(f.name || '-')}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(f.email || '-')}</span></td>
-                    <td style="font-size:0.7rem;font-family:monospace;">${escapeHtml(f.id_number || '-')}</td>
-                    <td style="font-size:0.7rem;">${match}${idPill}</td>
-                    <td>${verdict}</td></tr>`;
+                    <td style="font-size:0.72rem;"><b>${escapeHtml(f.name || '-')}</b><br><span class="muted" style="font-size:0.68rem;">${escapeHtml(f.email || '-')}</span></td>
+                    <td class="field-mono">${escapeHtml(f.id_number || '-')}</td>
+                    <td style="font-size:0.7rem;">${match}${flagChips}${candidateCopy}</td>
+                    <td style="white-space:nowrap;">${verdict}</td></tr>`;
             }).join('');
             el.innerHTML = flags.length
-                ? `<div class="alert ${blocked ? 'alert-danger' : 'alert-info'} show"><b>${flags.length}</b> duplicate/synthetic check${flags.length === 1 ? '' : 's'} on record${blocked ? ` &middot; <b>${blocked}</b> auto-blocked` : ''}</div>
-                    <div class="table-container" style="max-height:280px;overflow:auto;"><table><thead><tr><th>When</th><th>Name / Email</th><th>ID Number</th><th>Matches</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`
-                : '<div class="hint">No duplicate checks recorded yet - run a fuzzy match to populate the flag history.</div>';
+                ? `<div class="alert ${blocked ? 'alert-danger' : 'alert-info'} show"><i class="fas fa-flag"></i> <b>Flag history</b> &middot; ${flags.length} check${flags.length === 1 ? '' : 's'}, newest first &middot; ${blocked} blocked &middot; ${review} for review &middot; ${clear} clear</div>
+                    <div class="table-container" style="max-height:300px;overflow:auto;"><table><thead><tr><th scope="col">Checked</th><th scope="col">Submitted identity</th><th scope="col">ID number</th><th scope="col">On-chain evidence</th><th scope="col">Decision</th></tr></thead><tbody>${rows}</tbody></table></div>`
+                : resultEmpty('fa-flag', 'No flag history yet', 'Run a fuzzy match above. Each check is saved here with its strongest on-chain evidence.');
+            bindResultButtons(el);
         }
         async function bulkOnboard() {
             const lines = _gid('bulkCsv').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -2323,25 +2633,31 @@
                 `</tbody></table></div>`;
         }
         async function bulkBatches() {
-            const r = await fetchAPI('/api/onboard/batches');
             const el = _gid('bulkResult');
-            if (!r.success) { renderRaw('bulkResult', r); return; }
-            const batches = r.data.batches || [];
+            resultLoading('bulkResult', 'fa-circle-notch', 'Loading batch receipts...', 'Collecting every bulk-onboarding batch and its hash receipts.');
+            const r = await fetchAPI('/api/onboard/batches');
+            if (!r.success) { el.innerHTML = resultEmpty('fa-triangle-exclamation', 'Batch receipts unavailable', escapeHtml(r.error || 'The request did not return usable receipts.')); return; }
+            const batches = (((r.data || {}).batches) || []).slice().reverse();
             const partial = batches.filter(b => (b.success || 0) < (b.total || 0));
-            const rows = batches.slice().reverse().map(b => {
+            const onBoarded = batches.reduce((n, b) => n + (b.success || 0), 0);
+            const rows = batches.map(b => {
                 const total = b.total || 0, ok = b.success || 0;
+                const outcome = ok === total
+                    ? '<span class="pill pill-green"><i class="fas fa-check"></i> Complete</span>'
+                    : `<span class="pill pill-orange"><i class="fas fa-triangle-exclamation"></i> ${total - ok} failed</span>`;
                 return `<tr>
-                    <td style="font-size:0.7rem;font-family:monospace;"><span class="pill pill-blue">${escapeHtml(b.batch_id)}</span></td>
-                    <td style="font-size:0.72rem;">${escapeHtml(b.label || '(unlabelled)')}</td>
-                    <td style="font-size:0.72rem;">${ok}/${total} ${ok === total ? '<span class="pill pill-green">complete</span>' : `<span class="pill pill-orange">${total - ok} failed</span>`}</td>
-                    <td style="font-size:0.72rem;">${b.receipt_count || 0}</td>
+                    <td style="font-size:0.7rem;"><button type="button" class="pill pill-blue copyable" style="font:inherit;cursor:pointer;white-space:nowrap;" data-copy="${escapeHtml(b.batch_id)}" title="Copy batch ID"><i class="fas fa-copy"></i> ${escapeHtml(b.batch_id)}</button></td>
+                    <td style="font-size:0.72rem;"><b>${escapeHtml(b.label || 'Unlabelled batch')}</b></td>
+                    <td style="font-size:0.72rem;white-space:nowrap;"><b>${ok}/${total}</b><br>${outcome}</td>
+                    <td style="font-size:0.72rem;"><b>${b.receipt_count || 0}</b> <span class="muted">receipts</span></td>
                     <td style="font-size:0.7rem;white-space:nowrap;">${escapeHtml(f15Ts(b.ts))}</td></tr>`;
             }).join('');
-            const onBoarded = batches.reduce((n, b) => n + (b.success || 0), 0);
             el.innerHTML = batches.length
-                ? `<div class="alert ${partial.length ? 'alert-warning' : 'alert-success'} show"><b>${batches.length}</b> batch${batches.length === 1 ? '' : 'es'} on record &middot; <b>${onBoarded}</b> identities hash-receipted${partial.length ? ` &middot; <b>${partial.length}</b> with failed rows` : ''}</div>
-                    <div class="table-container" style="max-height:260px;overflow:auto;"><table><thead><tr><th>Batch</th><th>Label</th><th>On-boarded</th><th>Receipts</th><th>When</th></tr></thead><tbody>${rows}</tbody></table></div>`
-                : '<div class="hint">No batches yet - onboard a roster to mint its first hash receipts.</div>';
+                ? `<div class="alert ${partial.length ? 'alert-warning' : 'alert-success'} show"><i class="fas fa-receipt"></i> <b>Batch receipts</b> &middot; ${batches.length} batch${batches.length === 1 ? '' : 'es'}, newest first &middot; ${onBoarded} identities hash-receipted${partial.length ? ` &middot; ${partial.length} need${partial.length === 1 ? 's' : ''} row review` : ''}</div>
+                    <div class="table-container" style="max-height:300px;overflow:auto;"><table><thead><tr><th scope="col">Batch</th><th scope="col">Label</th><th scope="col">On-boarded</th><th scope="col">Receipts</th><th scope="col">Created</th></tr></thead><tbody>${rows}</tbody></table></div>
+                    <div class="hint"><i class="fas fa-copy"></i> Select a batch ID to copy it for payroll or audit sign-off.</div>`
+                : resultEmpty('fa-receipt', 'No batch receipts yet', 'Onboard a roster above. Each successful identity returns a block-hash receipt here.');
+            bindResultButtons(el);
         }
         async function joinSubmit() {
             let payload = {};
@@ -2434,7 +2750,11 @@
                 (r.data.records || []).map(x => `<tr><td style="font-size:0.7rem;">${escapeHtml(x.new_key_fingerprint)}</td><td style="font-size:0.7rem;">${escapeHtml(x.rotated_by)}</td><td style="font-size:0.65rem;">${escapeHtml(x.previous)}</td><td style="font-size:0.65rem;">${escapeHtml(x.hash)}</td></tr>`).join('') +
                 `</tbody></table></div>`;
         }
-        async function ktListAll() { renderRaw('ktResult', { success: true, data: (await fetchAPI('/api/keytrans/list')).data }); }
+        async function ktListAll() {
+            resultLoading('ktResult', 'fa-list', 'Loading key-transparency logs...', 'Fetching the transparency logs.');
+            const r = await fetchAPI('/api/keytrans/list');
+            renderApiResult('ktResult', r, { title: 'Key-transparency logs', icon: 'fa-list', recordName: 'identity', empty: 'No transparency logs yet.' });
+        }
         async function lvIssue() {
             const r = await postJSON('/api/liveness/issue', { public_id: _gid('lvPublicId').value.trim() });
             const el = _gid('lvResult');
@@ -2469,7 +2789,11 @@
             _gid('tpWindowId').value = r.data.window_id;
             el.innerHTML = `<div class="alert alert-warning show"><b>WINDOW ${r.data.window_id}</b> - ${escapeHtml(r.data.view)}</div>`;
         }
-        async function tpWindowList() { renderRaw('tpwResult', { success: true, data: (await fetchAPI('/api/twoperson/list')).data }); }
+        async function tpWindowList() {
+            resultLoading('tpwResult', 'fa-list', 'Loading two-person windows...', 'Fetching the viewing windows.');
+            const r = await fetchAPI('/api/twoperson/list');
+            renderApiResult('tpwResult', r, { title: 'Two-person windows', icon: 'fa-list', recordName: 'window', empty: 'No viewing windows yet.' });
+        }
         async function tpCoauthorize() {
             const r = await postJSON('/api/twoperson/coauthorize', {
                 window_id: _gid('tpWindowId').value.trim(),
@@ -2502,7 +2826,11 @@
                 <div class="hint">Mandatory factors: ${(r.data.factors || []).map(f => `<span class="pill pill-purple" style="margin-right:0.2rem;">${escapeHtml(f)}</span>`).join('')}</div>
                 <div class="hint">${escapeHtml(r.data.interpretation)}</div>`;
         }
-        async function rsList() { renderRaw('rsResult', { success: true, data: (await fetchAPI('/api/riskstepup/list')).data }); }
+        async function rsList() {
+            resultLoading('rsResult', 'fa-list', 'Loading step-up policies...', 'Fetching the configured step-up policies.');
+            const r = await fetchAPI('/api/riskstepup/list');
+            renderApiResult('rsResult', r, { title: 'Step-up policies', icon: 'fa-list', recordName: 'policy', empty: 'No step-up policies configured.' });
+        }
 
         // ============================================================
         // FEATURE SUITE v3 - Network: air-gap / partition / pinning
@@ -2519,7 +2847,11 @@
                     <div class="hint">${escapeHtml(r.data.carry_instructions)}</div>`
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
-        async function agList() { renderRaw('agResult', { success: true, data: (await fetchAPI('/api/airgap/list')).data }); }
+        async function agList() {
+            resultLoading('agResult', 'fa-list', 'Loading air-gap packs...', 'Fetching the available sync packs.');
+            const r = await fetchAPI('/api/airgap/list');
+            renderApiResult('agResult', r, { title: 'Air-gap packs', icon: 'fa-list', recordName: 'pack', empty: 'No sync packs available.' });
+        }
         async function partStart() {
             const r = await postJSON('/api/partition/start', { label: 'PARTITION-WEST' });
             const el = _gid('partResult');
@@ -2541,8 +2873,16 @@
                 ? `<div class="alert alert-success show"><b>HEALED</b> - ${escapeHtml(r.data.resolved)}</div>`
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
-        async function partLog() { renderRaw('partResult', { success: true, data: (await fetchAPI('/api/partition/log')).data }); }
-        async function pinStatus() { renderRaw('pinResult', { success: true, data: (await fetchAPI('/api/pinning/status')).data }); }
+        async function partLog() {
+            resultLoading('partResult', 'fa-list', 'Loading partition drill log...', 'Fetching the recorded partition drills.');
+            const r = await fetchAPI('/api/partition/log');
+            renderApiResult('partResult', r, { title: 'Partition drill log', icon: 'fa-list', recordName: 'drill', empty: 'No partition drills recorded.' });
+        }
+        async function pinStatus() {
+            resultLoading('pinResult', 'fa-thumbtack', 'Loading pinning status...', 'Fetching the pinning status.');
+            const r = await fetchAPI('/api/pinning/status');
+            renderApiResult('pinResult', r, { title: 'Pinning status', icon: 'fa-thumbtack', recordName: 'record', empty: 'No pinning status returned.' });
+        }
         async function pinAssign() {
             const r = await postJSON('/api/pinning/assign', { cid: _gid('pinCid').value.trim(), node_id: _gid('pinNode').value.trim() });
             const el = _gid('pinResult');
@@ -2585,7 +2925,11 @@
                 ? `<div class="alert alert-success show"><b>FLASH ${escapeHtml(r.data.flash)}</b> - ${escapeHtml(r.data.message)}</div>`
                 : `<div class="alert ${r.data && r.data.flash === 'REFUSED' ? 'alert-danger' : 'alert-error'} show"><b>FLASH ${escapeHtml(r.data && r.data.flash || 'DENIED')}</b> - ${escapeHtml(r.data && r.data.reason || r.error)}</div>`;
         }
-        async function fwList() { renderRaw('fwResult', { success: true, data: (await fetchAPI('/api/firmware/list')).data }); }
+        async function fwList() {
+            resultLoading('fwResult', 'fa-list', 'Loading firmware registry...', 'Fetching the firmware-anchored units.');
+            const r = await fetchAPI('/api/firmware/list');
+            renderApiResult('fwResult', r, { title: 'Firmware registry', icon: 'fa-list', recordName: 'unit', empty: 'No firmware-anchored units yet.' });
+        }
         async function prTransfer() {
             const r = await postJSON('/api/provenance/transfer', {
                 unit_id: _gid('prUnit').value.trim(),
@@ -2606,7 +2950,11 @@
             el.innerHTML = `<div class="alert alert-info show"><b>${escapeHtml(r.data.unit_id)}</b> - ${r.data.hops} custody hop(s), current holder: <b>${escapeHtml(r.data.current_holder || 'none')}</b></div>` +
                 `<div class="hint">${(r.data.graph || []).map(x => `<span class="pill pill-green" style="margin-right:0.2rem;">${escapeHtml(x.from)} &#8594; ${escapeHtml(x.to)}</span>`).join(' ')}</div>`;
         }
-        async function prList() { renderRaw('prResult', { success: true, data: (await fetchAPI('/api/provenance/list')).data }); }
+        async function prList() {
+            resultLoading('prResult', 'fa-list', 'Loading provenance units...', 'Fetching the provenance units.');
+            const r = await fetchAPI('/api/provenance/list');
+            renderApiResult('prResult', r, { title: 'Provenance units', icon: 'fa-list', recordName: 'unit', empty: 'No provenance units yet.' });
+        }
         async function rcCreate() {
             const r = await postJSON('/api/recall/create', {
                 name: _gid('rcName').value.trim(),
@@ -2627,7 +2975,11 @@
                 ? `<div class="alert alert-success show"><b>ACKNOWLEDGED</b> ${escapeHtml(r.data.unit_id)} - ${escapeHtml(r.data.progress)}</div>`
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
-        async function rcList() { renderRaw('rcResult', { success: true, data: (await fetchAPI('/api/recall/list')).data }); }
+        async function rcList() {
+            resultLoading('rcResult', 'fa-list', 'Loading recall campaigns...', 'Fetching the recall campaigns.');
+            const r = await fetchAPI('/api/recall/list');
+            renderApiResult('rcResult', r, { title: 'Recall campaigns', icon: 'fa-list', recordName: 'campaign', empty: 'No recall campaigns yet.' });
+        }
 
         // ============================================================
         // FEATURE SUITE v3 - Audit: cases / compliance / forensic
@@ -2667,7 +3019,11 @@
                 ? `<div class="alert alert-success show">${escapeHtml(r.data.message)}</div>`
                 : `<div class="alert alert-error show">${escapeHtml(r.error || (r.data && r.data.reason))}</div>`;
         }
-        async function caseList() { renderRaw('caseResult', { success: true, data: (await fetchAPI('/api/case/list')).data }); }
+        async function caseList() {
+            resultLoading('caseResult', 'fa-list', 'Loading cases...', 'Fetching the cases.');
+            const r = await fetchAPI('/api/case/list');
+            renderApiResult('caseResult', r, { title: 'Cases', icon: 'fa-list', recordName: 'case', empty: 'No cases yet.' });
+        }
         async function complianceRun() {
             const r = await fetchAPI('/api/compliance/report');
             const el = _gid('complianceResult');
@@ -2681,7 +3037,11 @@
             el.innerHTML = `<div class="alert alert-success show"><b>COMPLIANCE ${escapeHtml(rep.org)}</b> - ${r.data.implemented}/${r.data.required_controls} controls (${r.data.compliance_pct}%) generated ${escapeHtml(rep.generated)}</div>
                 <div class="table-container" style="max-height:300px;overflow:auto;"><table><thead><tr><th>Framework</th><th>Clause</th><th>Control</th><th>Status</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         }
-        async function complianceList() { renderRaw('complianceResult', { success: true, data: (await fetchAPI('/api/compliance/list')).data }); }
+        async function complianceList() {
+            resultLoading('complianceResult', 'fa-list', 'Loading compliance report history...', 'Fetching the saved compliance reports.');
+            const r = await fetchAPI('/api/compliance/list');
+            renderApiResult('complianceResult', r, { title: 'Compliance report history', icon: 'fa-list', recordName: 'report', empty: 'No compliance reports saved yet.' });
+        }
         async function foTamper() {
             const r = await postJSON('/api/forensic/tamper', { block_index: parseInt(_gid('foIndex').value, 10) });
             const el = _gid('foResult');
@@ -2691,7 +3051,11 @@
                 <div class="hint">before ${escapeHtml(d.hash_before.slice(0, 24))}... &middot; after ${escapeHtml(d.hash_after.slice(0, 24))}... &middot; recomputed ${escapeHtml(d.recomputed_hash.slice(0, 24))}... &middot; ${d.hashes_diverge ? 'hashes DIVERGE' : 'hashes match?'}</div>
                 <div class="hint">defenses that would fire: ${(d.defenses_that_would_fire || []).map(x => `<span class="pill pill-orange">${escapeHtml(x)}</span>`).join(' ')}</div>`;
         }
-        async function foScan() { renderRaw('foResult', { success: true, data: (await fetchAPI('/api/forensic/list')).data }); }
+        async function foScan() {
+            resultLoading('foResult', 'fa-microscope', 'Loading forensic diff reports...', 'Fetching the forensic reports.');
+            const r = await fetchAPI('/api/forensic/list');
+            renderApiResult('foResult', r, { title: 'Forensic diff reports', icon: 'fa-microscope', recordName: 'report', empty: 'No forensic reports yet.' });
+        }
 
         // ============================================================
         // FEATURE 15 - Scenario Theater / Propagation / Benchmarks
@@ -2713,8 +3077,9 @@
                 <div id="f15scenPast" style="margin-top:0.4rem;"></div>`;
         }
         async function f15ScenarioList() {
+            resultLoading('f15scenPast', 'fa-list', 'Loading past scenario runs...', 'Fetching the past scenario runs.');
             const r = await fetchAPI('/api/scenario/list');
-            renderRaw('f15scenPast', { success: true, data: { runs: (r.data.runs || []).map(x => ({ run_id: x.run_id, preset: x.preset, status: x.status, duration_ms: x.duration_ms, identity: x.identity })) } });
+            renderApiResult('f15scenPast', { success: true, data: { runs: (r.data.runs || []).map(x => ({ run_id: x.run_id, preset: x.preset, status: x.status, duration_ms: x.duration_ms, identity: x.identity })) } }, { title: 'Past scenario runs', icon: 'fa-list', recordName: 'run', empty: 'No past scenario runs yet.' });
         }
         function f15PropDrawNode(ctx, x, y, label, alive, head) {
             ctx.beginPath();
@@ -2798,9 +3163,9 @@
             await f15PropMap();
         }
         async function f15BenchRun() {
-            _gid('f15benchResult').innerHTML = '<div class="hint">Benchmarking... (PoW mine-time + auth + ZK percentiles)</div>';
+            resultLoading('f15benchResult', 'fa-stopwatch', 'Running benchmarks...', 'Measuring PoW mine-time, auth, and ZK percentiles.');
             const r = await postJSON('/api/benchmark/run', {});
-            renderRaw('f15benchResult', r);
+            renderApiResult('f15benchResult', r, { title: 'Benchmark results', icon: 'fa-stopwatch', recordName: 'result', empty: 'No result returned.' });
         }
 
         // ============================================================
@@ -2842,32 +3207,36 @@
                 ${ob.public_id ? `<div class="hint">Minted on-chain: ${escapeHtml(ob.public_id)} @ block ${ob.block}${ob.identity_hash ? ' &middot; ' + escapeHtml(ob.identity_hash.slice(0, 24)) + '...' : ''}</div>` : ''}`;
         }
         async function f15VouchList() {
-            const r = await fetchAPI('/api/vouch/list');
             const el = _gid('f15vouchResult');
-            if (!r.success) { renderRaw('f15vouchResult', r); return; }
-            const targets = r.data.targets || [];
+            resultLoading('f15vouchResult', 'fa-circle-notch', 'Loading vouching queue...', 'Checking pending targets, attestations, and quorum progress.');
+            const r = await fetchAPI('/api/vouch/list');
+            if (!r.success) { el.innerHTML = resultEmpty('fa-triangle-exclamation', 'Vouching queue unavailable', escapeHtml(r.error || 'The request did not return usable targets.')); return; }
+            const targets = ((r.data || {}).targets) || [];
             const vouched = targets.filter(t => t.status === 'VOUCHED').length;
+            const pending = targets.length - vouched;
             const rows = targets.map(t => {
                 const vs = t.vouchers || [];
                 const quorum = (t.count || 0) >= (t.required || 2);
                 const vouches = vs.length
-                    ? `<div style="display:flex;gap:0.2rem;flex-wrap:wrap;">${vs.map(v => `<span class="pill ${quorum ? 'pill-green' : 'pill-blue'}" title="${escapeHtml(v.note || 'no note')}">${escapeHtml(v.voucher)}</span>`).join('')}</div>`
-                    : '<span class="hint">no vouchers yet</span>';
+                    ? `<div style="display:flex;gap:0.25rem;flex-wrap:wrap;">${vs.map(v => `<button type="button" class="pill ${quorum ? 'pill-green' : 'pill-blue'} copyable" style="font:inherit;cursor:pointer;" data-copy="${escapeHtml(v.voucher)}" title="${escapeHtml(v.note || 'No voucher note')} — select to copy voucher identity"><i class="fas fa-user-check"></i> ${escapeHtml(v.voucher)}</button>`).join('')}</div>`
+                    : '<span class="muted">Awaiting the first HIGH-level attestation.</span>';
                 const status = t.status === 'VOUCHED'
-                    ? '<span class="pill pill-green">VOUCHED</span>'
-                    : `<span class="pill ${quorum ? 'pill-blue' : 'pill-yellow'}">${escapeHtml(t.status || 'PENDING')}</span>`;
+                    ? '<span class="pill pill-green"><i class="fas fa-handshake"></i> VOUCHED</span>'
+                    : `<span class="pill ${quorum ? 'pill-blue' : 'pill-yellow'}"><i class="fas fa-hourglass-half"></i> ${escapeHtml(t.status || 'PENDING')}</span>`;
                 return `<tr>
-                    <td style="font-size:0.7rem;font-family:monospace;"><span class="pill pill-purple">${escapeHtml(t.target_id)}</span></td>
-                    <td style="font-size:0.72rem;">${escapeHtml(t.name || '-')}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(t.email || '-')}</span></td>
-                    <td style="font-size:0.7rem;font-family:monospace;">${escapeHtml(t.id_number || '-')}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(t.role || '-')}</span></td>
-                    <td style="font-size:0.7rem;"><b>${t.count || 0}/${t.required || 2}</b><br>${vouches}</td>
+                    <td style="font-size:0.7rem;"><div style="display:flex;gap:0.3rem;flex-wrap:wrap;"><button type="button" class="pill pill-purple copyable" style="font:inherit;cursor:pointer;white-space:nowrap;" data-copy="${escapeHtml(t.target_id)}" title="Copy target ID"><i class="fas fa-copy"></i> ${escapeHtml(t.target_id)}</button><button type="button" class="pill pill-blue copyable" style="font:inherit;cursor:pointer;white-space:nowrap;" data-use-target="${escapeHtml(t.target_id)}" title="Use this target in the attestation form"><i class="fas fa-arrow-down"></i> Use</button></div></td>
+                    <td style="font-size:0.72rem;"><b>${escapeHtml(t.name || '-')}</b><br><span class="muted" style="font-size:0.68rem;">${escapeHtml(t.email || '-')}</span></td>
+                    <td class="field-mono">${escapeHtml(t.id_number || '-')}<br><span class="muted" style="font-size:0.68rem;">${escapeHtml(t.role || '-')}</span></td>
+                    <td style="font-size:0.7rem;"><b>${t.count || 0}/${t.required || 2}</b> <span class="muted">vouchers</span><div style="margin-top:0.3rem;">${vouches}</div></td>
                     <td style="font-size:0.7rem;white-space:nowrap;">${escapeHtml(f15Ts(t.ts))}</td>
-                    <td>${status}</td></tr>`;
+                    <td style="white-space:nowrap;">${status}</td></tr>`;
             }).join('');
             el.innerHTML = targets.length
-                ? `<div class="alert ${vouched ? 'alert-success' : 'alert-info'} show"><b>${targets.length}</b> vouch target${targets.length === 1 ? '' : 's'} &middot; <b>${vouched}</b> reached quorum${targets.length - vouched ? ` &middot; <b>${targets.length - vouched}</b> still pending` : ''}</div>
-                    <div class="table-container" style="max-height:280px;overflow:auto;"><table><thead><tr><th>Target</th><th>Name / Email</th><th>ID / Role</th><th>Vouchers</th><th>When</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`
-                : '<div class="hint">No vouch targets yet - register an identity to start peer vouching.</div>';
+                ? `<div class="alert ${vouched ? 'alert-success' : 'alert-info'} show"><i class="fas fa-handshake"></i> <b>Vouching queue</b> &middot; ${targets.length} target${targets.length === 1 ? '' : 's'} &middot; ${vouched} reached quorum${pending ? ` &middot; ${pending} still pending` : ''}</div>
+                    <div class="table-container" style="max-height:320px;overflow:auto;"><table><thead><tr><th scope="col">Target actions</th><th scope="col">Candidate</th><th scope="col">ID / role</th><th scope="col">Attestations</th><th scope="col">Registered</th><th scope="col">Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+                    <div class="hint"><i class="fas fa-arrow-down"></i> Use fills the attestation form. Voucher names can be selected for copying.</div>`
+                : resultEmpty('fa-handshake', 'No vouch targets yet', 'Register a candidate above, then collect two HIGH-level peer attestations.');
+            bindResultButtons(el);
         }
         async function f15Containment() {
             const r = await postJSON('/api/containment/revoke', {
@@ -2880,7 +3249,11 @@
             el.innerHTML = `<div class="alert alert-danger show"><b>${escapeHtml(r.data.action_id)}</b> &middot; ${r.data.revoked_count} identities in ${escapeHtml(r.data.department)} revoked &middot; ${escapeHtml(r.data.message)}</div>
                 <div class="table-container" style="max-height:200px;"><table><thead><tr><th>Public id</th><th>Department</th><th>State</th></tr></thead><tbody>${rows || '<tr><td colspan="3">(none)</td></tr>'}</tbody></table></div>`;
         }
-        async function f15ContainmentList() { renderRaw('f15containResult', { success: true, data: (await fetchAPI('/api/containment/list')).data }); }
+        async function f15ContainmentList() {
+            resultLoading('f15containResult', 'fa-list', 'Loading containment history...', 'Fetching the containment actions.');
+            const r = await fetchAPI('/api/containment/list');
+            renderApiResult('f15containResult', r, { title: 'Containment history', icon: 'fa-list', recordName: 'action', empty: 'No containment actions yet.' });
+        }
 
         // ============================================================
         // FEATURE 15 - Selective Disclosure / Witness / Lifecycle
@@ -2906,7 +3279,11 @@
                 <div class="hint" style="margin-bottom:0.4rem;">REVEALED: ${shown || '(none)'}</div>
                 <div class="hint">WITHHELD: ${(r.data.withheld || []).map(escapeHtml).join(', ') || '(none)'} &middot; verifier sub-digest ${escapeHtml(r.data.sub_digest.slice(0, 24))}...</div>`;
         }
-        async function f15SdList() { renderRaw('f15sdResult', { success: true, data: (await fetchAPI('/api/sd/list')).data }); }
+        async function f15SdList() {
+            resultLoading('f15sdResult', 'fa-list', 'Loading selective-disclosure credentials...', 'Fetching the selective-disclosure credentials.');
+            const r = await fetchAPI('/api/sd/list');
+            renderApiResult('f15sdResult', r, { title: 'Selective-disclosure credentials', icon: 'fa-list', recordName: 'credential', empty: 'No selective-disclosure credentials yet.' });
+        }
         async function f15WitnessOpen() {
             const r = await postJSON('/api/witness/open', {
                 requester: _gid('f15wRequester').value.trim(), resource: _gid('f15wResource').value.trim()
@@ -2925,7 +3302,11 @@
             if (!r.success) { renderRaw('f15witnessResult', r); return; }
             el.innerHTML = `<div class="alert alert-success show"><b>${r.data.status}</b> &middot; ${escapeHtml(r.data.message)}</div>`;
         }
-        async function f15WitnessList() { renderRaw('f15witnessResult', { success: true, data: (await fetchAPI('/api/witness/list')).data }); }
+        async function f15WitnessList() {
+            resultLoading('f15witnessResult', 'fa-list', 'Loading witness requests...', 'Fetching the witness requests.');
+            const r = await fetchAPI('/api/witness/list');
+            renderApiResult('f15witnessResult', r, { title: 'Witness requests', icon: 'fa-list', recordName: 'request', empty: 'No witness requests yet.' });
+        }
         async function f15Lifecycle() {
             const r = await postJSON('/api/lifecycle/change', {
                 public_id: _gid('f15lPid').value.trim(), change_type: _gid('f15lType').value,
@@ -2940,7 +3321,11 @@
                 <div class="hint">Cascade-revoked grants: ${rev || '<i>none</i>'}</div>
                 <div class="hint">Grants now: ${now || '<i>none</i>'}</div>`;
         }
-        async function f15LifecycleList() { renderRaw('f15lifecycleResult', { success: true, data: (await fetchAPI('/api/lifecycle/list')).data }); }
+        async function f15LifecycleList() {
+            resultLoading('f15lifecycleResult', 'fa-list', 'Loading lifecycle cascade events...', 'Fetching the lifecycle events.');
+            const r = await fetchAPI('/api/lifecycle/list');
+            renderApiResult('f15lifecycleResult', r, { title: 'Lifecycle cascade events', icon: 'fa-list', recordName: 'event', empty: 'No lifecycle events yet.' });
+        }
 
         // ============================================================
         // FEATURE 15 - Purpose Binding / Session Sealing / Classification
@@ -2963,7 +3348,11 @@
             el.innerHTML = `<div class="alert ${r.data.granted ? 'alert-success' : 'alert-danger'} show"><b>${r.data.granted ? 'GRANTED' : 'DENIED'}</b> &middot; ${escapeHtml(r.data.reason)}</div>
                 <div class="hint">role_permitted: ${r.data.role_permitted} &middot; purpose_registered: ${r.data.purpose_registered}</div>`;
         }
-        async function f15PurposeList() { renderRaw('f15purposeResult', { success: true, data: (await fetchAPI('/api/purpose/list')).data }); }
+        async function f15PurposeList() {
+            resultLoading('f15purposeResult', 'fa-list', 'Loading purpose policy and denials...', 'Fetching the purpose policy entries.');
+            const r = await fetchAPI('/api/purpose/list');
+            renderApiResult('f15purposeResult', r, { title: 'Purpose policy and denials', icon: 'fa-list', recordName: 'entry', empty: 'No purpose policy entries yet.' });
+        }
         async function f15SessionSeal() { /* removed */ }
         async function f15SessionValidate() { /* removed */ }
         async function f15SessionHijack() { /* removed */ }
@@ -2991,7 +3380,11 @@
             el.innerHTML = `<div class="alert alert-success show"><b>${escapeHtml(r.data.label)}</b> &middot; ${escapeHtml(r.data.message)}</div>
                 <div class="hint">factors: ${(rules.factors || []).map(x => `<span class="pill pill-blue">${escapeHtml(x)}</span>`).join(' ')} &middot; min_level ${rules.min_level} &middot; watermark ${escapeHtml(rules.watermark)}</div>`;
         }
-        async function f15ClassifyList() { renderRaw('f15classifyResult', { success: true, data: (await fetchAPI('/api/classify/list')).data }); }
+        async function f15ClassifyList() {
+            resultLoading('f15classifyResult', 'fa-list', 'Loading classification layers...', 'Fetching the classification layers.');
+            const r = await fetchAPI('/api/classify/list');
+            renderApiResult('f15classifyResult', r, { title: 'Classification layers', icon: 'fa-list', recordName: 'layer', empty: 'No classification layers yet.' });
+        }
 
         // ============================================================
         // FEATURE 15 - Chaos / Node PKI / Audit-Root Notarization
@@ -3027,7 +3420,11 @@
                 ? `<div class="alert alert-warning show">${escapeHtml(r.data.message)}</div>`
                 : `<div class="alert alert-warning show">${escapeHtml(r.data.reason || 'failed')}</div>`;
         }
-        async function f15PkiList() { renderRaw('f15pkiResult', { success: true, data: (await fetchAPI('/api/pki/list')).data }); }
+        async function f15PkiList() {
+            resultLoading('f15pkiResult', 'fa-list', 'Loading node PKI registry...', 'Fetching the PKI nodes.');
+            const r = await fetchAPI('/api/pki/list');
+            renderApiResult('f15pkiResult', r, { title: 'Node PKI registry', icon: 'fa-list', recordName: 'node', empty: 'No PKI nodes yet.' });
+        }
         async function f15NotarizeAnchor() {
             const r = await postJSON('/api/notarize/anchor', { notary: 'BEL-AUDIT-01' });
             _gid('f15notarizeResult').innerHTML = r.success
@@ -3041,7 +3438,11 @@
             el.innerHTML = `<div class="alert ${r.data.verdict === 'VERIFIED' ? 'alert-success' : 'alert-danger'} show"><b>${r.data.verdict}</b> &middot; trail matches anchor: ${r.data.audit_trail_matches_anchor} &middot; ipfs_retrievable ${r.data.ipfs_retrievable}</div>
                 <div class="hint">${escapeHtml(r.data.message)}</div>`;
         }
-        async function f15NotarizeList() { renderRaw('f15notarizeResult', { success: true, data: (await fetchAPI('/api/notarize/list')).data }); }
+        async function f15NotarizeList() {
+            resultLoading('f15notarizeResult', 'fa-list', 'Loading notarization anchors...', 'Fetching the notarization anchors.');
+            const r = await fetchAPI('/api/notarize/list');
+            renderApiResult('f15notarizeResult', r, { title: 'Notarization anchors', icon: 'fa-list', recordName: 'anchor', empty: 'No notarization anchors yet.' });
+        }
 
         // ============================================================
         // FEATURE 15 - Geo-Fence / Work Orders / Lifecycle Timeline
@@ -3064,7 +3465,11 @@
             if (!r.success) { renderRaw('f15geofenceResult', r); return; }
             el.innerHTML = `<div class="alert ${r.data.flagged ? 'alert-danger' : 'alert-success'} show"><b>${r.data.inside_perimeter ? 'INSIDE' : 'OUTSIDE PERIMETER'}</b> &middot; ${r.data.distance_km} km &middot; ${escapeHtml(r.data.message)}</div>`;
         }
-        async function f15GeofenceList() { renderRaw('f15geofenceResult', { success: true, data: (await fetchAPI('/api/geofence/list')).data }); }
+        async function f15GeofenceList() {
+            resultLoading('f15geofenceResult', 'fa-list', 'Loading geofences and alerts...', 'Fetching the geofences.');
+            const r = await fetchAPI('/api/geofence/list');
+            renderApiResult('f15geofenceResult', r, { title: 'Geofences and alerts', icon: 'fa-list', recordName: 'entry', empty: 'No geofences yet.' });
+        }
         async function f15WoCreate() {
             const r = await postJSON('/api/wo/create', {
                 unit_id: _gid('f15woUnit').value.trim(), technician: _gid('f15woTech').value.trim(),
@@ -3086,7 +3491,11 @@
                 ? `<div class="alert alert-success show"><b>${escapeHtml(r.data.order_id)}</b> &middot; ${escapeHtml(r.data.message)}</div>`
                 : `<div class="alert alert-warning show">${escapeHtml(r.data.reason || 'failed')}</div>`;
         }
-        async function f15WoList() { renderRaw('f15woResult', { success: true, data: (await fetchAPI('/api/wo/list')).data }); }
+        async function f15WoList() {
+            resultLoading('f15woResult', 'fa-list', 'Loading maintenance orders...', 'Fetching the maintenance orders.');
+            const r = await fetchAPI('/api/wo/list');
+            renderApiResult('f15woResult', r, { title: 'Maintenance orders', icon: 'fa-list', recordName: 'order', empty: 'No maintenance orders yet.' });
+        }
         function f15Ts(ts) { return ts ? new Date(ts * 1000).toLocaleString('en-IN') : '?'; }
         async function f15Timeline() {
             const r = await fetchAPI('/api/timeline/asset?unit_id=' + encodeURIComponent(_gid('f15tlUnit').value.trim()));
@@ -3097,7 +3506,11 @@
                 <span style="font-size:0.68rem;color:var(--text-dim);">${escapeHtml(f15Ts(e.ts))} &middot; by ${escapeHtml(e.by || '?')} &middot; ${escapeHtml(e.note || '')}</span></div>`).join('');
             el.innerHTML = `<div class="alert alert-success show"><b>${escapeHtml(r.data.unit_id)}</b> &middot; ${r.data.count} events</div>${ev || '<div class="hint">No events recorded yet.</div>'}`;
         }
-        async function f15TimelineAssets() { renderRaw('f15timelineResult', { success: true, data: (await fetchAPI('/api/timeline/assets')).data }); }
+        async function f15TimelineAssets() {
+            resultLoading('f15timelineResult', 'fa-list', 'Loading timeline assets...', 'Fetching the timeline assets.');
+            const r = await fetchAPI('/api/timeline/assets');
+            renderApiResult('f15timelineResult', r, { title: 'Timeline assets', icon: 'fa-list', recordName: 'asset', empty: 'No timeline assets yet.' });
+        }
 
         // ============================================================
         // FEATURE 15 - Least-Privilege / Attestation Receipts
@@ -3121,7 +3534,11 @@
                 ? `<div class="alert alert-success show">${escapeHtml(r.data.message)}</div>`
                 : `<div class="alert alert-warning show">${escapeHtml(r.data.reason || 'failed')}</div>`;
         }
-        async function f15LpList() { renderRaw('f15lpResult', { success: true, data: (await fetchAPI('/api/least-privilege/list')).data }); }
+        async function f15LpList() {
+            resultLoading('f15lpResult', 'fa-list', 'Loading least-privilege proposals...', 'Fetching the prune proposals.');
+            const r = await fetchAPI('/api/least-privilege/list');
+            renderApiResult('f15lpResult', r, { title: 'Least-privilege proposals', icon: 'fa-list', recordName: 'proposal', empty: 'No prune proposals yet.' });
+        }
         async function f15ReceiptIssue() {
             const r = await postJSON('/api/receipt/issue', {
                 control: _gid('f15rControl').value.trim(), framework: _gid('f15rFramework').value.trim(),
@@ -3141,7 +3558,11 @@
             el.innerHTML = `<div class="alert ${r.data.verdict === 'VERIFIED' ? 'alert-success' : 'alert-danger'} show"><b>${r.data.verdict}</b> &middot; signature_valid ${r.data.signature_valid} &middot; digest_valid ${r.data.digest_valid} &middot; offline_verifiable ${r.data.offline_verifiable}</div>
                 <div class="hint">${escapeHtml(r.data.message)}</div>`;
         }
-        async function f15ReceiptList() { renderRaw('f15receiptResult', { success: true, data: (await fetchAPI('/api/receipt/list')).data }); }
+        async function f15ReceiptList() {
+            resultLoading('f15receiptResult', 'fa-list', 'Loading attestation receipts...', 'Fetching the attestation receipts.');
+            const r = await fetchAPI('/api/receipt/list');
+            renderApiResult('f15receiptResult', r, { title: 'Attestation receipts', icon: 'fa-list', recordName: 'receipt', empty: 'No attestation receipts yet.' });
+        }
 
         // ================================================================
         // PS GOVERNANCE LAYER

@@ -439,7 +439,7 @@
                         <button class="btn" onclick="dupCheck()"><i class="fas fa-binoculars"></i> Run Fuzzy Match</button>
                         <button class="btn" onclick="dupFlags()"><i class="fas fa-flag"></i> Flag History</button>
                     </div>
-                    <div id="dupResult"><div class="hint">Fuzzy-matches name + email + ID against every registered identity; blocks synthetic identities (same ID, different name) at registration.</div></div>
+                    <div id="dupResult" role="status" aria-live="polite"><div class="hint">Fuzzy-matches name + email + ID against every registered identity; blocks synthetic identities (same ID, different name) at registration.</div></div>
                 </div>
     </div>
     <div>
@@ -453,7 +453,7 @@
                         <button class="btn" onclick="bulkOnboard()"><i class="fas fa-user-plus"></i> Onboard Roster</button>
                         <button class="btn" onclick="bulkBatches()"><i class="fas fa-receipt"></i> Batch Receipts</button>
                     </div>
-                    <div id="bulkResult"><div class="hint">Every row is POW-mined on-chain and returns its block-hash receipt for payroll/audit sign-off.</div></div>
+                    <div id="bulkResult" role="status" aria-live="polite"><div class="hint">Every row is POW-mined on-chain and returns its block-hash receipt for payroll/audit sign-off.</div></div>
                 </div>
     </div>
     <div>
@@ -514,7 +514,7 @@
                         <button class="btn btn-success btn-full" onclick="f15VouchAttest()"><i class="fas fa-check"></i> Attest (HIGH peer)</button>
                         <button class="btn btn-secondary btn-full" onclick="f15VouchList()"><i class="fas fa-list"></i> Pending + Vouched</button>
                     </div>
-                    <div id="f15vouchResult" style="margin-top:0.8rem;"></div>
+                    <div id="f15vouchResult" role="status" aria-live="polite" style="margin-top:0.8rem;"></div>
                 </div>
     </div>
     <div>
@@ -2381,7 +2381,7 @@
 
     <script src="/static/js/ui.js?v=6"></script>
     <script src="/static/js/endpoints.js?v=6"></script>
-    <script src="/static/js/app.js?v=6"></script>
+    <script src="/static/js/app.js?v=8"></script>
     <script src="/static/js/organize.js?v=9"></script>
     <script src="/static/js/console.js?v=6"></script>
     <script src="/static/js/palette.js?v=6"></script>
