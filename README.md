@@ -23,7 +23,7 @@ Build a blockchain-based system that securely manages digital identities and con
 - **Visualization upgrades**: rotating Proof-of-Work difficulty sparkline for the block explorer and a shake/red-flash animation + border on any tampered block.
 - **States**: shimmer skeletons, empty states, aria-live alert toasts, `role="status"` on every result container, focus-visible rings, skip link, reduced-motion and forced-colors support, keyboard shortcuts (`1`–`8` jump between workspaces, `C` toggles the console, `I` opens API traffic, `L` activity, `T` tour).
 - **Responsive**: off-canvas mobile drawer, collapsing status pills, single-column groups on small screens.
-- **Engineering hygiene**: CSS/JS extracted from the single `templates/index.html` into `static/css/app.css`, `static/css/v6.css` and `static/js/{ui,app,main,organize,console,palette,endpoints}.js`, plus an inline SVG favicon and cache-busted asset links. `test_frontend.py` asserts 163 structural and integrity invariants (no duplicate ids, every `_gid()` target exists, every card lands in a group, the palette exposes only GET routes, the activity chip labels match the server-side labels, the top bar carries the non-wrapping declarations that keep it on one line, the three dashboard sections keep their cards stacked in a single full-width column, and the retired hero badge, dashboard purpose line and dashboard section dividers are gone).
+- **Engineering hygiene**: CSS/JS extracted from the single `templates/index.html` into `static/css/app.css`, `static/css/v6.css` and `static/js/{ui,app,main,organize,console,palette,endpoints}.js`, plus an inline SVG favicon and cache-busted asset links. `test_frontend.py` asserts 161 structural and integrity invariants (no duplicate ids, every `_gid()` target exists, every card lands in a group, the palette exposes only GET routes, the activity chip labels match the server-side labels, the top bar carries the non-wrapping declarations that keep it on one line, every workspace keeps its cards stacked one after another in a single full-width column (one `.workspace .tool-group-body` rule rather than per-workspace overrides), and the retired hero badge, dashboard purpose line and dashboard section dividers are gone).
 
 ### 🔐 Core Blockchain
 - **Custom SHA-256 Blockchain** - an **immutable, proof-of-work prototype ledger** written for this project, not a general-purpose chain
@@ -484,7 +484,7 @@ SIH26125-Blockchain-Identity/
 ├── test_new_features.py   # ZK + QR feature tests
 ├── test_crypto.py         # Passwordless auth tests
 ├── test_biometric_smartcontract.py  # Biometric + smart contract tests
-├── test_frontend.py       # 163 frontend structural + integrity assertions
+├── test_frontend.py       # 161 frontend structural + integrity assertions
 ├── test_network_ipfs.py   # Multi-node network + IPFS storage tests
 ├── test_advanced_features.py  # Audit, multisig, replay/escalation, revoke, schedule, encryption, ZK doc, topology, health, metrics, playbook
 ├── test_rbac_governance.py    # 147 RBAC / dNFT-ownership / DID-consent / six-activity / join-approval-and-rejection checks
