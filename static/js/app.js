@@ -2276,7 +2276,37 @@
             el.innerHTML = `<div class="alert ${d.verdict === 'CLEAR' ? 'alert-success' : d.verdict === 'BLOCKED' ? 'alert-danger' : 'alert-warning'} show"><b>VERDICT: ${d.verdict}</b> - ${escapeHtml(d.heuristic)}</div>
                 ${cands ? `<div class="table-container" style="max-height:200px;overflow:auto;"><table><thead><tr><th>Candidate</th><th>Flags</th><th>Similarity</th><th>Action</th></tr></thead><tbody>${cands}</tbody></table></div>` : '<div class="hint">No near-matches on-chain.</div>'}`;
         }
-        async function dupFlags() { renderRaw('dupResult', { success: true, data: (await fetchAPI('/api/identity/duplicate-flags')).data }); }
+        async function dupFlags() {
+            const r = await fetchAPI('/api/identity/duplicate-flags');
+            const el = _gid('dupResult');
+            if (!r.success) { renderRaw('dupResult', r); return; }
+            const flags = r.data.flags || [];
+            const blocked = flags.filter(f => (f.candidates || []).some(c => c.blocked)).length;
+            const rows = flags.map(f => {
+                const cands = f.candidates || [];
+                const top = cands[0];
+                const isBlocked = cands.some(c => c.blocked);
+                const verdict = isBlocked ? '<span class="pill pill-red">BLOCKED</span>'
+                    : cands.length ? '<span class="pill pill-orange">REVIEW</span>'
+                    : '<span class="pill pill-green">CLEAR</span>';
+                const match = top
+                    ? `<b>${cands.length}</b> near-match${cands.length === 1 ? '' : 'es'}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(top.public_id)} &middot; name ${top.name_similarity} / email ${top.email_similarity}</span>`
+                    : '<span class="hint">none</span>';
+                const idPill = (cands.flatMap(c => c.flags || []).length)
+                    ? `<div style="display:flex;gap:0.2rem;flex-wrap:wrap;margin-top:0.2rem;">${[...new Set(cands.flatMap(c => c.flags || []))].map(x => `<span class="pill pill-orange" style="font-size:0.6rem;">${escapeHtml(x)}</span>`).join('')}</div>`
+                    : '';
+                return `<tr>
+                    <td style="font-size:0.7rem;white-space:nowrap;">${escapeHtml(f15Ts(f.ts))}</td>
+                    <td style="font-size:0.72rem;">${escapeHtml(f.name || '-')}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(f.email || '-')}</span></td>
+                    <td style="font-size:0.7rem;font-family:monospace;">${escapeHtml(f.id_number || '-')}</td>
+                    <td style="font-size:0.7rem;">${match}${idPill}</td>
+                    <td>${verdict}</td></tr>`;
+            }).join('');
+            el.innerHTML = flags.length
+                ? `<div class="alert ${blocked ? 'alert-danger' : 'alert-info'} show"><b>${flags.length}</b> duplicate/synthetic check${flags.length === 1 ? '' : 's'} on record${blocked ? ` &middot; <b>${blocked}</b> auto-blocked` : ''}</div>
+                    <div class="table-container" style="max-height:280px;overflow:auto;"><table><thead><tr><th>When</th><th>Name / Email</th><th>ID Number</th><th>Matches</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`
+                : '<div class="hint">No duplicate checks recorded yet - run a fuzzy match to populate the flag history.</div>';
+        }
         async function bulkOnboard() {
             const lines = _gid('bulkCsv').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
             const rows = lines.map(l => {
@@ -2292,7 +2322,27 @@
                 r.data.receipts.map(x => `<tr><td style="font-size:0.7rem;">${x.row}</td><td style="font-size:0.7rem;">${escapeHtml(x.public_id)}</td><td style="font-size:0.7rem;font-family:monospace;">${escapeHtml(x.receipt || x.error || '')}</td></tr>`).join('') +
                 `</tbody></table></div>`;
         }
-        async function bulkBatches() { renderRaw('bulkResult', { success: true, data: (await fetchAPI('/api/onboard/batches')).data }); }
+        async function bulkBatches() {
+            const r = await fetchAPI('/api/onboard/batches');
+            const el = _gid('bulkResult');
+            if (!r.success) { renderRaw('bulkResult', r); return; }
+            const batches = r.data.batches || [];
+            const partial = batches.filter(b => (b.success || 0) < (b.total || 0));
+            const rows = batches.slice().reverse().map(b => {
+                const total = b.total || 0, ok = b.success || 0;
+                return `<tr>
+                    <td style="font-size:0.7rem;font-family:monospace;"><span class="pill pill-blue">${escapeHtml(b.batch_id)}</span></td>
+                    <td style="font-size:0.72rem;">${escapeHtml(b.label || '(unlabelled)')}</td>
+                    <td style="font-size:0.72rem;">${ok}/${total} ${ok === total ? '<span class="pill pill-green">complete</span>' : `<span class="pill pill-orange">${total - ok} failed</span>`}</td>
+                    <td style="font-size:0.72rem;">${b.receipt_count || 0}</td>
+                    <td style="font-size:0.7rem;white-space:nowrap;">${escapeHtml(f15Ts(b.ts))}</td></tr>`;
+            }).join('');
+            const onBoarded = batches.reduce((n, b) => n + (b.success || 0), 0);
+            el.innerHTML = batches.length
+                ? `<div class="alert ${partial.length ? 'alert-warning' : 'alert-success'} show"><b>${batches.length}</b> batch${batches.length === 1 ? '' : 'es'} on record &middot; <b>${onBoarded}</b> identities hash-receipted${partial.length ? ` &middot; <b>${partial.length}</b> with failed rows` : ''}</div>
+                    <div class="table-container" style="max-height:260px;overflow:auto;"><table><thead><tr><th>Batch</th><th>Label</th><th>On-boarded</th><th>Receipts</th><th>When</th></tr></thead><tbody>${rows}</tbody></table></div>`
+                : '<div class="hint">No batches yet - onboard a roster to mint its first hash receipts.</div>';
+        }
         async function joinSubmit() {
             let payload = {};
             try { payload = JSON.parse(_gid('joinPayload').value); }
@@ -2793,7 +2843,31 @@
         }
         async function f15VouchList() {
             const r = await fetchAPI('/api/vouch/list');
-            renderRaw('f15vouchResult', { success: true, data: { targets: (r.data.targets || []).map(t => ({ id: t.target_id, name: t.name, email: t.email, status: t.status, count: t.count, required: t.required, vouchers: t.vouchers })) } });
+            const el = _gid('f15vouchResult');
+            if (!r.success) { renderRaw('f15vouchResult', r); return; }
+            const targets = r.data.targets || [];
+            const vouched = targets.filter(t => t.status === 'VOUCHED').length;
+            const rows = targets.map(t => {
+                const vs = t.vouchers || [];
+                const quorum = (t.count || 0) >= (t.required || 2);
+                const vouches = vs.length
+                    ? `<div style="display:flex;gap:0.2rem;flex-wrap:wrap;">${vs.map(v => `<span class="pill ${quorum ? 'pill-green' : 'pill-blue'}" title="${escapeHtml(v.note || 'no note')}">${escapeHtml(v.voucher)}</span>`).join('')}</div>`
+                    : '<span class="hint">no vouchers yet</span>';
+                const status = t.status === 'VOUCHED'
+                    ? '<span class="pill pill-green">VOUCHED</span>'
+                    : `<span class="pill ${quorum ? 'pill-blue' : 'pill-yellow'}">${escapeHtml(t.status || 'PENDING')}</span>`;
+                return `<tr>
+                    <td style="font-size:0.7rem;font-family:monospace;"><span class="pill pill-purple">${escapeHtml(t.target_id)}</span></td>
+                    <td style="font-size:0.72rem;">${escapeHtml(t.name || '-')}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(t.email || '-')}</span></td>
+                    <td style="font-size:0.7rem;font-family:monospace;">${escapeHtml(t.id_number || '-')}<br><span class="hint" style="font-size:0.68rem;">${escapeHtml(t.role || '-')}</span></td>
+                    <td style="font-size:0.7rem;"><b>${t.count || 0}/${t.required || 2}</b><br>${vouches}</td>
+                    <td style="font-size:0.7rem;white-space:nowrap;">${escapeHtml(f15Ts(t.ts))}</td>
+                    <td>${status}</td></tr>`;
+            }).join('');
+            el.innerHTML = targets.length
+                ? `<div class="alert ${vouched ? 'alert-success' : 'alert-info'} show"><b>${targets.length}</b> vouch target${targets.length === 1 ? '' : 's'} &middot; <b>${vouched}</b> reached quorum${targets.length - vouched ? ` &middot; <b>${targets.length - vouched}</b> still pending` : ''}</div>
+                    <div class="table-container" style="max-height:280px;overflow:auto;"><table><thead><tr><th>Target</th><th>Name / Email</th><th>ID / Role</th><th>Vouchers</th><th>When</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`
+                : '<div class="hint">No vouch targets yet - register an identity to start peer vouching.</div>';
         }
         async function f15Containment() {
             const r = await postJSON('/api/containment/revoke', {
