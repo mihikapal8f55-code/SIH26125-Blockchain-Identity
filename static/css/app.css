@@ -1228,26 +1228,22 @@ html[data-theme="dark"] .status-pill.chain-ok { background: var(--ok-fill); colo
 }
 .dash-section-divider i { color: var(--primary); }
 
-/* Dashboard sections read top-to-bottom: the cards inside each section stack
-   in a single full-width column, one after another -- Chain & Consensus puts
-   the chain visualisation above the consensus metrics, Security Posture
-   stacks its four, Scenario Lab its three. This deliberately overrides the
-   shared .tool-group-body auto-fit grid, which would otherwise place them
-   side by side. */
-#ws-dashboard .tool-group-body {
-    grid-template-columns: minmax(0, 1fr);
-}
-
-/* Identity & Registration reads top-to-bottom: the cards in each section
-   stack in a single full-width column, one after another, overriding the
-   shared .tool-group-body auto-fit grid that would place them side by side. */
-#ws-identity .tool-group-body {
+/* Every workspace reads top-to-bottom: the cards inside each section stack in
+   a single full-width column, one after another. This deliberately overrides
+   the shared .tool-group-body auto-fit grid in v6.css, which would otherwise
+   place cards side by side. The `.workspace` qualifier is what gives this
+   enough specificity to win over that later-loaded stylesheet.
+   Sections: Chain & Consensus stacks the chain visualisation above the
+   consensus metrics; Identity Ledger, Onboarding Controls, Identity
+   Operations, the ZK/SSI and access-control groups, network, assets, audit
+   and the G-Series controls all stack the same way. */
+.workspace .tool-group-body {
     grid-template-columns: minmax(0, 1fr);
 }
 
 /* Pre-JS fallback: same single column, in case organize.js ever leaves the
    authored .main-grid blocks in place instead of replacing them with groups. */
-#ws-dashboard > .main-grid {
+.workspace > .main-grid {
     grid-template-columns: minmax(0, 1fr);
 }
 #ws-dashboard > .main-grid .card { margin-bottom: 0; min-width: 0; }

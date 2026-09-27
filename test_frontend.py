@@ -180,8 +180,6 @@ checks = {
     # Dashboard sections stack their cards in one full-width column.
     'No leftover rowwise machinery': 'rowwise' not in organizejs
     and '--cols' not in organizejs,
-    'Dashboard single-column grid rule': '#ws-dashboard .tool-group-body {' in css
-    and 'grid-template-columns: minmax(0, 1fr);' in css,
     'Dashboard main-grid fallback also single column': css.count(
         'grid-template-columns: minmax(0, 1fr);') >= 2,
     'No dashboard multi-column override': 'repeat(var(--cols' not in css
@@ -199,13 +197,16 @@ checks = {
     'html[data-theme="dark"] .chain-block.genesis { background: var(--surface-2); border-color: var(--c-hairline); color: var(--c-ink); }' in css,
     'Block titles use theme-aware ink': '.chain-block .block-index {' in css
     and 'color: var(--c-ink);' in css.split('.chain-block .block-index {')[1].split('}')[0],
-    # Identity & Registration stacks its cards in one full-width column too,
-    # and nothing else is given a per-workspace override.
-    'Identity workspace single column': '#ws-identity .tool-group-body {' in css
-    and 'grid-template-columns: minmax(0, 1fr);' in css.split('#ws-identity .tool-group-body {')[1].split('}')[0],
-    'Only dashboard + identity are single column': sorted(set(
-        re.findall(r'#ws-[a-z]+ \.tool-group-body \{', css)))
-    == ['#ws-dashboard .tool-group-body {', '#ws-identity .tool-group-body {'],
+    # Every workspace stacks its cards in one full-width column. Done with a
+    # single `.workspace`-qualified rule rather than eight per-workspace ones.
+    # rsplit: `.workspace > .main-grid {` also appears earlier in app.css with
+    # the auto-fit grid, and the single-column override comes last.
+    'All workspaces single column': 'grid-template-columns: minmax(0, 1fr);'
+    in css.rsplit('.workspace .tool-group-body {', 1)[1].split('}')[0],
+    'No per-workspace column overrides': not re.findall(
+        r'#ws-[a-z]+ \.tool-group-body \{', css),
+    'Pre-JS fallback also single column': 'grid-template-columns: minmax(0, 1fr);'
+    in css.rsplit('.workspace > .main-grid {', 1)[1].split('}')[0],
     'Result containers in dock': 'id="inspectorBody"' in html,
     'v6 scripts linked': all(s in html for s in (
         'organize.js', 'console.js', 'palette.js', 'endpoints.js')),
